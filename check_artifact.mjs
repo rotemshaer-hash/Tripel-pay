@@ -1,0 +1,13 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const page = await browser.newPage({ viewport: { width: 430, height: 900 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}\n${e.stack}`));
+page.on("console", (msg) => { if (msg.type() === "error") errors.push(`console: ${msg.text()}`); });
+await page.goto("file:///tmp/claude-0/-home-user-Telegram-rs/4f8aa2eb-e0e2-5755-84ac-b0e801e09c28/scratchpad/triplepay.html");
+await page.waitForTimeout(1500);
+console.log("body length:", (await page.content()).length);
+console.log("root innerHTML length:", await page.evaluate(() => document.getElementById('root')?.innerHTML.length));
+await page.screenshot({ path: "/tmp/claude-0/-home-user-Telegram-rs/4f8aa2eb-e0e2-5755-84ac-b0e801e09c28/scratchpad/artifact-file-check.png" });
+console.log("errors:", errors);
+await browser.close();

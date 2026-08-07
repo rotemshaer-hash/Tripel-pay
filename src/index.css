@@ -1,0 +1,250 @@
+:root {
+  /* --- "GoHenry Ledger": matched directly against real GoHenry app screenshots —
+     signature coral-red + deep purple + mint, soft white cards on a light grey page,
+     soft blurred elevation (not hard offset), thin/no borders, generous rounding.
+     Variable NAMES are kept as-is — every screen already references them — only what
+     they resolve to has changed, so the whole app re-skins from this one file. --- */
+  /* teal-900 is the "text-safe" dark shade of the coral family — teal-700 is the bright
+     signature red used as a background FILL (buttons, banners); teal-900 is the shade
+     used anywhere the color needs to double as legible text on the light --paper bg. */
+  --teal-900: #a9142c;
+  --teal-800: #ff6f7d;
+  --teal-700: #ff4a5c;
+  --teal-500: #ff8a93;
+  --teal-200: rgba(255, 74, 92, 0.16);
+  --teal-100: rgba(255, 74, 92, 0.08);
+  --violet-700: #4b2e83;
+  --violet-500: #8a6bc4;
+  --violet-200: rgba(75, 46, 131, 0.1);
+  --amber-600: #ffc933;
+  --amber-100: rgba(255, 201, 51, 0.18);
+  --coral-600: #23c1ab;
+  --coral-100: rgba(35, 193, 171, 0.14);
+  --ink: #17181f;
+  --ink-soft: #5c5f6b;
+  --ink-faint: #9a9ca6;
+  --paper: #f6f6fa;
+  --card: #ffffff;
+  --card-solid: #ffffff;
+  --line: #e7e7ef;
+  --line-soft: rgba(23, 24, 31, 0.08);
+  --header-gradient: #ff4a5c;
+  --grad-teal: linear-gradient(135deg, #ff7a67 0%, #ff4a5c 60%, #e0224a 100%);
+  --grad-violet: linear-gradient(135deg, #8a6bc4 0%, #4b2e83 65%, #351f5e 100%);
+  --grad-amber: linear-gradient(135deg, #ffe08a 0%, #ffc933 60%, #ff9d3d 100%);
+  --glow-teal: 0 10px 22px -8px rgba(255, 74, 92, 0.45);
+  --glow-violet: 0 10px 22px -8px rgba(75, 46, 131, 0.4);
+  --shadow-card: 0 2px 10px -4px rgba(23, 24, 31, 0.1);
+  --shadow-card-solid: 0 12px 26px -10px rgba(23, 24, 31, 0.22);
+  --radius-lg: 50px 12px 50px 12px;
+  --radius-md: 34px 8px 34px 8px;
+  --radius-sm: 24px 6px 24px 6px;
+  --shell-w: 430px;
+  --font-heb: "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  font-family: var(--font-heb);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font-family: inherit; }
+
+button { cursor: pointer; transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.12s ease, opacity 0.12s ease; }
+button:active { transform: scale(0.97) translateY(1px); }
+button:disabled { cursor: not-allowed; }
+
+button:focus-visible, input:focus-visible, a:focus-visible {
+  outline: 2px solid var(--teal-700);
+  outline-offset: 2px;
+}
+
+input {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  caret-color: var(--teal-700);
+}
+input::placeholder { color: var(--ink-faint); }
+
+.app-backdrop {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0;
+}
+
+@media (min-width: 560px) {
+  .app-backdrop { padding: 40px 16px; align-items: center; }
+}
+
+.phone-shell {
+  width: 100%;
+  max-width: var(--shell-w);
+  min-height: 100vh;
+  background: var(--paper);
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+@media (min-width: 560px) {
+  .phone-shell {
+    min-height: 900px;
+    max-height: 900px;
+    border-radius: 40px;
+    box-shadow: 0 30px 70px -20px rgba(38, 34, 31, 0.35), 0 0 0 10px #ffffff, 0 0 0 11px rgba(38, 34, 31, 0.08);
+    overflow: hidden;
+  }
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-bottom: 118px;
+  position: relative;
+  animation: screenEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.screen.no-nav { padding-bottom: 24px; }
+.screen::-webkit-scrollbar { width: 0; height: 0; }
+
+@keyframes screenEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+a { color: inherit; text-decoration: none; }
+
+.money { font-family: var(--font-heb); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* --- layout utilities: reduces repeated inline flex patterns across screens --- */
+.row { display: flex; align-items: center; }
+.row-between { display: flex; align-items: center; justify-content: space-between; }
+.stack { display: flex; flex-direction: column; }
+
+/* --- flat surface: no white card fill, just spacing/rounding — the app's list rows
+   and grid tiles float as soft white cards on the page background, matching GoHenry's
+   card-forward look --- */
+.glass {
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+/* --- solid modal sheet: unlike .glass, these float over a dimmed backdrop and need
+   a real white surface to stay legible (bottom sheets, celebration dialogs) --- */
+.modal-sheet {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card-solid);
+}
+
+/* --- brand decoration: soft blurred color blobs + dotted grid + chevrons --- */
+.brand-decor { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.decor-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: decorFloat 9s ease-in-out infinite;
+}
+@keyframes decorFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-16px) scale(1.06); }
+}
+.decor-dots {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+.decor-dots span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.decor-chevrons { position: absolute; display: flex; gap: 4px; font-weight: 800; letter-spacing: -2px; }
+
+/* --- shine sweep, used sparingly --- */
+.shine-sweep { position: relative; overflow: hidden; }
+.shine-sweep::after {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -30%;
+  width: 35%;
+  height: 220%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: rotate(12deg);
+  animation: shineSweep 6s ease-in-out infinite;
+}
+@keyframes shineSweep {
+  0% { left: -35%; }
+  45% { left: 130%; }
+  100% { left: 130%; }
+}
+
+/* --- soft pulse behind FAB (subtle, not neon) --- */
+.pulse-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 74, 92, 0.4), transparent 70%);
+  animation: pulseGlow 2.8s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(0.92); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.2; }
+}
+
+/* --- confetti burst --- */
+.confetti-piece {
+  position: absolute;
+  top: -10px;
+  border-radius: 2px;
+  animation: confettiFall 1.8s cubic-bezier(0.35, 0, 0.65, 1) both;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(220px) rotate(340deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen, .decor-square, .shine-sweep::after, .confetti-piece, .pulse-ring {
+    animation: none !important;
+  }
+}
+
+.role-switcher {
+  display: flex;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+  border-radius: 999px;
+  padding: 3px;
+}
+.role-switcher button {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+}
+.role-switcher button.active {
+  background: #ffffff;
+  color: var(--teal-900);
+  font-weight: 700;
+}
+
+::selection { background: var(--violet-500); color: #ffffff; }
