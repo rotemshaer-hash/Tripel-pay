@@ -36,6 +36,7 @@ type Action =
   | { type: "SIGN_OUT" }
   | { type: "SET_ACTIVE_CHILD"; childId: string }
   | { type: "SET_VIEW_MODE"; mode: ViewMode }
+  | { type: "SET_CHILD_PHOTO"; childId: string; photoUrl: string | null }
   | { type: "ASSIGN_TASK"; childId: string; templateId: string }
   | { type: "ADVANCE_TASK"; childId: string; taskId: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string }
@@ -144,6 +145,11 @@ function reducer(state: AppState, action: Action): AppState {
     case "SET_VIEW_MODE":
       if (state.role === "child") return state; // no parent view to switch to on a real child login
       return { ...state, viewMode: action.mode };
+    case "SET_CHILD_PHOTO":
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => ({ ...c, photoUrl: action.photoUrl ?? undefined })),
+      };
     case "ASSIGN_TASK": {
       const template = state.family.taskBank.find((t) => t.id === action.templateId);
       if (!template) return state;
@@ -199,7 +205,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) => {
-          if (c.balance < gift.cost || c.settings.frozen || gift.cost > c.settings.paymentLimit) return c;
+          if (c.balance < gift.cost) return c;
           return {
             ...c,
             balance: c.balance - gift.cost,

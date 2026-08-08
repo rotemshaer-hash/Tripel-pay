@@ -6,7 +6,7 @@ import { SceneBroom, ScenePiggyBank, SceneGraduation } from "../../components/Il
 const slides = [
   {
     icon: <SceneBroom size={132} />,
-    title: "מטלות בתמורה לתשלום",
+    title: "מטלות בתמורה לתגמול",
     subtitle: "הגדירו מטלות בית, וכל אחת מגיעה עם תגמול משלה.",
   },
   {

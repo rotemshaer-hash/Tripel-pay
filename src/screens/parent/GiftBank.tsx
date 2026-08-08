@@ -186,7 +186,6 @@ export function GiftBank() {
           const affordable = child.balance >= g.cost;
           const gap = g.cost - child.balance;
           const confirming = confirmingId === g.id;
-          const blocked = child.settings.frozen || g.cost > child.settings.paymentLimit;
           return (
             <div
               key={g.id}
@@ -225,22 +224,22 @@ export function GiftBank() {
               <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.3, minHeight: 34 }}>{g.title}</div>
               <Money value={g.cost} sign={false} />
               <button
-                disabled={!affordable || blocked}
+                disabled={!affordable}
                 onClick={() => redeem(g)}
                 style={{
                   marginTop: 4,
-                  background: !affordable || blocked ? "rgba(15,33,29,0.08)" : confirming ? "var(--violet-700)" : "var(--teal-700)",
-                  color: !affordable || blocked ? "var(--ink-faint)" : "#ffffff",
-                  boxShadow: !affordable || blocked ? "none" : confirming ? "var(--glow-violet)" : "var(--glow-teal)",
+                  background: !affordable ? "rgba(15,33,29,0.08)" : confirming ? "var(--violet-700)" : "var(--teal-700)",
+                  color: !affordable ? "var(--ink-faint)" : "#ffffff",
+                  boxShadow: !affordable ? "none" : confirming ? "var(--glow-violet)" : "var(--glow-teal)",
                   border: "none",
                   borderRadius: 999,
                   padding: "8px 10px",
                   fontSize: 12,
                   fontWeight: 700,
-                  cursor: !affordable || blocked ? "not-allowed" : "pointer",
+                  cursor: !affordable ? "not-allowed" : "pointer",
                 }}
               >
-                {child.settings.frozen ? "הכרטיס מוקפא" : !affordable ? `עוד ${gap.toLocaleString("he-IL")}₪ ואפשר!` : blocked ? "מעל הגבלת התשלום" : confirming ? "לאשר מימוש?" : "מימוש"}
+                {!affordable ? `עוד ${gap.toLocaleString("he-IL")}₪ ואפשר!` : confirming ? "לאשר מימוש?" : "מימוש"}
               </button>
             </div>
           );

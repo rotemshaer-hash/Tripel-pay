@@ -61,19 +61,12 @@ export interface AuthorizedPerson {
 }
 
 export interface ChildSettings {
-  frozen: boolean;
-  paymentLimit: number;
-  storeAuthMethod: "faceid" | "fingerprint" | "pin";
-  paymentNotifications: boolean;
   thirdPartyTransfersEnabled: boolean;
   transferNotifications: boolean;
   authorizedPeople: AuthorizedPerson[];
   savingsBreakNotify: boolean;
   savingsBreakRequiresApproval: boolean;
   weeklyAllowance: number;
-  cameraPermission: boolean;
-  fingerprintPermission: boolean;
-  locationPermission: boolean;
 }
 
 export interface StrengthTopic {
@@ -101,6 +94,7 @@ export interface Child {
   name: string;
   avatarColor: string;
   initial: string;
+  photoUrl?: string;
   balance: number;
   savingsTotal: number;
   inviteCode: string;

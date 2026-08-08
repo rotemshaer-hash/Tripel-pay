@@ -1,6 +1,7 @@
 import { Mascot } from "./Mascot";
+import { IconPiggyBank } from "./Icons";
 
-export function WalletCard({ holderName, last4 = "5332", onClick }: { holderName: string; last4?: string; onClick?: () => void }) {
+export function WalletCard({ holderName, onClick }: { holderName: string; onClick?: () => void }) {
   return (
     <div style={{ position: "relative", minWidth: 200 }}>
       <div
@@ -53,24 +54,19 @@ export function WalletCard({ holderName, last4 = "5332", onClick }: { holderName
       >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ fontSize: 10, fontWeight: 800, color: "var(--ink)", letterSpacing: "0.03em" }}>Triple Pay</span>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.85 }}>
-          <path d="M4 14a11 11 0 0 1 16 0" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" />
-          <path d="M7.5 17.2a6.5 6.5 0 0 1 9 0" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="12" cy="20.5" r="1.4" fill="var(--ink)" />
-        </svg>
+        <div style={{ color: "var(--ink)", opacity: 0.75 }}>
+          <IconPiggyBank size={20} />
+        </div>
       </div>
       <div
-        dir="ltr"
         style={{
-          fontFamily: "var(--mono)",
-          fontSize: 14,
-          letterSpacing: "0.08em",
+          fontSize: 12.5,
           color: "var(--ink)",
           opacity: 0.75,
           margin: "16px 0 14px",
         }}
       >
-        **** **** **** {last4}
+        ארנק אישי לחיסכון ודמי כיס
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink)" }}>{holderName}</span>

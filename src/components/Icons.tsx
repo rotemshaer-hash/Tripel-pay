@@ -206,15 +206,6 @@ export function IconChecklist({ size = 22, color = "currentColor", strokeWidth =
   );
 }
 
-export function IconQRScan({ size = 22, color = "#ffffff", strokeWidth = 2 }: IconProps) {
-  return (
-    <svg {...base(size)}>
-      <path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="9" y="9" width="6" height="6" rx="1" fill={color} />
-    </svg>
-  );
-}
-
 export function IconParentUser({ size = 22, color = "currentColor", strokeWidth = 2 }: IconProps) {
   return (
     <svg {...base(size)}>
