@@ -5,6 +5,8 @@ import { SectionTitle } from "../../components/UI";
 import { IconChecklist } from "../../components/Icons";
 import { TaskCard } from "../../components/TaskCard";
 import { WalletCard } from "../../components/WalletCard";
+import { ExtraCardVisual } from "../../components/ExtraCardVisual";
+import { CardCarousel } from "../../components/CardCarousel";
 import { NotificationsBell } from "../../components/NotificationsBell";
 import { RewardRevealCard } from "../../components/RewardRevealCard";
 import { SceneRest } from "../../components/Illustrations";
@@ -78,32 +80,12 @@ export function ChildHome() {
         </div>
       )}
 
-      <div style={{ margin: "20px 20px 0", display: "flex", gap: 12 }}>
-        <WalletCard holderName={child.name} onClick={() => navigate("/child/cards")} />
-        <button
-          onClick={() => navigate("/child/vouchers")}
-          style={{
-            flex: 1,
-            borderRadius: "50%",
-            aspectRatio: "1",
-            background: "var(--violet-700)",
-            color: "#ffffff",
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 3,
-            border: "none",
-            boxShadow: "var(--shadow-card-solid)",
-            cursor: "pointer",
-          }}
-        >
-          <div style={{ fontSize: 20 }}>🎫</div>
-          <div style={{ fontSize: 10.5, opacity: 0.85, fontWeight: 700 }}>שוברים שלי</div>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>{child.redeemedGifts.length}</div>
-        </button>
-      </div>
+      <CardCarousel
+        items={[
+          <WalletCard key="main" holderName={child.name} onClick={() => navigate("/child/cards")} />,
+          ...child.extraCards.map((c) => <ExtraCardVisual key={c.id} card={c} onClick={() => navigate("/child/cards")} />),
+        ]}
+      />
 
       <div style={{ padding: "16px 20px 0" }}>
         <button

@@ -1,27 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { ChildBottomNav } from "../../components/BottomNav";
 import { Card, SectionTitle, EmptyState } from "../../components/UI";
 import { WalletCard } from "../../components/WalletCard";
-import { IconReceipt, IconPeopleCoin, IconGift, IconCardCheck } from "../../components/Icons";
+import { IconTicket } from "../../components/Icons";
 import { useActiveChild, useStore } from "../../data/store";
 import type { ExtraCard } from "../../data/types";
-
-const cardIcons: Record<ExtraCard["category"], React.ReactNode> = {
-  subscription: <IconReceipt size={24} />,
-  membership: <IconPeopleCoin size={24} />,
-  gift: <IconGift size={24} />,
-  other: <IconCardCheck size={24} />,
-};
-
-const categoryLabels: Record<ExtraCard["category"], string> = {
-  subscription: "מנוי",
-  membership: "חברות מועדון",
-  gift: "כרטיס מתנה",
-  other: "אחר",
-};
+import { cardIcons, categoryLabels } from "../../data/extraCardStyle";
 
 export function ChildMyCards() {
+  const navigate = useNavigate();
   const child = useActiveChild();
   const { dispatch } = useStore();
   const [adding, setAdding] = useState(false);
@@ -41,6 +30,27 @@ export function ChildMyCards() {
 
       <div style={{ margin: "20px 20px 0" }}>
         <WalletCard holderName={child.name} />
+      </div>
+
+      <div style={{ padding: "16px 20px 0" }}>
+        <button
+          onClick={() => navigate("/child/vouchers")}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            borderRadius: "var(--radius-sm)",
+            padding: "12px 16px",
+            border: "1px dashed var(--violet-700)",
+            background: "var(--violet-200)",
+            color: "var(--violet-700)",
+          }}
+        >
+          <IconTicket size={20} />
+          <span style={{ fontSize: 13.5, fontWeight: 700, flex: 1, textAlign: "start" }}>השוברים שלי ({child.redeemedGifts.length})</span>
+          <span style={{ fontSize: 16 }}>‹</span>
+        </button>
       </div>
 
       <SectionTitle

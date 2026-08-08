@@ -247,4 +247,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
 }
 
+.card-carousel-track { scrollbar-width: none; -ms-overflow-style: none; }
+.card-carousel-track::-webkit-scrollbar { display: none; }
+
 ::selection { background: var(--violet-500); color: #ffffff; }

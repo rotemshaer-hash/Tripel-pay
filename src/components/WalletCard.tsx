@@ -74,11 +74,6 @@ export function WalletCard({ holderName, last4 = "5332", onClick }: { holderName
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink)" }}>{holderName}</span>
-        <div style={{ display: "flex", gap: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(23,24,31,0.25)" }} />
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ink)" }} />
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(23,24,31,0.25)" }} />
-        </div>
       </div>
       </div>
     </div>

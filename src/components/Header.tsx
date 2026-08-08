@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useStore } from "../data/store";
+import { IconParentUser, IconChildUser } from "./Icons";
 
 function RoleSwitcher() {
   const { state, dispatch } = useStore();
@@ -17,11 +18,19 @@ function RoleSwitcher() {
 
   return (
     <div className="role-switcher" style={{ flexShrink: 0 }}>
-      <button className={state.viewMode === "parent" ? "active" : ""} onClick={() => go("parent")}>
-        📱 הורה
+      <button
+        className={state.viewMode === "parent" ? "active" : ""}
+        onClick={() => go("parent")}
+        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+      >
+        <IconParentUser size={13} strokeWidth={2.2} /> הורה
       </button>
-      <button className={state.viewMode === "child" ? "active" : ""} onClick={() => go("child")}>
-        🧒 ילד
+      <button
+        className={state.viewMode === "child" ? "active" : ""}
+        onClick={() => go("child")}
+        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+      >
+        <IconChildUser size={13} strokeWidth={2.2} /> ילד
       </button>
     </div>
   );

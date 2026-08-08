@@ -214,3 +214,22 @@ export function IconQRScan({ size = 22, color = "#ffffff", strokeWidth = 2 }: Ic
     </svg>
   );
 }
+
+export function IconParentUser({ size = 22, color = "currentColor", strokeWidth = 2 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <circle cx="12" cy="7" r="3" stroke={color} strokeWidth={strokeWidth} />
+      <path d="M5.3 20c.6-4.7 3-6.9 6.7-6.9s6.1 2.2 6.7 6.9" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconChildUser({ size = 22, color = "currentColor", strokeWidth = 2 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <circle cx="10.8" cy="8.7" r="2.5" stroke={color} strokeWidth={strokeWidth} />
+      <path d="M5.8 20c.5-3.7 2.3-5.4 5-5.4s4.5 1.7 5 5.4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.4 3.8v3.2M15.8 5.4h3.2" stroke={color} strokeWidth={strokeWidth * 0.9} strokeLinecap="round" />
+    </svg>
+  );
+}
