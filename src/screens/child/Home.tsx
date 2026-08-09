@@ -5,6 +5,7 @@ import { SectionTitle } from "../../components/UI";
 import { IconChecklist } from "../../components/Icons";
 import { TaskCard } from "../../components/TaskCard";
 import { WalletCard } from "../../components/WalletCard";
+import { EggAvatar } from "../../components/EggAvatar";
 import { ExtraCardVisual } from "../../components/ExtraCardVisual";
 import { CardCarousel } from "../../components/CardCarousel";
 import { NotificationsBell } from "../../components/NotificationsBell";
@@ -53,7 +54,10 @@ export function ChildHome() {
           </div>
         }
       />
-      <div style={{ background: "var(--header-gradient)", padding: "0 20px 22px", color: "#fff", textAlign: "center" }}>
+      <div style={{ background: "var(--header-gradient)", padding: "6px 20px 22px", color: "#fff", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10, filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.18))" }}>
+          <EggAvatar photoUrl={child.photoUrl} color={child.avatarColor} initial={child.initial} size={64} />
+        </div>
         <div style={{ fontSize: 12, opacity: 0.85 }}>הארנק שלי</div>
         <div className="money" style={{ fontSize: 42, marginTop: 4 }}>
           {displayBalance.toLocaleString("he-IL")}₪
