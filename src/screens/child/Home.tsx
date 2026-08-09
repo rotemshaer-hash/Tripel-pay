@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { ChildBottomNav } from "../../components/BottomNav";
-import { SectionTitle } from "../../components/UI";
+import { SectionTitle, Card, ProgressBar } from "../../components/UI";
 import { IconChecklist } from "../../components/Icons";
 import { TaskCard } from "../../components/TaskCard";
 import { WalletCard } from "../../components/WalletCard";
@@ -11,6 +11,7 @@ import { CardCarousel } from "../../components/CardCarousel";
 import { NotificationsBell } from "../../components/NotificationsBell";
 import { RewardRevealCard } from "../../components/RewardRevealCard";
 import { SceneRest } from "../../components/Illustrations";
+import { BadgeFlame, BadgeCoin } from "../../components/Badges";
 import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { useCountUp } from "../../hooks/useCountUp";
@@ -91,6 +92,28 @@ export function ChildHome() {
         ]}
       />
 
+      <button
+        onClick={() => navigate("/child/achievements")}
+        style={{ display: "flex", gap: 10, padding: "16px 20px 0", width: "100%", background: "none", border: "none", textAlign: "start" }}
+      >
+        <Card style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+          <BadgeFlame size={38} />
+          <div>
+            <div style={{ fontSize: 10.5, color: "var(--ink-soft)" }}>רצף שבועות</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--violet-700)" }}>{child.achievements.consistencyStreakWeeks}</div>
+          </div>
+        </Card>
+        <Card style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+          <BadgeCoin size={38} />
+          <div>
+            <div style={{ fontSize: 10.5, color: "var(--ink-soft)" }}>הרווחתי בסה"כ</div>
+            <div className="money" style={{ fontSize: 15, fontWeight: 800, color: "var(--violet-700)" }}>
+              {child.achievements.totalTaskReward.toLocaleString("he-IL")}₪
+            </div>
+          </div>
+        </Card>
+      </button>
+
       <div style={{ padding: "16px 20px 0" }}>
         <button
           onClick={() => navigate("/child/house-rules")}
@@ -137,6 +160,37 @@ export function ChildHome() {
           />
         ))}
       </div>
+
+      <SectionTitle
+        action={
+          <button onClick={() => navigate("/child/savings")} style={{ background: "none", border: "none", color: "var(--violet-700)", fontSize: 13, fontWeight: 700 }}>
+            החיסכון שלי ‹
+          </button>
+        }
+      >
+        המטרה שלי
+      </SectionTitle>
+      <button onClick={() => navigate("/child/savings")} style={{ display: "block", width: "100%", padding: "0 20px 20px", background: "none", border: "none", textAlign: "start" }}>
+        {child.savingsGoals[0] ? (
+          <Card>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>{child.savingsGoals[0].title}</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }} className="money">
+                {child.savingsGoals[0].current.toLocaleString("he-IL")} / {child.savingsGoals[0].target.toLocaleString("he-IL")}₪
+              </span>
+            </div>
+            <ProgressBar value={child.savingsGoals[0].current} max={child.savingsGoals[0].target} />
+          </Card>
+        ) : (
+          <Card style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 28 }}>🎯</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>עדיין אין לך מטרת חיסכון</div>
+              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>לחצו כדי להתחיל לחסוך למשהו שממש בא לכם עליו</div>
+            </div>
+          </Card>
+        )}
+      </button>
       {unrevealed && (
         <RewardRevealCard task={unrevealed} onDone={() => dispatch({ type: "REVEAL_TASK_REWARD", childId: child.id, taskId: unrevealed.id })} />
       )}
