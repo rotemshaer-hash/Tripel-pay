@@ -5,7 +5,7 @@ import { SectionTitle, categoryIcon, categoryTileColor, EmptyState } from "../..
 import { Toast, useToast } from "../../components/Toast";
 import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import avatarChild from "../../assets/avatar-child.png";
+import { EggAvatar } from "../../components/EggAvatar";
 import { useNavigate } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
 
@@ -81,7 +81,7 @@ export function ParentHome() {
           </div>
         </div>
         <button onClick={() => navigate("/parent/savings")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0 }}>
-          <img src={avatarChild} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.5)" }} />
+          <EggAvatar photoUrl={child.photoUrl} color={child.avatarColor} initial={child.initial} size={44} />
           <span style={{ fontSize: 18, opacity: 0.9 }}>‹</span>
         </button>
       </div>
@@ -109,22 +109,8 @@ export function ParentHome() {
                 textAlign: "start",
               }}
             >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: c.avatarColor,
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 800,
-                  fontSize: 15,
-                  flexShrink: 0,
-                }}
-              >
-                {c.initial}
+              <div style={{ flexShrink: 0 }}>
+                <EggAvatar photoUrl={c.photoUrl} color={c.avatarColor} initial={c.initial} size={38} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="row-between">

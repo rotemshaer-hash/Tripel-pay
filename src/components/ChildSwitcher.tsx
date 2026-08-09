@@ -1,13 +1,34 @@
+import { useRef, useState } from "react";
 import type { Child } from "../data/types";
-import avatarChild from "../assets/avatar-child.png";
+import { EggAvatar } from "./EggAvatar";
+import { resizeImageToDataUrl } from "../utils/resizeImage";
+import { useStore } from "../data/store";
 
 export function ChildCarousel({ children, activeId, onSelect }: { children: Child[]; activeId: string; onSelect: (id: string) => void }) {
+  const { dispatch } = useStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const idx = children.findIndex((c) => c.id === activeId);
   const active = children[idx] ?? children[0];
 
   function step(dir: 1 | -1) {
     const next = (idx + dir + children.length) % children.length;
     onSelect(children[next].id);
+  }
+
+  async function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file);
+      dispatch({ type: "SET_CHILD_PHOTO", childId: active.id, photoUrl: dataUrl });
+    } catch {
+      /* silently ignore a bad/corrupt image pick — the avatar just stays as-is */
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -26,7 +47,36 @@ export function ChildCarousel({ children, activeId, onSelect }: { children: Chil
         ‹
       </button>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        <img src={avatarChild} alt="" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover" }} />
+        <div style={{ position: "relative" }}>
+          <EggAvatar photoUrl={active.photoUrl} color={active.avatarColor} initial={active.initial} size={72} />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            aria-label={`העלאת תמונה ל${active.name}`}
+            disabled={uploading}
+            style={{
+              position: "absolute",
+              bottom: -2,
+              insetInlineEnd: -4,
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              background: "var(--violet-700)",
+              border: "2px solid #ffffff",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "var(--shadow-card)",
+              opacity: uploading ? 0.6 : 1,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <path d="M4 8h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
+              <circle cx="12" cy="14" r="3.2" stroke="#fff" strokeWidth="2" />
+            </svg>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={onPhotoSelected} style={{ display: "none" }} />
+        </div>
         <span style={{ fontSize: 16, fontWeight: 800 }}>{active.name}</span>
       </div>
       <button onClick={() => step(1)} disabled={children.length < 2} style={{ fontSize: 22, color: "var(--teal-900)", background: "none", border: "none", opacity: children.length < 2 ? 0.3 : 1 }}>
