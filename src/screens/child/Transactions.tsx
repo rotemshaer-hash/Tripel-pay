@@ -8,7 +8,7 @@ export function ChildTransactions() {
 
   return (
     <div className="screen">
-      <Header title="תנועות בחשבון שלי" subtitle={`יתרה: ${child.balance.toLocaleString("he-IL")}₪`} back />
+      <Header title="תנועות בחשבון שלי" subtitle={`יתרה: ${child.balance.toLocaleString("he-IL")}₪`} back tint="playful" />
       <div style={{ padding: "18px 20px 20px" }}>
         {child.transactions.length === 0 && <EmptyState text="עדיין אין כאן כלום — ברגע שתתחיל/י להרוויח ולהוציא, הכול יופיע כאן ✨" />}
         <div className="glass" style={{ borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)" }}>

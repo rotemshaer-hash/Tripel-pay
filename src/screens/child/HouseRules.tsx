@@ -8,7 +8,7 @@ export function ChildHouseRules() {
 
   return (
     <div className="screen">
-      <Header title="הכללים שלנו 🏡" subtitle="ככה אנחנו עושים דברים במשפחה שלנו" back />
+      <Header title="הכללים שלנו 🏡" subtitle="ככה אנחנו עושים דברים במשפחה שלנו" back tint="playful" />
       <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "20px 20px 24px" }}>
         {rules.length === 0 && (
           <div style={{ textAlign: "center", color: "var(--ink-faint)", fontSize: 13.5, padding: "28px 20px" }}>ההורה שלך עוד לא הוסיף כללים 🙂</div>

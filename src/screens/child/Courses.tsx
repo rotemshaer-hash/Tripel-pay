@@ -10,7 +10,7 @@ export function ChildCourses() {
 
   return (
     <div className="screen">
-      <Header title="מה למדתי" subtitle="חינוך פיננסי בקצב שלך" back />
+      <Header title="מה למדתי" subtitle="חינוך פיננסי בקצב שלך" back tint="playful" />
       <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 4px" }}>
         <img src={lightbulbIllustration} alt="" style={{ width: 84, height: "auto" }} />
       </div>

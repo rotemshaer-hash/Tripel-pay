@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useStore } from "../data/store";
 import { IconParentUser, IconChildUser } from "./Icons";
+import { SurrealBackdrop } from "./SurrealBackdrop";
+
+const MELT_CLIP = "polygon(0 0, 100% 0, 100% 88%, 94% 100%, 84% 86%, 74% 100%, 62% 84%, 50% 100%, 38% 84%, 26% 100%, 14% 86%, 6% 100%, 0 88%)";
 
 function RoleSwitcher() {
   const { state, dispatch } = useStore();
@@ -49,15 +52,23 @@ export function Header({
   back?: boolean;
   right?: ReactNode;
   tall?: boolean;
-  tint?: "red" | "purple" | "transparent";
+  tint?: "red" | "purple" | "transparent" | "playful";
 }) {
   const navigate = useNavigate();
+  const playful = tint === "playful";
   return (
     <header
+      className={playful ? "dream-sky" : undefined}
       style={{
-        background: tint === "transparent" ? "none" : tint === "purple" ? "var(--violet-700)" : "var(--header-gradient)",
+        background: playful
+          ? "linear-gradient(120deg, var(--header-gradient) 0%, var(--violet-700) 45%, var(--amber-600) 75%, var(--header-gradient) 100%)"
+          : tint === "transparent"
+            ? "none"
+            : tint === "purple"
+              ? "var(--violet-700)"
+              : "var(--header-gradient)",
         color: "#fff",
-        padding: tall ? "20px 20px 34px" : "16px 20px 20px",
+        padding: tall ? "20px 20px 34px" : playful ? "16px 20px 32px" : "16px 20px 20px",
         borderRadius: 0,
         display: "flex",
         alignItems: "center",
@@ -65,9 +76,12 @@ export function Header({
         gap: 12,
         flexShrink: 0,
         position: "relative",
+        overflow: playful ? "hidden" : undefined,
+        clipPath: playful ? MELT_CLIP : undefined,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1, position: "relative" }}>
+      {playful && <SurrealBackdrop />}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1, position: "relative", zIndex: 1 }}>
         {back && (
           <button
             onClick={() => navigate(-1)}
@@ -106,7 +120,7 @@ export function Header({
           {subtitle && <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3 }}>{subtitle}</div>}
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, position: "relative", zIndex: 1 }}>
         {right}
         <RoleSwitcher />
       </div>

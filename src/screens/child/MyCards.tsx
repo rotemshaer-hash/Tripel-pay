@@ -26,7 +26,7 @@ export function ChildMyCards() {
 
   return (
     <div className="screen">
-      <Header title="הכרטיסים שלי" back />
+      <Header title="הכרטיסים שלי" back tint="playful" />
 
       <div style={{ margin: "20px 20px 0" }}>
         <WalletCard holderName={child.name} />

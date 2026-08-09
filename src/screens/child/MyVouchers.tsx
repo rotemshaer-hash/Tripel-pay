@@ -9,7 +9,7 @@ export function ChildMyVouchers() {
 
   return (
     <div className="screen">
-      <Header title="השוברים שלי" back />
+      <Header title="השוברים שלי" back tint="playful" />
       <SectionTitle>מתנות שמימשתי</SectionTitle>
       <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
         {child.redeemedGifts.length === 0 && <EmptyState text="עדיין לא מימשת אף מתנה — תבדוק/י את מאגר המתנות!" />}

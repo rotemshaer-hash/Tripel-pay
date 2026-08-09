@@ -21,7 +21,7 @@ export function ChildSavings() {
 
   return (
     <div className="screen">
-      <Header title="החיסכון שלי" subtitle={`סה"כ: ${child.savingsTotal.toLocaleString("he-IL")}₪`} back />
+      <Header title="החיסכון שלי" subtitle={`סה"כ: ${child.savingsTotal.toLocaleString("he-IL")}₪`} back tint="playful" />
       <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 4px" }}>
         <img src={piggyIllustration} alt="" style={{ width: 96, height: "auto" }} />
       </div>

@@ -22,7 +22,7 @@ export function ChildAllTasks() {
 
   return (
     <div className="screen">
-      <Header title="המטלות שלי" back />
+      <Header title="המטלות שלי" back tint="playful" />
       <SectionTitle>המטלות שלי</SectionTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 20px 20px" }}>
         {active.length === 0 && <div style={{ color: "var(--ink-faint)", fontSize: 13.5, padding: "10px 4px" }}>כל הכבוד! סיימת את כל המטלות 🎉</div>}
