@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore, useActiveChild } from "../data/store";
 import { Toast, useToast } from "./Toast";
+import { IconGift } from "./Icons";
 
 type Mode = "send" | "withdraw";
 
@@ -37,11 +38,12 @@ export function SendMoneyFab({ childId }: { childId: string }) {
         <div className="pulse-ring" />
         <button
           onClick={() => setOpen(true)}
-          aria-label="ניהול הארנק"
+          aria-label="דמי כיס ומתנות"
+          className="egg-breathe"
           style={{
             width: 58,
             height: 58,
-            borderRadius: "50%",
+            borderRadius: "50% 50% 42% 58% / 58% 42% 50% 50%",
             background: "var(--teal-700)",
             border: "4px solid #ffffff",
             boxShadow: "0 10px 22px -8px rgba(38,34,31,0.45)",
@@ -51,10 +53,7 @@ export function SendMoneyFab({ childId }: { childId: string }) {
             justifyContent: "center",
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            <rect x="9" y="9" width="6" height="6" rx="1" fill="#ffffff" />
-          </svg>
+          <IconGift size={24} color="#ffffff" strokeWidth={2.2} />
         </button>
       </div>
       {open && (
