@@ -37,7 +37,7 @@ type Action =
   | { type: "SET_ACTIVE_CHILD"; childId: string }
   | { type: "SET_VIEW_MODE"; mode: ViewMode }
   | { type: "SET_CHILD_PHOTO"; childId: string; photoUrl: string | null }
-  | { type: "MARK_ARTICLE_READ"; childId: string; articleId: string }
+  | { type: "COMPLETE_MISSION"; childId: string; articleId: string; articleTitle: string; reward: number }
   | { type: "ASSIGN_TASK"; childId: string; templateId: string }
   | { type: "ADVANCE_TASK"; childId: string; taskId: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string }
@@ -152,12 +152,21 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         family: mapChild(state.family, action.childId, (c) => ({ ...c, photoUrl: action.photoUrl ?? undefined })),
       };
-    case "MARK_ARTICLE_READ":
+    case "COMPLETE_MISSION":
       return {
         ...state,
-        family: mapChild(state.family, action.childId, (c) =>
-          c.readArticles.includes(action.articleId) ? c : { ...c, readArticles: [...c.readArticles, action.articleId] }
-        ),
+        family: mapChild(state.family, action.childId, (c) => {
+          if (c.readArticles.includes(action.articleId)) return c;
+          return {
+            ...c,
+            balance: c.balance + action.reward,
+            readArticles: [...c.readArticles, action.articleId],
+            transactions: [
+              { id: `tx-${crypto.randomUUID()}`, title: `השלמת משימה: ${action.articleTitle}`, amount: action.reward, date: "היום" },
+              ...c.transactions,
+            ],
+          };
+        }),
       };
     case "ASSIGN_TASK": {
       const template = state.family.taskBank.find((t) => t.id === action.templateId);
