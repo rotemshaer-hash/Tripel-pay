@@ -16,7 +16,7 @@ function normalizeChild(c: Child): Child {
     transactions: c.transactions ?? [],
     savingsGoals: c.savingsGoals ?? [],
     savingsHistory: c.savingsHistory ?? [],
-    courses: c.courses ?? [],
+    readArticles: c.readArticles ?? [],
     strengths: c.strengths ?? [],
     redeemedGifts: c.redeemedGifts ?? [],
     extraCards: c.extraCards ?? [],

@@ -44,7 +44,7 @@ function blankChild(name: string, colorIndex: number): Child {
     transactions: [],
     savingsGoals: [],
     savingsHistory: [],
-    courses: [],
+    readArticles: [],
     strengths: [],
     redeemedGifts: [],
     extraCards: [],

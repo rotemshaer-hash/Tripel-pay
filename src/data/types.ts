@@ -46,14 +46,6 @@ export interface GiftBankItem {
   category: "flight" | "ticket" | "food" | "gadget" | "toy";
 }
 
-export interface CourseTopic {
-  id: string;
-  title: string;
-  icon: string;
-  progress: number;
-  stage: 1 | 2 | 3;
-}
-
 export interface AuthorizedPerson {
   id: string;
   name: string;
@@ -103,7 +95,7 @@ export interface Child {
   transactions: TransactionItem[];
   savingsGoals: SavingsGoal[];
   savingsHistory: SavingsGoal[];
-  courses: CourseTopic[];
+  readArticles: string[];
   strengths: StrengthTopic[];
   redeemedGifts: RedeemedGift[];
   extraCards: ExtraCard[];

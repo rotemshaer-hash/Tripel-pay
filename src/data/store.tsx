@@ -37,6 +37,7 @@ type Action =
   | { type: "SET_ACTIVE_CHILD"; childId: string }
   | { type: "SET_VIEW_MODE"; mode: ViewMode }
   | { type: "SET_CHILD_PHOTO"; childId: string; photoUrl: string | null }
+  | { type: "MARK_ARTICLE_READ"; childId: string; articleId: string }
   | { type: "ASSIGN_TASK"; childId: string; templateId: string }
   | { type: "ADVANCE_TASK"; childId: string; taskId: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string }
@@ -149,6 +150,13 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) => ({ ...c, photoUrl: action.photoUrl ?? undefined })),
+      };
+    case "MARK_ARTICLE_READ":
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          c.readArticles.includes(action.articleId) ? c : { ...c, readArticles: [...c.readArticles, action.articleId] }
+        ),
       };
     case "ASSIGN_TASK": {
       const template = state.family.taskBank.find((t) => t.id === action.templateId);
