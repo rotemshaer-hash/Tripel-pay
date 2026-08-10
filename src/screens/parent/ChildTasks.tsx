@@ -64,7 +64,7 @@ export function ChildTasks() {
 
   return (
     <div className="screen">
-      <Header title={`המטלות של ${child.name}`} back />
+      <Header title={`המטלות של ${child.name}`} back tint="playful" />
       <ChildCarousel children={childrenList(state.family)} activeId={child.id} onSelect={(id) => dispatch({ type: "SET_ACTIVE_CHILD", childId: id })} />
       <Group title="מטלות ממתינות לאישור" tasks={pending} childId={child.id} dispatch={dispatch} onApprove={approve} />
       <Group title="מטלות בביצוע" tasks={inProgress} childId={child.id} dispatch={dispatch} onApprove={approve} />

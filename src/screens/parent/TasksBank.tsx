@@ -28,7 +28,7 @@ export function TasksBank() {
 
   return (
     <div className="screen">
-      <Header title="מאגר מטלות" subtitle={`הקצאה ל${child.name}`} back />
+      <Header title="מאגר מטלות" subtitle={`הקצאה ל${child.name}`} back tint="playful" />
       <SectionTitle
         action={
           <button onClick={() => setAdding((v) => !v)} style={{ background: "none", border: "none", color: "var(--violet-700)", fontSize: 13, fontWeight: 700 }}>

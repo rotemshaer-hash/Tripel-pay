@@ -113,7 +113,7 @@ export function ChildHub() {
 
   return (
     <div className="screen">
-      <Header title="הילדים שלי" back />
+      <Header title="הילדים שלי" back tint="playful" />
 
       <ChildCarousel children={childrenList(state.family)} activeId={child.id} onSelect={(id) => dispatch({ type: "SET_ACTIVE_CHILD", childId: id })} />
 

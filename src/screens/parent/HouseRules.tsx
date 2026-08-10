@@ -20,7 +20,7 @@ export function HouseRules() {
 
   return (
     <div className="screen">
-      <Header title="כללי הבית שלנו" subtitle="נראה לכל הילדים במשפחה" back />
+      <Header title="כללי הבית שלנו" subtitle="נראה לכל הילדים במשפחה" back tint="playful" />
 
       <SectionTitle>החוקים שלנו</SectionTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 20px" }}>

@@ -15,7 +15,7 @@ export function ChildrenDetails() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      <Header title="פרטי ילדים" back />
+      <Header title="פרטי ילדים" back tint="playful" />
       <div style={{ flex: 1, padding: "24px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8 }}>

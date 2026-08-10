@@ -146,7 +146,7 @@ export function ParentSettings() {
 
   return (
     <div className="screen">
-      <Header title={`ההגדרות של ${child.name}`} back />
+      <Header title={`ההגדרות של ${child.name}`} back tint="playful" />
 
       <SectionTitle>שיתוף</SectionTitle>
       <div style={{ padding: "0 20px" }}>

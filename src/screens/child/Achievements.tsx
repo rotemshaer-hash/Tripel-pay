@@ -2,7 +2,6 @@ import { Header } from "../../components/Header";
 import { ChildBottomNav } from "../../components/BottomNav";
 import { SectionTitle, Card, ProgressRing } from "../../components/UI";
 import { Confetti } from "../../components/Confetti";
-import { SplashBackdrop } from "../../components/SplashBackdrop";
 import { BadgeFlame, BadgeCheck, BadgeStar, BadgeCoin } from "../../components/Badges";
 import { useActiveChild } from "../../data/store";
 
@@ -22,12 +21,7 @@ export function ChildAchievements() {
   return (
     <div className="screen">
       <Confetti />
-      <div style={{ position: "relative", background: "var(--violet-700)" }}>
-        <SplashBackdrop tone="violet" />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <Header title="ההישגים שלי" subtitle="🎉 ממשיכים ככה!" back tall tint="transparent" />
-        </div>
-      </div>
+      <Header title="ההישגים שלי" subtitle="🎉 ממשיכים ככה!" back tall tint="playful" />
 
       <div style={{ display: "flex", justifyContent: "space-around", padding: "20px 20px 4px" }}>
         <ProgressRing pct={child.achievements.lessonsProgress} label="שיעורים שלמדתי" color="var(--violet-500)" />

@@ -110,7 +110,7 @@ export function ParentSavings() {
 
   return (
     <div className="screen">
-      <Header title={`החסכונות של ${child.name}`} back />
+      <Header title={`החסכונות של ${child.name}`} back tint="playful" />
 
       <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 4px" }}>
         <img src={piggyIllustration} alt="" style={{ width: 96, height: "auto" }} />

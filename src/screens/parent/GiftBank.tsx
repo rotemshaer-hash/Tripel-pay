@@ -77,7 +77,7 @@ export function GiftBank() {
 
   return (
     <div className="screen">
-      <Header title="מאגר המתנות" subtitle={`יתרת ${child.name}: ${child.balance.toLocaleString("he-IL")}₪`} back />
+      <Header title="מאגר המתנות" subtitle={`יתרת ${child.name}: ${child.balance.toLocaleString("he-IL")}₪`} back tint="playful" />
 
       <div style={{ display: "flex", gap: 8, padding: "18px 20px 4px", overflowX: "auto" }}>
         <button

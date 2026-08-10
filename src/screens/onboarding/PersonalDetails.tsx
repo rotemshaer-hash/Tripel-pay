@@ -22,7 +22,7 @@ export function PersonalDetails() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      <Header title="פרטים אישיים" back tall={false} />
+      <Header title="פרטים אישיים" back tall={false} tint="playful" />
       <div style={{ flex: 1, padding: "24px 20px", display: "flex", flexDirection: "column", gap: 22 }}>
         <div>
           <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>שם מלא</label>

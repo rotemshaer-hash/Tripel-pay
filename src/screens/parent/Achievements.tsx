@@ -3,7 +3,6 @@ import { ParentBottomNav } from "../../components/BottomNav";
 import { SendMoneyFab } from "../../components/SendMoneyFab";
 import { SectionTitle, Card, ProgressRing } from "../../components/UI";
 import { Confetti } from "../../components/Confetti";
-import { SplashBackdrop } from "../../components/SplashBackdrop";
 import { BadgeFlame, BadgeCheck, BadgeStar, BadgeCoin } from "../../components/Badges";
 import { useActiveChild } from "../../data/store";
 
@@ -23,12 +22,7 @@ export function ParentAchievements() {
   return (
     <div className="screen">
       <Confetti />
-      <div style={{ position: "relative", background: "var(--violet-700)" }}>
-        <SplashBackdrop tone="violet" />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <Header title={`ההישגים של ${child.name}`} subtitle="🎉 עוד צעד לבגרות פיננסית" back tall tint="transparent" />
-        </div>
-      </div>
+      <Header title={`ההישגים של ${child.name}`} subtitle="🎉 עוד צעד לבגרות פיננסית" back tall tint="playful" />
 
       <div style={{ display: "flex", justifyContent: "space-around", padding: "20px 20px 4px" }}>
         <ProgressRing pct={child.achievements.lessonsProgress} label="שיעורים בחינוך פיננסי" color="var(--violet-500)" />

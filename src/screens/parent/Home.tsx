@@ -35,6 +35,7 @@ export function ParentHome() {
     <div className="screen">
       <Header
         title="מסך הבית"
+        tint="playful"
         right={
           <div style={{ position: "relative", fontSize: 20 }}>
             🔔
@@ -60,31 +61,22 @@ export function ParentHome() {
             </span>
           </div>
         }
-      />
-
-      <div
-        style={{
-          background: "var(--header-gradient)",
-          padding: "0 20px 22px",
-          color: "#fff",
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-        }}
       >
-        <div>
-          <div className="money" style={{ fontSize: 40, lineHeight: 1 }}>
-            {displayBalance.toLocaleString("he-IL")}₪
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <div>
+            <div className="money" style={{ fontSize: 40, lineHeight: 1 }}>
+              {displayBalance.toLocaleString("he-IL")}₪
+            </div>
+            <div style={{ fontSize: 12.5, opacity: 0.85, marginTop: 6 }}>
+              יתרת {child.name} · חסכונות {displaySavings.toLocaleString("he-IL")}₪
+            </div>
           </div>
-          <div style={{ fontSize: 12.5, opacity: 0.85, marginTop: 6 }}>
-            יתרת {child.name} · חסכונות {displaySavings.toLocaleString("he-IL")}₪
-          </div>
+          <button onClick={() => navigate("/parent/savings")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0 }}>
+            <EggAvatar photoUrl={child.photoUrl} color={child.avatarColor} initial={child.initial} size={44} />
+            <span style={{ fontSize: 18, opacity: 0.9 }}>‹</span>
+          </button>
         </div>
-        <button onClick={() => navigate("/parent/savings")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0 }}>
-          <EggAvatar photoUrl={child.photoUrl} color={child.avatarColor} initial={child.initial} size={44} />
-          <span style={{ fontSize: 18, opacity: 0.9 }}>‹</span>
-        </button>
-      </div>
+      </Header>
 
       <SectionTitle>המשפחה שלי</SectionTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 20px" }}>

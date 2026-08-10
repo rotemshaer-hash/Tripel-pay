@@ -28,17 +28,18 @@ export function ParentTransactions() {
 
   return (
     <div className="screen">
-      <Header title={`תנועות בחשבון של ${child.name}`} back />
-      <div style={{ background: "var(--header-gradient)", padding: "0 20px 20px", color: "#fff", display: "flex", justifyContent: "space-around" }}>
-        <div style={{ textAlign: "center" }}>
-          <div className="money" style={{ fontSize: 20 }}>+{income.toLocaleString("he-IL")}₪</div>
-          <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>סך הכנסות</div>
+      <Header title={`תנועות בחשבון של ${child.name}`} back tint="playful">
+        <div style={{ display: "flex", justifyContent: "space-around" }}>
+          <div style={{ textAlign: "center" }}>
+            <div className="money" style={{ fontSize: 20 }}>+{income.toLocaleString("he-IL")}₪</div>
+            <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>סך הכנסות</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div className="money" style={{ fontSize: 20 }}>-{expense.toLocaleString("he-IL")}₪</div>
+            <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>סך הוצאות</div>
+          </div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div className="money" style={{ fontSize: 20 }}>-{expense.toLocaleString("he-IL")}₪</div>
-          <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>סך הוצאות</div>
-        </div>
-      </div>
+      </Header>
 
       {slices.length > 0 && (
         <div style={{ margin: "18px 20px 0", padding: 18, borderRadius: "var(--radius-lg)" }} className="glass">
