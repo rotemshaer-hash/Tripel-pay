@@ -43,6 +43,7 @@ type Action =
   | { type: "APPROVE_TASK"; childId: string; taskId: string }
   | { type: "REDEEM_GIFT"; childId: string; giftId: string }
   | { type: "SEND_MONEY"; childId: string; amount: number; note: string }
+  | { type: "WITHDRAW_CASH"; childId: string; amount: number; note: string }
   | { type: "CONTRIBUTE_SAVINGS"; childId: string; goalId: string; amount: number }
   | { type: "ADD_SAVINGS_GOAL"; childId: string; goal: SavingsGoal }
   | { type: "UPDATE_SETTINGS"; childId: string; patch: Partial<ChildSettings> }
@@ -50,7 +51,7 @@ type Action =
   | { type: "ADD_HOUSE_RULE"; text: string }
   | { type: "REMOVE_HOUSE_RULE"; ruleId: string }
   | { type: "RESET_CHILD_PROGRESS"; childId: string }
-  | { type: "ADD_EXTRA_CARD"; childId: string; name: string; category: ExtraCard["category"] }
+  | { type: "ADD_EXTRA_CARD"; childId: string; name: string; category: ExtraCard["category"]; cost?: number; note?: string }
   | { type: "REMOVE_EXTRA_CARD"; childId: string; cardId: string }
   | { type: "ADD_TASK_TEMPLATE"; title: string; reward: number; category: TaskCategory }
   | { type: "REMOVE_TASK_TEMPLATE"; templateId: string }
@@ -201,7 +202,6 @@ function reducer(state: AppState, action: Action): AppState {
             achievements: {
               ...c.achievements,
               tasksCompletedCount: c.achievements.tasksCompletedCount + 1,
-              totalTaskReward: c.achievements.totalTaskReward + task.reward,
             },
           };
         }),
@@ -231,6 +231,20 @@ function reducer(state: AppState, action: Action): AppState {
           balance: c.balance + action.amount,
           transactions: [{ id: `tx-${crypto.randomUUID()}`, title: action.note || "העברה מההורה", amount: action.amount, date: "היום" }, ...c.transactions],
         })),
+      };
+    }
+    case "WITHDRAW_CASH": {
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => {
+          const amount = Math.min(action.amount, c.balance);
+          if (amount <= 0) return c;
+          return {
+            ...c,
+            balance: c.balance - amount,
+            transactions: [{ id: `tx-${crypto.randomUUID()}`, title: action.note || "משיכה במזומן", amount: -amount, date: "היום" }, ...c.transactions],
+          };
+        }),
       };
     }
     case "CONTRIBUTE_SAVINGS": {
@@ -294,14 +308,13 @@ function reducer(state: AppState, action: Action): AppState {
             ...c.achievements,
             savingsPaidProgress: 0,
             tasksCompletedCount: 0,
-            totalTaskReward: 0,
             consistencyStreakWeeks: 0,
           },
         })),
       };
     }
     case "ADD_EXTRA_CARD": {
-      const card: ExtraCard = { id: `ec-${crypto.randomUUID()}`, name: action.name, category: action.category };
+      const card: ExtraCard = { id: `ec-${crypto.randomUUID()}`, name: action.name, category: action.category, cost: action.cost, note: action.note };
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) => ({ ...c, extraCards: [...c.extraCards, card] })),

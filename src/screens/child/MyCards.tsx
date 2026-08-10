@@ -16,11 +16,15 @@ export function ChildMyCards() {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ExtraCard["category"]>("subscription");
+  const [cost, setCost] = useState("");
+  const [note, setNote] = useState("");
 
   function add() {
     if (!name.trim()) return;
-    dispatch({ type: "ADD_EXTRA_CARD", childId: child.id, name: name.trim(), category });
+    dispatch({ type: "ADD_EXTRA_CARD", childId: child.id, name: name.trim(), category, cost: cost ? Number(cost) : undefined, note: note.trim() || undefined });
     setName("");
+    setCost("");
+    setNote("");
     setAdding(false);
   }
 
@@ -91,6 +95,21 @@ export function ChildMyCards() {
                 </button>
               ))}
             </div>
+            <label style={{ fontSize: 12, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>עלות תקופתית (₪, אופציונלי)</label>
+            <input
+              type="number"
+              placeholder="למשל: 39"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)", fontSize: 14, marginBottom: 10 }}
+            />
+            <label style={{ fontSize: 12, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>הערה (אופציונלי)</label>
+            <input
+              placeholder="למשל: מתחדש ב-5 לחודש"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)", fontSize: 14, marginBottom: 12 }}
+            />
             <button
               onClick={add}
               disabled={!name.trim()}
@@ -109,9 +128,13 @@ export function ChildMyCards() {
             <div style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--violet-700)", flexShrink: 0 }}>
               {cardIcons[c.category]}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 700 }}>{c.name}</div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>{categoryLabels[c.category]}</div>
+              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>
+                {categoryLabels[c.category]}
+                {c.cost ? ` · ₪${c.cost.toLocaleString("he-IL")}` : ""}
+                {c.note ? ` · ${c.note}` : ""}
+              </div>
             </div>
             <button
               onClick={() => dispatch({ type: "REMOVE_EXTRA_CARD", childId: child.id, cardId: c.id })}

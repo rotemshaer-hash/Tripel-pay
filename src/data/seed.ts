@@ -61,7 +61,6 @@ function blankChild(name: string, colorIndex: number): Child {
       savingsPaidProgress: 0,
       favoriteTask: "",
       tasksCompletedCount: 0,
-      totalTaskReward: 0,
       consistencyStreakWeeks: 0,
     },
   };

@@ -4,6 +4,7 @@ import { SectionTitle, Card, ProgressRing } from "../../components/UI";
 import { Confetti } from "../../components/Confetti";
 import { BadgeFlame, BadgeCheck, BadgeStar, BadgeCoin } from "../../components/Badges";
 import { useActiveChild } from "../../data/store";
+import { totalEarned } from "../../data/family";
 
 const HEX = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
 const badgeGeometry = [
@@ -48,7 +49,7 @@ export function ChildAchievements() {
           <BadgeCoin size={48} />
           <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>הרווחתי בסה"כ</div>
           <div style={{ fontSize: 14, fontWeight: 700 }} className="money">
-            {child.achievements.totalTaskReward.toLocaleString("he-IL")}₪
+            {totalEarned(child).toLocaleString("he-IL")}₪
           </div>
         </Card>
       </div>

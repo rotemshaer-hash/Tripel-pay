@@ -79,6 +79,8 @@ export interface ExtraCard {
   id: string;
   name: string;
   category: "subscription" | "membership" | "gift" | "other";
+  cost?: number;
+  note?: string;
 }
 
 export interface Child {
@@ -105,7 +107,6 @@ export interface Child {
     savingsPaidProgress: number;
     favoriteTask: string;
     tasksCompletedCount: number;
-    totalTaskReward: number;
     consistencyStreakWeeks: number;
   };
 }

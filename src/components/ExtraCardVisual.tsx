@@ -26,8 +26,17 @@ export function ExtraCardVisual({ card, onClick }: { card: ExtraCard; onClick?: 
         </span>
         <div style={{ color: "#ffffff", opacity: 0.9 }}>{cardIcons[card.category]}</div>
       </div>
-      <div style={{ fontSize: 14.5, fontWeight: 800, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {card.name}
+      <div>
+        <div style={{ fontSize: 14.5, fontWeight: 800, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {card.name}
+        </div>
+        {(card.cost || card.note) && (
+          <div style={{ fontSize: 11, color: "#ffffff", opacity: 0.85, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {card.cost ? `₪${card.cost.toLocaleString("he-IL")}` : ""}
+            {card.cost && card.note ? " · " : ""}
+            {card.note ?? ""}
+          </div>
+        )}
       </div>
     </div>
   );

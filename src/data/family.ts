@@ -4,6 +4,15 @@ export function childrenList(family: Family): Child[] {
   return family.childOrder.map((id) => family.children[id]).filter((c): c is Child => !!c);
 }
 
+// "Total earned" is derived from the transaction log itself, never stored separately —
+// a task reward, an allowance top-up from a parent, or any other positive transaction
+// all count. A separately-incremented counter would only track one income source and
+// silently drift out of sync with the real balance history, which is exactly the bug
+// this replaced.
+export function totalEarned(c: Child): number {
+  return c.transactions.filter((tx) => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0);
+}
+
 // Firebase Realtime Database has no way to represent an "empty array" distinct from
 // "this key doesn't exist" — writing `[]` to a field, then reading it back, comes back
 // with that key simply missing. Any array/object field that can legitimately become

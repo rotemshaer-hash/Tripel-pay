@@ -13,7 +13,7 @@ import { RewardRevealCard } from "../../components/RewardRevealCard";
 import { SceneRest } from "../../components/Illustrations";
 import { BadgeFlame, BadgeCoin } from "../../components/Badges";
 import { useActiveChild, useStore } from "../../data/store";
-import { childrenList } from "../../data/family";
+import { childrenList, totalEarned } from "../../data/family";
 import { useCountUp } from "../../hooks/useCountUp";
 
 export function ChildHome() {
@@ -112,7 +112,7 @@ export function ChildHome() {
           <div>
             <div style={{ fontSize: 10.5, color: "var(--ink-soft)" }}>הרווחתי בסה"כ</div>
             <div className="money" style={{ fontSize: 15, fontWeight: 800, color: "var(--violet-700)" }}>
-              {child.achievements.totalTaskReward.toLocaleString("he-IL")}₪
+              {totalEarned(child).toLocaleString("he-IL")}₪
             </div>
           </div>
         </Card>
