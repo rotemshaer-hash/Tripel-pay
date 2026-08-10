@@ -12,7 +12,6 @@ import { NotificationsBell } from "../../components/NotificationsBell";
 import { RewardRevealCard } from "../../components/RewardRevealCard";
 import { SceneRest } from "../../components/Illustrations";
 import { BadgeFlame, BadgeCoin } from "../../components/Badges";
-import { SurrealBackdrop } from "../../components/SurrealBackdrop";
 import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { useCountUp } from "../../hooks/useCountUp";
@@ -45,6 +44,7 @@ export function ChildHome() {
     <div className="screen">
       <Header
         title={`היי ${child.name}! 👋`}
+        tint="playful"
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <NotificationsBell child={child} />
@@ -55,21 +55,8 @@ export function ChildHome() {
             )}
           </div>
         }
-      />
-      <div
-        className="dream-sky"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          background: "linear-gradient(120deg, var(--header-gradient) 0%, var(--violet-700) 45%, var(--amber-600) 75%, var(--header-gradient) 100%)",
-          padding: "6px 20px 34px",
-          color: "#fff",
-          textAlign: "center",
-          clipPath: "polygon(0 0, 100% 0, 100% 92%, 94% 100%, 84% 90%, 74% 100%, 62% 88%, 50% 100%, 38% 88%, 26% 100%, 14% 90%, 6% 100%, 0 92%)",
-        }}
       >
-        <SurrealBackdrop />
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ textAlign: "center" }}>
           <div className="egg-breathe" style={{ display: "flex", justifyContent: "center", marginBottom: 10, filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.25))" }}>
             <EggAvatar photoUrl={child.photoUrl} color={child.avatarColor} initial={child.initial} size={64} />
           </div>
@@ -78,7 +65,7 @@ export function ChildHome() {
             {displayBalance.toLocaleString("he-IL")}₪
           </div>
         </div>
-      </div>
+      </Header>
 
       {previewList.length > 1 && (
         <div style={{ margin: "14px 20px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>

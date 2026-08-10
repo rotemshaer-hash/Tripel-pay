@@ -46,6 +46,7 @@ export function Header({
   right,
   tall,
   tint = "red",
+  children,
 }: {
   title: string;
   subtitle?: string;
@@ -53,6 +54,7 @@ export function Header({
   right?: ReactNode;
   tall?: boolean;
   tint?: "red" | "purple" | "transparent" | "playful";
+  children?: ReactNode;
 }) {
   const navigate = useNavigate();
   const playful = tint === "playful";
@@ -71,8 +73,7 @@ export function Header({
         padding: tall ? "20px 20px 34px" : playful ? "16px 20px 32px" : "16px 20px 20px",
         borderRadius: 0,
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
+        flexDirection: "column",
         gap: 12,
         flexShrink: 0,
         position: "relative",
@@ -81,49 +82,56 @@ export function Header({
       }}
     >
       {playful && <SurrealBackdrop />}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1, position: "relative", zIndex: 1 }}>
-        {back && (
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="חזרה"
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.35)",
-              background: "rgba(255,255,255,0.12)",
-              backdropFilter: "blur(6px)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              flexShrink: 0,
-            }}
-          >
-            ›
-          </button>
-        )}
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 800,
-              letterSpacing: "-0.01em",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {title}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+          {back && (
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="חזרה"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.35)",
+                background: "rgba(255,255,255,0.12)",
+                backdropFilter: "blur(6px)",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 16,
+                flexShrink: 0,
+              }}
+            >
+              ›
+            </button>
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: "-0.01em",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {title}
+            </div>
+            {subtitle && <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3 }}>{subtitle}</div>}
           </div>
-          {subtitle && <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3 }}>{subtitle}</div>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {right}
+          <RoleSwitcher />
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, position: "relative", zIndex: 1 }}>
-        {right}
-        <RoleSwitcher />
-      </div>
+      {children && (
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {children}
+        </div>
+      )}
     </header>
   );
 }
