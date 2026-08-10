@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { ChildBottomNav } from "../../components/BottomNav";
-import { SectionTitle, Card, ProgressBar } from "../../components/UI";
+import { SectionTitle, Card } from "../../components/UI";
 import { IconChecklist } from "../../components/Icons";
-import { TaskCard } from "../../components/TaskCard";
+import { MissionTrail } from "../../components/MissionTrail";
+import { GoalCrystal } from "../../components/GoalCrystal";
 import { WalletCard } from "../../components/WalletCard";
 import { EggAvatar } from "../../components/EggAvatar";
 import { ExtraCardVisual } from "../../components/ExtraCardVisual";
@@ -148,22 +149,20 @@ export function ChildHome() {
       >
         המטלות שלי היום
       </SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 20px 20px" }}>
-        {quickTasks.length === 0 && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "10px 4px 4px" }}>
-            <SceneRest size={110} />
-            <div style={{ color: "var(--ink-faint)", fontSize: 13.5 }}>כל הכבוד! סיימת את כל המטלות 🎉</div>
-          </div>
-        )}
-        {quickTasks.map((t) => (
-          <TaskCard
-            key={t.id}
-            task={t}
-            actionLabel={t.status === "available" ? "התחלה" : t.status === "in_progress" ? "סיימתי" : undefined}
-            onAction={t.status !== "pending_approval" ? () => dispatch({ type: "ADVANCE_TASK", childId: child.id, taskId: t.id }) : undefined}
-          />
-        ))}
-      </div>
+      {quickTasks.length === 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "10px 4px 20px" }}>
+          <SceneRest size={110} />
+          <div style={{ color: "var(--ink-faint)", fontSize: 13.5 }}>כל הכבוד! סיימת את כל המטלות 🎉</div>
+        </div>
+      ) : (
+        <MissionTrail
+          items={quickTasks.map((t) => ({
+            task: t,
+            actionLabel: t.status === "available" ? "התחלה" : t.status === "in_progress" ? "סיימתי" : undefined,
+            onAction: t.status !== "pending_approval" ? () => dispatch({ type: "ADVANCE_TASK", childId: child.id, taskId: t.id }) : undefined,
+          }))}
+        />
+      )}
 
       <SectionTitle
         action={
@@ -174,27 +173,21 @@ export function ChildHome() {
       >
         המטרה שלי
       </SectionTitle>
-      <button onClick={() => navigate("/child/savings")} style={{ display: "block", width: "100%", padding: "0 20px 20px", background: "none", border: "none", textAlign: "start" }}>
+      <div style={{ padding: "0 20px 20px" }}>
         {child.savingsGoals[0] ? (
-          <Card>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>{child.savingsGoals[0].title}</span>
-              <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }} className="money">
-                {child.savingsGoals[0].current.toLocaleString("he-IL")} / {child.savingsGoals[0].target.toLocaleString("he-IL")}₪
-              </span>
-            </div>
-            <ProgressBar value={child.savingsGoals[0].current} max={child.savingsGoals[0].target} />
-          </Card>
+          <GoalCrystal goal={child.savingsGoals[0]} onClick={() => navigate("/child/savings")} />
         ) : (
-          <Card style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 28 }}>🎯</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>עדיין אין לך מטרת חיסכון</div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>לחצו כדי להתחיל לחסוך למשהו שממש בא לכם עליו</div>
-            </div>
-          </Card>
+          <button onClick={() => navigate("/child/savings")} style={{ display: "block", width: "100%", background: "none", border: "none", textAlign: "start" }}>
+            <Card style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ fontSize: 28 }}>🎯</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>עדיין אין לך מטרת חיסכון</div>
+                <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>לחצו כדי להתחיל לחסוך למשהו שממש בא לכם עליו</div>
+              </div>
+            </Card>
+          </button>
         )}
-      </button>
+      </div>
       {unrevealed && (
         <RewardRevealCard task={unrevealed} onDone={() => dispatch({ type: "REVEAL_TASK_REWARD", childId: child.id, taskId: unrevealed.id })} />
       )}

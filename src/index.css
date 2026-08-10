@@ -262,9 +262,50 @@ button.glass:active, .glass button:active {
   66% { transform: translate(-10px, 8px) rotate(-10deg); }
 }
 
+/* --- mission trail: pulsing halo ring behind an in-progress/pending task orb --- */
+.orb-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: inherit;
+  filter: blur(6px);
+  opacity: 0.55;
+  animation: orbPulse 2.4s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes orbPulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.55; }
+  50% { transform: scale(1.25); opacity: 0.15; }
+}
+
+/* --- goal crystal: bubbles rising through the liquid fill --- */
+.crystal-bubble {
+  position: absolute;
+  bottom: -10%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  animation: bubbleRise 3.2s ease-in infinite;
+}
+@keyframes bubbleRise {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  15% { opacity: 0.8; }
+  100% { transform: translateY(-120%) scale(1); opacity: 0; }
+}
+
+.sparkle-twinkle {
+  position: absolute;
+  animation: sparkleTwinkle 1.8s ease-in-out infinite;
+}
+@keyframes sparkleTwinkle {
+  0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
+  50% { transform: scale(1.15) rotate(12deg); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .screen, .decor-square, .shine-sweep::after, .confetti-piece, .pulse-ring,
-  .dream-sky, .levitate, .egg-breathe, .surreal-shape {
+  .dream-sky, .levitate, .egg-breathe, .surreal-shape,
+  .orb-pulse::before, .crystal-bubble, .sparkle-twinkle {
     animation: none !important;
   }
 }

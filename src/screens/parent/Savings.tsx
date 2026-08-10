@@ -4,6 +4,7 @@ import { ParentBottomNav } from "../../components/BottomNav";
 import { SendMoneyFab } from "../../components/SendMoneyFab";
 import { SectionTitle, Card, EmptyState } from "../../components/UI";
 import { Toast, useToast } from "../../components/Toast";
+import { GoalCrystal } from "../../components/GoalCrystal";
 import { GoalCelebration } from "../../components/GoalCelebration";
 import { useActiveChild, useStore } from "../../data/store";
 import piggyIllustration from "../../assets/illustration-piggy.png";
@@ -22,35 +23,12 @@ function GoalBar({
   onToggle?: () => void;
   onContribute?: (amount: number) => void;
 }) {
-  const pct = Math.min(100, Math.round((goal.current / Math.max(1, goal.target)) * 100));
-  const label = goal.current >= goal.target ? `${goal.target.toLocaleString("he-IL")}₪` : `${goal.current.toLocaleString("he-IL")}₪ / ${goal.target.toLocaleString("he-IL")}₪`;
-  const remaining = goal.target - goal.current;
-  const almostThere = !faded && pct >= 80 && pct < 100;
   const [amount, setAmount] = useState("");
 
   return (
-    <Card style={{ display: "flex", flexDirection: "column", gap: 0, opacity: faded ? 0.55 : 1 }}>
-      <button
-        onClick={onToggle}
-        disabled={!onToggle}
-        style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, width: "100%", textAlign: "start" }}
-      >
-        <span style={{ fontSize: 15, color: "var(--violet-700)", transform: expanded ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>‹</span>
-        <div style={{ flex: 1, position: "relative", height: 34, borderRadius: 999, background: "var(--line-soft)", overflow: "hidden" }}>
-          <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "var(--violet-700)", borderRadius: 999 }} />
-          <div style={{ position: "relative", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: pct > 45 ? "#fff" : "var(--ink)" }}>
-            {label}
-          </div>
-        </div>
-        <span style={{ fontSize: 14, fontWeight: 700, minWidth: 60, textAlign: "start" }}>{goal.title}</span>
-      </button>
-      {almostThere && (
-        <div style={{ fontSize: 11.5, color: "var(--violet-700)", fontWeight: 700, marginTop: 8 }}>
-          כמעט הגעתם! עוד {remaining.toLocaleString("he-IL")}₪ ל{goal.title} 🎯
-        </div>
-      )}
+    <GoalCrystal goal={goal} faded={faded} color={goal.current >= goal.target ? "var(--teal-700)" : "var(--violet-700)"} onClick={onToggle}>
       {expanded && onContribute && (
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
           <input
             type="number"
             placeholder="סכום להפקדה (₪)"
@@ -80,7 +58,7 @@ function GoalBar({
           </button>
         </div>
       )}
-    </Card>
+    </GoalCrystal>
   );
 }
 

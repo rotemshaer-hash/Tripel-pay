@@ -5,7 +5,7 @@ import { SendMoneyFab } from "../../components/SendMoneyFab";
 import { ChildCarousel } from "../../components/ChildSwitcher";
 import { SectionTitle, EmptyState } from "../../components/UI";
 import { Toast, useToast } from "../../components/Toast";
-import { TaskCard } from "../../components/TaskCard";
+import { MissionTrail } from "../../components/MissionTrail";
 import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import type { TaskItem } from "../../data/types";
@@ -27,24 +27,25 @@ function Group({
   return (
     <>
       <SectionTitle>{title}</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 20px" }}>
-        {tasks.length === 0 && <EmptyState text="אין כאן מטלות כרגע" actionLabel="למאגר המטלות" onAction={() => navigate("/parent/tasks-bank")} />}
-        {tasks.map((t) => (
-          <TaskCard
-            key={t.id}
-            task={t}
-            actionLabel={t.status === "pending_approval" ? "אישור" : undefined}
-            onAction={
+      {tasks.length === 0 ? (
+        <div style={{ padding: "0 20px" }}>
+          <EmptyState text="אין כאן מטלות כרגע" actionLabel="למאגר המטלות" onAction={() => navigate("/parent/tasks-bank")} />
+        </div>
+      ) : (
+        <MissionTrail
+          items={tasks.map((t) => ({
+            task: t,
+            actionLabel: t.status === "pending_approval" ? "אישור" : undefined,
+            onAction:
               t.status === "pending_approval"
                 ? () => {
                     dispatch({ type: "APPROVE_TASK", childId, taskId: t.id });
                     onApprove(t.title);
                   }
-                : undefined
-            }
-          />
-        ))}
-      </div>
+                : undefined,
+          }))}
+        />
+      )}
     </>
   );
 }
