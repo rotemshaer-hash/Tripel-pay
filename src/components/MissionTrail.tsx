@@ -84,6 +84,9 @@ export function MissionTrail({ items }: { items: MissionTrailItem[] }) {
                   flex: 1,
                   minWidth: 0,
                   padding: "10px 14px",
+                  // Cycle the shared card-tint palette by position so the task trail is a
+                  // rainbow matching the transactions/knowledge lists, not one flat color.
+                  background: `var(--tint-${(i % 5) + 1})`,
                   borderRadius: leftSide ? "6px 22px 22px 22px" : "22px 6px 22px 22px",
                 }}
               >

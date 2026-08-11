@@ -43,6 +43,9 @@ export function ChildCarousel({ children, activeId, onSelect }: { children: Chil
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        // Pin the switcher to the neutral brand tint so it reads as intentional
+        // rather than picking up an arbitrary color from its position on the page.
+        background: "var(--tint-1)",
       }}
     >
       <span
