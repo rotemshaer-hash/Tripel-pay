@@ -17,112 +17,100 @@ export interface MissionTrailItem {
 }
 
 /**
- * A winding constellation of mission "orbs" replacing a flat task list —
- * each task floats along an alternating dashed trail instead of sitting in a
- * stacked row, echoing the recommended-tasks path already used on the parent home.
+ * Tasks as straight, aligned rows — a leading category orb, title, status + reward,
+ * and a trailing action — the exact same row layout as the transactions and other
+ * lists so every screen's rows line up identically. Each card cycles the shared
+ * --tint palette by position for the app-wide color festival; the orb pulses while
+ * a task is in progress / awaiting approval and gets a check once completed.
  */
 export function MissionTrail({ items }: { items: MissionTrailItem[] }) {
   return (
-    <div style={{ position: "relative", padding: "10px 20px 4px" }}>
-      <div
-        aria-hidden="true"
-        style={{ position: "absolute", top: 10, bottom: 26, insetInlineStart: "50%", borderInlineStart: "3px dashed var(--line)" }}
-      />
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "10px 20px 4px" }}>
       {items.map(({ task, actionLabel, onAction, extra }, i) => {
-        const leftSide = i % 2 === 0;
         const color = categoryTileColor(task.category);
         const isPulse = task.status === "in_progress" || task.status === "pending_approval";
         const isDone = task.status === "completed";
-        const isAvailable = task.status === "available";
         return (
-          <div key={task.id} style={{ marginBottom: 22 }}>
-            <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: leftSide ? "row" : "row-reverse", alignItems: "center", gap: 12 }}>
-              <div
-                className={isPulse ? "orb-pulse" : undefined}
+          <div
+            key={task.id}
+            className="glass"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 14px",
+              borderRadius: "var(--radius-sm)",
+              boxShadow: "var(--shadow-card)",
+              background: `var(--tint-${(i % 5) + 1})`,
+            }}
+          >
+            <div
+              className={isPulse ? "orb-pulse" : undefined}
+              style={{
+                position: "relative",
+                width: 44,
+                height: 44,
+                flexShrink: 0,
+                borderRadius: "54% 46% 50% 50% / 50% 50% 54% 46%",
+                background: color,
+                boxShadow: `0 8px 16px -6px ${color}`,
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {categoryIcon(task.category)}
+              {isDone && (
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: -2,
+                    insetInlineEnd: -2,
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    background: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 10,
+                    color: "var(--teal-900)",
+                    fontWeight: 800,
+                    boxShadow: "0 2px 6px rgba(23,24,31,0.25)",
+                  }}
+                >
+                  ✓
+                </span>
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</div>
+              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>{statusLabel[task.status]}</span>
+                <span>·</span>
+                <Money value={task.reward} />
+              </div>
+              {extra}
+            </div>
+            {actionLabel && onAction && (
+              <button
+                onClick={onAction}
                 style={{
-                  position: "relative",
-                  width: 52,
-                  height: 52,
-                  borderRadius: "50%",
-                  background: isAvailable ? "var(--line-soft)" : color,
-                  border: isAvailable ? "2px dashed var(--line)" : "none",
-                  color: isAvailable ? "var(--ink-faint)" : "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: isAvailable ? "none" : "var(--shadow-card-solid)",
+                  background: "var(--teal-700)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 999,
+                  padding: "9px 15px",
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  boxShadow: "var(--glow-teal)",
                   flexShrink: 0,
                 }}
               >
-                {categoryIcon(task.category)}
-                {isDone && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      bottom: -2,
-                      insetInlineEnd: -2,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      background: "#ffffff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 11,
-                      color: "var(--teal-900)",
-                      fontWeight: 800,
-                      boxShadow: "0 2px 6px rgba(23,24,31,0.25)",
-                    }}
-                  >
-                    ✓
-                  </span>
-                )}
-              </div>
-              <div
-                className="glass"
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "10px 14px",
-                  // Cycle the shared card-tint palette by position so the task trail is a
-                  // rainbow matching the transactions/knowledge lists, not one flat color.
-                  background: `var(--tint-${(i % 5) + 1})`,
-                  borderRadius: leftSide ? "6px 22px 22px 22px" : "22px 6px 22px 22px",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {task.title}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>{statusLabel[task.status]}</span>
-                      <span>·</span>
-                      <Money value={task.reward} />
-                    </div>
-                  </div>
-                  {actionLabel && onAction && (
-                    <button
-                      onClick={onAction}
-                      style={{
-                        background: "var(--teal-700)",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: 999,
-                        padding: "8px 13px",
-                        fontSize: 11.5,
-                        fontWeight: 800,
-                        boxShadow: "var(--glow-teal)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {actionLabel}
-                    </button>
-                  )}
-                </div>
-                {extra}
-              </div>
-            </div>
+                {actionLabel}
+              </button>
+            )}
           </div>
         );
       })}

@@ -136,74 +136,51 @@ export function ParentHome() {
           <EmptyState text={`ל${child.name} כבר יש את כל המטלות הזמינות`} actionLabel="למאגר המטלות" onAction={() => navigate("/parent/tasks-bank")} />
         </div>
       ) : (
-        <div style={{ position: "relative", padding: "6px 20px 24px" }}>
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: 6,
-              bottom: 24,
-              insetInlineStart: "50%",
-              borderInlineStart: "3px dashed var(--line)",
-            }}
-          />
-          {recommended.map((t, i) => {
-            const size = 52 + Math.min(20, Math.round(t.reward / 2));
-            const leftSide = i % 2 === 0;
-            return (
-              <button
-                key={t.id}
-                onClick={() => assign(t.id, t.title)}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 20px 24px" }}>
+          {recommended.map((t, i) => (
+            <button
+              key={t.id}
+              onClick={() => assign(t.id, t.title)}
+              className="glass"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 14px",
+                borderRadius: "var(--radius-sm)",
+                boxShadow: "var(--shadow-card)",
+                background: `var(--tint-${(i % 5) + 1})`,
+                textAlign: "start",
+              }}
+            >
+              <span
                 style={{
-                  position: "relative",
-                  zIndex: 1,
-                  width: "100%",
+                  width: 44,
+                  height: 44,
+                  flexShrink: 0,
+                  borderRadius: "54% 46% 50% 50% / 50% 50% 54% 46%",
+                  background: categoryTileColor(t.category),
+                  color: "#ffffff",
                   display: "flex",
-                  flexDirection: leftSide ? "row" : "row-reverse",
                   alignItems: "center",
-                  gap: 12,
-                  marginBottom: 20,
-                  background: "none",
-                  border: "none",
-                  textAlign: leftSide ? "start" : "end",
+                  justifyContent: "center",
+                  boxShadow: `0 8px 16px -6px ${categoryTileColor(t.category)}`,
                 }}
               >
-                <span
-                  className="egg-breathe"
-                  style={{
-                    width: size,
-                    height: size,
-                    borderRadius: "56% 44% 52% 48% / 48% 54% 46% 52%",
-                    background: categoryTileColor(t.category),
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: `0 10px 22px -6px ${categoryTileColor(t.category)}`,
-                    flexShrink: 0,
-                  }}
-                >
-                  {categoryIcon(t.category)}
-                </span>
-                <div
-                  className="glass"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    padding: "12px 16px",
-                    border: "none",
-                    background: `color-mix(in srgb, ${categoryTileColor(t.category)} 15%, #ffffff)`,
-                    borderRadius: leftSide ? "6px 22px 22px 22px" : "22px 6px 22px 22px",
-                  }}
-                >
-                  <div style={{ fontSize: 13.5, fontWeight: 800, lineHeight: 1.3 }}>{t.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 3 }}>
-                    הקצאה ל{child.name} · <span className="money" style={{ color: "var(--teal-900)", fontWeight: 800 }}>{t.reward}₪</span>
-                  </div>
+                {categoryIcon(t.category)}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</div>
+                <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>
+                  הקצאה ל{child.name} · <span className="money" style={{ color: "var(--teal-900)", fontWeight: 800 }}>{t.reward}₪</span>
                 </div>
-              </button>
-            );
-          })}
+              </div>
+              <span style={{ background: "var(--teal-700)", color: "#ffffff", borderRadius: 999, padding: "8px 14px", fontSize: 12.5, fontWeight: 800, boxShadow: "var(--glow-teal)", flexShrink: 0 }}>
+                + הקצאה
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
