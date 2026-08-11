@@ -134,14 +134,31 @@ a { color: inherit; text-decoration: none; }
 .row-between { display: flex; align-items: center; justify-content: space-between; }
 .stack { display: flex; flex-direction: column; }
 
-/* --- soft tinted surface: cards carry a gentle lavender wash instead of stark white,
-   so no plain white rectangles remain on any screen while dark text stays legible.
-   Bold components (capsules, nav pills, stat tiles) set their own background inline
-   and are unaffected; tinted list cards (e.g. recommended tasks) override this too. --- */
+/* --- color-festival surfaces: no plain white rectangles anywhere. Cards cycle through
+   five cheerful colored tints by their position, so every list and screen reads as a
+   rainbow of colored cards while dark text stays fully legible. Bold components
+   (capsules, nav pills, stat tiles) and tinted list cards set their own background
+   inline and win over these. --- */
 .glass {
-  background: linear-gradient(150deg, #f7f1ff 0%, #e9ddfb 100%);
-  border: 1px solid rgba(75, 46, 131, 0.08);
+  background: linear-gradient(150deg, #f0e6ff 0%, #dcc6f7 100%);
+  border: 1px solid rgba(75, 46, 131, 0.1);
   transition: transform 0.15s ease;
+}
+.glass:nth-child(5n + 2) {
+  background: linear-gradient(150deg, #d7f6ec 0%, #a9ecd6 100%);
+  border-color: rgba(31, 158, 138, 0.14);
+}
+.glass:nth-child(5n + 3) {
+  background: linear-gradient(150deg, #ffe7c7 0%, #ffce97 100%);
+  border-color: rgba(242, 118, 27, 0.14);
+}
+.glass:nth-child(5n + 4) {
+  background: linear-gradient(150deg, #ffdfe6 0%, #ffbecd 100%);
+  border-color: rgba(224, 34, 74, 0.12);
+}
+.glass:nth-child(5n + 5) {
+  background: linear-gradient(150deg, #dcecfc 0%, #b3d8f6 100%);
+  border-color: rgba(47, 127, 209, 0.14);
 }
 button.glass:active, .glass button:active {
   transform: scale(0.97);
