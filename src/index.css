@@ -134,12 +134,13 @@ a { color: inherit; text-decoration: none; }
 .row-between { display: flex; align-items: center; justify-content: space-between; }
 .stack { display: flex; flex-direction: column; }
 
-/* --- flat surface: no white card fill, just spacing/rounding — the app's list rows
-   and grid tiles float as soft white cards on the page background, matching GoHenry's
-   card-forward look --- */
+/* --- soft tinted surface: cards carry a gentle lavender wash instead of stark white,
+   so no plain white rectangles remain on any screen while dark text stays legible.
+   Bold components (capsules, nav pills, stat tiles) set their own background inline
+   and are unaffected; tinted list cards (e.g. recommended tasks) override this too. --- */
 .glass {
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: linear-gradient(150deg, #f7f1ff 0%, #e9ddfb 100%);
+  border: 1px solid rgba(75, 46, 131, 0.08);
   transition: transform 0.15s ease;
 }
 button.glass:active, .glass button:active {
