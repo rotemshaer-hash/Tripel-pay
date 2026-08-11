@@ -1,7 +1,8 @@
 import { Header } from "../../components/Header";
 import { ChildBottomNav } from "../../components/BottomNav";
-import { SectionTitle, Card, ProgressRing } from "../../components/UI";
+import { SectionTitle, ProgressRing } from "../../components/UI";
 import { Confetti } from "../../components/Confetti";
+import { StatTile } from "../../components/StatTile";
 import { BadgeFlame, BadgeCheck, BadgeStar, BadgeCoin } from "../../components/Badges";
 import { useActiveChild } from "../../data/store";
 import { totalEarned } from "../../data/family";
@@ -29,29 +30,21 @@ export function ChildAchievements() {
         <ProgressRing pct={child.achievements.savingsPaidProgress} label="חסכונות שהשגתי" color="var(--teal-500)" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "20px 20px 0" }}>
-        <Card style={{ textAlign: "center", padding: "10px 6px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <BadgeFlame size={48} />
-          <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>רצף שבועות</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--violet-700)" }}>{child.achievements.consistencyStreakWeeks}</div>
-        </Card>
-        <Card style={{ textAlign: "center", padding: "10px 6px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <BadgeCheck size={48} />
-          <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>מטלות שביצעתי</div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{child.achievements.tasksCompletedCount}</div>
-        </Card>
-        <Card style={{ textAlign: "center", padding: "10px 6px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <BadgeStar size={48} />
-          <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>מטלה אהובה</div>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>{child.achievements.favoriteTask}</div>
-        </Card>
-        <Card style={{ textAlign: "center", padding: "10px 6px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <BadgeCoin size={48} />
-          <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>הרווחתי בסה"כ</div>
-          <div style={{ fontSize: 14, fontWeight: 700 }} className="money">
-            {totalEarned(child).toLocaleString("he-IL")}₪
-          </div>
-        </Card>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "20px 20px 0" }}>
+        <StatTile
+          badge={<BadgeFlame size={34} />}
+          label="רצף שבועות"
+          value={child.achievements.consistencyStreakWeeks}
+          gradient="linear-gradient(140deg, #ffb347 0%, #f2761b 100%)"
+        />
+        <StatTile badge={<BadgeCheck size={34} />} label="מטלות שביצעתי" value={child.achievements.tasksCompletedCount} gradient="var(--grad-violet)" />
+        <StatTile badge={<BadgeStar size={34} />} label="מטלה אהובה" value={child.achievements.favoriteTask} gradient="var(--grad-teal)" />
+        <StatTile
+          badge={<BadgeCoin size={34} />}
+          label='הרווחתי בסה"כ'
+          value={<span className="money">{totalEarned(child).toLocaleString("he-IL")}₪</span>}
+          gradient="linear-gradient(140deg, #37d3b8 0%, #1f9e8a 100%)"
+        />
       </div>
 
       <SectionTitle>אני חזק/ה ב</SectionTitle>

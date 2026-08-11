@@ -3,6 +3,7 @@ import { ParentBottomNav } from "../../components/BottomNav";
 import { SendMoneyFab } from "../../components/SendMoneyFab";
 import { EmptyState } from "../../components/UI";
 import { DonutChart, type DonutSlice } from "../../components/DonutChart";
+import { TransactionRow } from "../../components/TransactionRow";
 import { useActiveChild } from "../../data/store";
 
 const SLICE_COLORS = ["var(--teal-700)", "var(--violet-700)", "var(--amber-600)", "var(--coral-600)"];
@@ -59,37 +60,11 @@ export function ParentTransactions() {
         </div>
       )}
 
-      <div style={{ padding: "18px 20px 20px" }}>
+      <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
         {child.transactions.length === 0 && <EmptyState text="אין תנועות עדיין" />}
-        <div className="glass" style={{ borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)" }}>
-          {child.transactions.map((tx, i) => {
-            const positive = tx.amount >= 0;
-            return (
-              <div
-                key={tx.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "14px 16px",
-                  borderBottom: i === child.transactions.length - 1 ? "none" : "1px solid var(--line-soft)",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{tx.title}</div>
-                  <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>
-                    {tx.date}
-                    {tx.location && ` · ${tx.location}`}
-                  </div>
-                </div>
-                <span className="money" style={{ color: positive ? "var(--teal-900)" : "var(--violet-700)", fontWeight: 700 }}>
-                  {positive ? "+" : "-"}
-                  {Math.abs(tx.amount).toLocaleString("he-IL")}₪
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {child.transactions.map((tx) => (
+          <TransactionRow key={tx.id} tx={tx} />
+        ))}
       </div>
       <SendMoneyFab childId={child.id} />
       <ParentBottomNav />
