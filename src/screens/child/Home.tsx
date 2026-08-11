@@ -5,6 +5,7 @@ import { SectionTitle, Card } from "../../components/UI";
 import { IconChecklist } from "../../components/Icons";
 import { MissionTrail } from "../../components/MissionTrail";
 import { GoalCrystal } from "../../components/GoalCrystal";
+import { StatTile } from "../../components/StatTile";
 import { WalletCard } from "../../components/WalletCard";
 import { EggAvatar } from "../../components/EggAvatar";
 import { ExtraCardVisual } from "../../components/ExtraCardVisual";
@@ -101,22 +102,22 @@ export function ChildHome() {
         onClick={() => navigate("/child/achievements")}
         style={{ display: "flex", gap: 10, padding: "16px 20px 0", width: "100%", background: "none", border: "none", textAlign: "start" }}
       >
-        <Card style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
-          <BadgeFlame size={38} />
-          <div>
-            <div style={{ fontSize: 10.5, color: "var(--ink-soft)" }}>רצף שבועות</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--violet-700)" }}>{child.achievements.consistencyStreakWeeks}</div>
-          </div>
-        </Card>
-        <Card style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
-          <BadgeCoin size={38} />
-          <div>
-            <div style={{ fontSize: 10.5, color: "var(--ink-soft)" }}>הרווחתי בסה"כ</div>
-            <div className="money" style={{ fontSize: 15, fontWeight: 800, color: "var(--violet-700)" }}>
-              {totalEarned(child).toLocaleString("he-IL")}₪
-            </div>
-          </div>
-        </Card>
+        <div style={{ flex: 1 }}>
+          <StatTile
+            badge={<BadgeFlame size={30} />}
+            label="רצף שבועות"
+            value={child.achievements.consistencyStreakWeeks}
+            gradient="linear-gradient(140deg, #ffb347 0%, #f2761b 100%)"
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <StatTile
+            badge={<BadgeCoin size={30} />}
+            label='הרווחתי בסה"כ'
+            value={<span className="money">{totalEarned(child).toLocaleString("he-IL")}₪</span>}
+            gradient="linear-gradient(140deg, #37d3b8 0%, #1f9e8a 100%)"
+          />
+        </div>
       </button>
 
       <div style={{ padding: "16px 20px 0" }}>

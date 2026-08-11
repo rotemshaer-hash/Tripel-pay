@@ -75,24 +75,46 @@ function ChildInviteCard({ child, parentName, showToast }: { child: Child; paren
   );
 }
 
-function LinkRow({ label, icon, onClick }: { label: string; icon: ReactNode; onClick: () => void }) {
+function LinkRow({ label, icon, gradient, accent, onClick }: { label: string; icon: ReactNode; gradient: string; accent: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="glass"
       style={{
+        position: "relative",
+        overflow: "hidden",
         width: "100%",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        borderRadius: 999,
-        padding: "16px 20px",
-        boxShadow: "var(--shadow-card)",
+        gap: 14,
+        borderRadius: "var(--radius-md)",
+        padding: "14px 18px",
+        background: gradient,
+        border: "none",
+        boxShadow: "var(--shadow-card-solid)",
+        color: "#ffffff",
+        textAlign: "start",
       }}
     >
-      <span style={{ color: "var(--violet-700)", display: "flex" }}>{icon}</span>
-      <span style={{ fontSize: 15, fontWeight: 700 }}>{label}</span>
-      <span style={{ fontSize: 18, color: "var(--violet-700)" }}>‹</span>
+      <span aria-hidden="true" style={{ position: "absolute", top: -22, insetInlineEnd: -16, width: 76, height: 76, borderRadius: "50%", background: "rgba(255,255,255,0.28)", filter: "blur(24px)", pointerEvents: "none" }} />
+      <span
+        style={{
+          position: "relative",
+          zIndex: 1,
+          flexShrink: 0,
+          width: 40,
+          height: 40,
+          borderRadius: "52% 48% 50% 50% / 50% 50% 52% 48%",
+          background: "rgba(255,255,255,0.92)",
+          color: accent,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {icon}
+      </span>
+      <span style={{ position: "relative", zIndex: 1, flex: 1, fontSize: 15.5, fontWeight: 800 }}>{label}</span>
+      <span style={{ position: "relative", zIndex: 1, fontSize: 18, opacity: 0.9 }}>‹</span>
     </button>
   );
 }
@@ -104,11 +126,11 @@ export function ChildHub() {
   const { toastMessage, showToast } = useToast();
 
   const links = [
-    { label: "הגדרות", icon: <IconPeopleCoin size={22} />, to: "/parent/settings" },
-    { label: "חסכונות", icon: <IconPiggyBank size={22} />, to: "/parent/savings" },
-    { label: "מטלות", icon: <IconMountain size={22} />, to: "/parent/child-tasks" },
-    { label: "תנועות", icon: <IconCardCheck size={22} />, to: "/parent/transactions" },
-    { label: "הישגים", icon: <IconGraduationCap size={22} />, to: "/parent/achievements" },
+    { label: "הגדרות", icon: <IconPeopleCoin size={22} />, to: "/parent/settings", gradient: "var(--grad-violet)", accent: "#4b2e83" },
+    { label: "חסכונות", icon: <IconPiggyBank size={22} />, to: "/parent/savings", gradient: "linear-gradient(140deg, #37d3b8 0%, #1f9e8a 100%)", accent: "#1f9e8a" },
+    { label: "מטלות", icon: <IconMountain size={22} />, to: "/parent/child-tasks", gradient: "var(--grad-teal)", accent: "#e0224a" },
+    { label: "תנועות", icon: <IconCardCheck size={22} />, to: "/parent/transactions", gradient: "linear-gradient(140deg, #ffb347 0%, #f2761b 100%)", accent: "#f2761b" },
+    { label: "הישגים", icon: <IconGraduationCap size={22} />, to: "/parent/achievements", gradient: "linear-gradient(140deg, #c65cc9 0%, #8a2fb0 100%)", accent: "#8a2fb0" },
   ];
 
   return (
@@ -142,7 +164,7 @@ export function ChildHub() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "22px 20px" }}>
         {links.map((l) => (
-          <LinkRow key={l.to} label={l.label} icon={l.icon} onClick={() => navigate(l.to)} />
+          <LinkRow key={l.to} label={l.label} icon={l.icon} gradient={l.gradient} accent={l.accent} onClick={() => navigate(l.to)} />
         ))}
       </div>
 
