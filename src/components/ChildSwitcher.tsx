@@ -35,6 +35,8 @@ export function ChildCarousel({ children, activeId, onSelect }: { children: Chil
     <div
       className="glass"
       style={{
+        position: "relative",
+        overflow: "hidden",
         margin: "18px 20px 0",
         borderRadius: "var(--radius-lg)",
         padding: "18px 16px",
@@ -43,10 +45,14 @@ export function ChildCarousel({ children, activeId, onSelect }: { children: Chil
         justifyContent: "space-between",
       }}
     >
-      <button onClick={() => step(-1)} disabled={children.length < 2} style={{ fontSize: 22, color: "var(--teal-900)", background: "none", border: "none", opacity: children.length < 2 ? 0.3 : 1 }}>
+      <span
+        aria-hidden="true"
+        style={{ position: "absolute", top: -46, insetInlineStart: "50%", transform: "translateX(-50%)", width: 160, height: 160, borderRadius: "50%", background: active.avatarColor, filter: "blur(46px)", opacity: 0.4, pointerEvents: "none" }}
+      />
+      <button onClick={() => step(-1)} disabled={children.length < 2} style={{ position: "relative", zIndex: 1, fontSize: 22, color: "var(--teal-900)", background: "none", border: "none", opacity: children.length < 2 ? 0.3 : 1 }}>
         ‹
       </button>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
         <div style={{ position: "relative" }}>
           <EggAvatar photoUrl={active.photoUrl} color={active.avatarColor} initial={active.initial} size={72} />
           <button
@@ -79,7 +85,7 @@ export function ChildCarousel({ children, activeId, onSelect }: { children: Chil
         </div>
         <span style={{ fontSize: 16, fontWeight: 800 }}>{active.name}</span>
       </div>
-      <button onClick={() => step(1)} disabled={children.length < 2} style={{ fontSize: 22, color: "var(--teal-900)", background: "none", border: "none", opacity: children.length < 2 ? 0.3 : 1 }}>
+      <button onClick={() => step(1)} disabled={children.length < 2} style={{ position: "relative", zIndex: 1, fontSize: 22, color: "var(--teal-900)", background: "none", border: "none", opacity: children.length < 2 ? 0.3 : 1 }}>
         ›
       </button>
     </div>

@@ -6,6 +6,7 @@ import { Toast, useToast } from "../../components/Toast";
 import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { EggAvatar } from "../../components/EggAvatar";
+import { FamilyMemberCard } from "../../components/FamilyMemberCard";
 import { useNavigate } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
 
@@ -79,63 +80,10 @@ export function ParentHome() {
       </Header>
 
       <SectionTitle>המשפחה שלי</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 20px" }}>
-        {childrenList(state.family).map((c) => {
-          const pending = c.tasks.filter((t) => t.status === "pending_approval").length;
-          const goal = c.savingsGoals[0];
-          const goalPct = goal ? Math.min(100, Math.round((goal.current / Math.max(1, goal.target)) * 100)) : null;
-          const isActive = c.id === child.id;
-          return (
-            <button
-              key={c.id}
-              onClick={() => dispatch({ type: "SET_ACTIVE_CHILD", childId: c.id })}
-              className="glass"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 14px",
-                borderRadius: "var(--radius-sm)",
-                boxShadow: "var(--shadow-card)",
-                border: isActive ? "1.5px solid var(--violet-700)" : "1px solid transparent",
-                textAlign: "start",
-              }}
-            >
-              <div style={{ flexShrink: 0 }}>
-                <EggAvatar photoUrl={c.photoUrl} color={c.avatarColor} initial={c.initial} size={38} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="row-between">
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>{c.name}</span>
-                  <span className="money" style={{ fontSize: 14 }}>{c.balance.toLocaleString("he-IL")}₪</span>
-                </div>
-                {goal && goalPct !== null && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                    <div style={{ flex: 1, height: 5, borderRadius: 999, background: "var(--line-soft)", overflow: "hidden" }}>
-                      <div style={{ width: `${goalPct}%`, height: "100%", background: "var(--violet-700)", borderRadius: 999 }} />
-                    </div>
-                    <span style={{ fontSize: 10.5, color: "var(--ink-faint)", flexShrink: 0 }}>{goal.title} {goalPct}%</span>
-                  </div>
-                )}
-              </div>
-              {pending > 0 && (
-                <span
-                  style={{
-                    background: "var(--violet-700)",
-                    color: "#fff",
-                    fontSize: 10.5,
-                    fontWeight: 800,
-                    borderRadius: 999,
-                    padding: "3px 8px",
-                    flexShrink: 0,
-                  }}
-                >
-                  {pending} לאישור
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 20px" }}>
+        {childrenList(state.family).map((c) => (
+          <FamilyMemberCard key={c.id} child={c} isActive={c.id === child.id} onSelect={() => dispatch({ type: "SET_ACTIVE_CHILD", childId: c.id })} />
+        ))}
       </div>
 
       {tradeOffers.length > 0 && (
@@ -221,16 +169,17 @@ export function ParentHome() {
                 }}
               >
                 <span
+                  className="egg-breathe"
                   style={{
                     width: size,
                     height: size,
-                    borderRadius: "50%",
+                    borderRadius: "56% 44% 52% 48% / 48% 54% 46% 52%",
                     background: categoryTileColor(t.category),
                     color: "#ffffff",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "var(--shadow-card-solid)",
+                    boxShadow: `0 10px 22px -6px ${categoryTileColor(t.category)}`,
                     flexShrink: 0,
                   }}
                 >
@@ -241,7 +190,9 @@ export function ParentHome() {
                   style={{
                     flex: 1,
                     minWidth: 0,
-                    padding: "10px 14px",
+                    padding: "12px 16px",
+                    border: "none",
+                    background: `color-mix(in srgb, ${categoryTileColor(t.category)} 15%, #ffffff)`,
                     borderRadius: leftSide ? "6px 22px 22px 22px" : "22px 6px 22px 22px",
                   }}
                 >
