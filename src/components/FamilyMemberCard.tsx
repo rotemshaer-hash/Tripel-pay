@@ -23,12 +23,13 @@ export function FamilyMemberCard({ child, isActive, onSelect }: { child: Child; 
         gap: 14,
         padding: "16px 18px",
         borderRadius: "var(--radius-md)",
-        // Solid color is the fallback; the gradient deepens it toward near-black so
-        // white text stays legible on any of the (sometimes light) avatar colors.
+        // Bright, cheerful capsule: a light tint of the child's color up top fading to
+        // their vivid color, with only a mild deepening at the bottom for depth. White
+        // text stays legible on the lighter tones thanks to the per-text shadow below.
         background: child.avatarColor,
-        backgroundImage: `linear-gradient(135deg, color-mix(in srgb, ${child.avatarColor} 62%, #1a1030) 0%, color-mix(in srgb, ${child.avatarColor} 34%, #120b24) 100%)`,
+        backgroundImage: `linear-gradient(140deg, color-mix(in srgb, ${child.avatarColor} 82%, #ffffff) 0%, ${child.avatarColor} 52%, color-mix(in srgb, ${child.avatarColor} 84%, #3a2560) 100%)`,
         border: isActive ? "3px solid #ffffff" : "3px solid transparent",
-        boxShadow: isActive ? "0 16px 32px -10px rgba(23,24,31,0.55)" : "var(--shadow-card-solid)",
+        boxShadow: isActive ? "0 16px 32px -10px rgba(23,24,31,0.4)" : "var(--shadow-card-solid)",
         overflow: "hidden",
         textAlign: "start",
         color: "#ffffff",
@@ -56,17 +57,17 @@ export function FamilyMemberCard({ child, isActive, onSelect }: { child: Child; 
         <EggAvatar photoUrl={child.photoUrl} color={child.avatarColor} initial={child.initial} size={46} />
       </div>
 
-      <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1, textShadow: "0 1px 3px rgba(0,0,0,0.28)" }}>
         <div style={{ fontSize: 15.5, fontWeight: 800 }}>{child.name}</div>
         <div className="money" style={{ fontSize: 21, marginTop: 1 }}>
           {child.balance.toLocaleString("he-IL")}₪
         </div>
         {goal && goalPct !== null && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-            <div style={{ flex: 1, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.22)", overflow: "hidden" }}>
-              <div style={{ width: `${goalPct}%`, height: "100%", background: "#ffffff", borderRadius: 999, boxShadow: "0 0 8px rgba(255,255,255,0.7)" }} />
+            <div style={{ flex: 1, height: 6, borderRadius: 999, background: "rgba(0,0,0,0.18)", overflow: "hidden" }}>
+              <div style={{ width: `${goalPct}%`, height: "100%", background: "#ffffff", borderRadius: 999, boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
             </div>
-            <span style={{ fontSize: 10.5, opacity: 0.92, flexShrink: 0 }}>
+            <span style={{ fontSize: 10.5, opacity: 0.95, flexShrink: 0 }}>
               {goal.title} {goalPct}%
             </span>
           </div>
