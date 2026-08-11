@@ -5,7 +5,7 @@ import { SectionTitle, Card } from "../../components/UI";
 import { IconChecklist } from "../../components/Icons";
 import { MissionTrail } from "../../components/MissionTrail";
 import { GoalCrystal } from "../../components/GoalCrystal";
-import { StatTile } from "../../components/StatTile";
+import { NavPill } from "../../components/NavPill";
 import { WalletCard } from "../../components/WalletCard";
 import { EggAvatar } from "../../components/EggAvatar";
 import { ExtraCardVisual } from "../../components/ExtraCardVisual";
@@ -13,9 +13,8 @@ import { CardCarousel } from "../../components/CardCarousel";
 import { NotificationsBell } from "../../components/NotificationsBell";
 import { RewardRevealCard } from "../../components/RewardRevealCard";
 import { SceneRest } from "../../components/Illustrations";
-import { BadgeFlame, BadgeCoin } from "../../components/Badges";
 import { useActiveChild, useStore } from "../../data/store";
-import { childrenList, totalEarned } from "../../data/family";
+import { childrenList } from "../../data/family";
 import { useCountUp } from "../../hooks/useCountUp";
 
 export function ChildHome() {
@@ -98,47 +97,14 @@ export function ChildHome() {
         ]}
       />
 
-      <button
-        onClick={() => navigate("/child/achievements")}
-        style={{ display: "flex", gap: 10, padding: "16px 20px 0", width: "100%", background: "none", border: "none", textAlign: "start" }}
-      >
-        <div style={{ flex: 1 }}>
-          <StatTile
-            badge={<BadgeFlame size={30} />}
-            label="רצף שבועות"
-            value={child.achievements.consistencyStreakWeeks}
-            gradient="linear-gradient(140deg, #ffb347 0%, #f2761b 100%)"
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <StatTile
-            badge={<BadgeCoin size={30} />}
-            label='הרווחתי בסה"כ'
-            value={<span className="money">{totalEarned(child).toLocaleString("he-IL")}₪</span>}
-            gradient="linear-gradient(140deg, #37d3b8 0%, #1f9e8a 100%)"
-          />
-        </div>
-      </button>
-
-      <div style={{ padding: "16px 20px 0" }}>
-        <button
+      <div style={{ padding: "18px 20px 0" }}>
+        <NavPill
+          label="הכללים שלנו בבית"
+          icon={<IconChecklist size={22} />}
+          gradient="var(--grad-violet)"
+          accent="#4b2e83"
           onClick={() => navigate("/child/house-rules")}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            borderRadius: "var(--radius-sm)",
-            padding: "12px 16px",
-            border: "1px dashed var(--violet-700)",
-            background: "var(--violet-200)",
-            color: "var(--violet-700)",
-          }}
-        >
-          <IconChecklist size={20} />
-          <span style={{ fontSize: 13.5, fontWeight: 700, flex: 1, textAlign: "start" }}>הכללים שלנו בבית</span>
-          <span style={{ fontSize: 16 }}>‹</span>
-        </button>
+        />
       </div>
 
       <SectionTitle

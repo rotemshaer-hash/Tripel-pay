@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { ParentBottomNav } from "../../components/BottomNav";
 import { SendMoneyFab } from "../../components/SendMoneyFab";
+import { NavPill } from "../../components/NavPill";
 import { ChildCarousel } from "../../components/ChildSwitcher";
 import { IconPeopleCoin, IconPiggyBank, IconMountain, IconCardCheck, IconGraduationCap, IconChecklist } from "../../components/Icons";
 import { Toast, useToast } from "../../components/Toast";
@@ -75,50 +75,6 @@ function ChildInviteCard({ child, parentName, showToast }: { child: Child; paren
   );
 }
 
-function LinkRow({ label, icon, gradient, accent, onClick }: { label: string; icon: ReactNode; gradient: string; accent: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        borderRadius: "var(--radius-md)",
-        padding: "14px 18px",
-        background: gradient,
-        border: "none",
-        boxShadow: "var(--shadow-card-solid)",
-        color: "#ffffff",
-        textAlign: "start",
-      }}
-    >
-      <span aria-hidden="true" style={{ position: "absolute", top: -22, insetInlineEnd: -16, width: 76, height: 76, borderRadius: "50%", background: "rgba(255,255,255,0.28)", filter: "blur(24px)", pointerEvents: "none" }} />
-      <span
-        style={{
-          position: "relative",
-          zIndex: 1,
-          flexShrink: 0,
-          width: 40,
-          height: 40,
-          borderRadius: "52% 48% 50% 50% / 50% 50% 52% 48%",
-          background: "rgba(255,255,255,0.92)",
-          color: accent,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {icon}
-      </span>
-      <span style={{ position: "relative", zIndex: 1, flex: 1, fontSize: 15.5, fontWeight: 800 }}>{label}</span>
-      <span style={{ position: "relative", zIndex: 1, fontSize: 18, opacity: 0.9 }}>‹</span>
-    </button>
-  );
-}
-
 export function ChildHub() {
   const { state, dispatch } = useStore();
   const child = useActiveChild();
@@ -164,7 +120,7 @@ export function ChildHub() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "22px 20px" }}>
         {links.map((l) => (
-          <LinkRow key={l.to} label={l.label} icon={l.icon} gradient={l.gradient} accent={l.accent} onClick={() => navigate(l.to)} />
+          <NavPill key={l.to} label={l.label} icon={l.icon} gradient={l.gradient} accent={l.accent} onClick={() => navigate(l.to)} />
         ))}
       </div>
 
