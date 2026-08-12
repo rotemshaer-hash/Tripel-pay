@@ -13,13 +13,15 @@ import { CardCarousel } from "../../components/CardCarousel";
 import { NotificationsBell } from "../../components/NotificationsBell";
 import { RewardRevealCard } from "../../components/RewardRevealCard";
 import { SceneRest } from "../../components/Illustrations";
-import { useActiveChild, useStore } from "../../data/store";
+import { PreviewBanner } from "../../components/PreviewBanner";
+import { useActiveChild, useStore, useIsParentPreview } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { useCountUp } from "../../hooks/useCountUp";
 
 export function ChildHome() {
   const child = useActiveChild();
   const { state, dispatch, logout } = useStore();
+  const preview = useIsParentPreview();
   const displayBalance = useCountUp(child.balance);
   const navigate = useNavigate();
   const quickTasks = child.tasks.filter((t) => t.status !== "completed").slice(0, 2);
@@ -67,6 +69,8 @@ export function ChildHome() {
           </div>
         </div>
       </Header>
+
+      {preview && <PreviewBanner childName={child.name} />}
 
       {previewList.length > 1 && (
         <div style={{ margin: "14px 20px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
@@ -125,8 +129,8 @@ export function ChildHome() {
         <MissionTrail
           items={quickTasks.map((t) => ({
             task: t,
-            actionLabel: t.status === "available" ? "התחלה" : t.status === "in_progress" ? "סיימתי" : undefined,
-            onAction: t.status !== "pending_approval" ? () => dispatch({ type: "ADVANCE_TASK", childId: child.id, taskId: t.id }) : undefined,
+            actionLabel: preview ? undefined : t.status === "available" ? "התחלה" : t.status === "in_progress" ? "סיימתי" : undefined,
+            onAction: preview || t.status === "pending_approval" ? undefined : () => dispatch({ type: "ADVANCE_TASK", childId: child.id, taskId: t.id }),
           }))}
         />
       )}

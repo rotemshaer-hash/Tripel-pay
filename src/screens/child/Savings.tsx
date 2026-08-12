@@ -4,13 +4,15 @@ import { ChildBottomNav } from "../../components/BottomNav";
 import { SectionTitle, EmptyState } from "../../components/UI";
 import { GoalCrystal } from "../../components/GoalCrystal";
 import { GoalCelebration } from "../../components/GoalCelebration";
-import { useActiveChild, useStore } from "../../data/store";
+import { PreviewBanner } from "../../components/PreviewBanner";
+import { useActiveChild, useStore, useIsParentPreview } from "../../data/store";
 import piggyIllustration from "../../assets/illustration-piggy.png";
 import type { SavingsGoal } from "../../data/types";
 
 export function ChildSavings() {
   const child = useActiveChild();
   const { dispatch } = useStore();
+  const preview = useIsParentPreview();
   const [celebrating, setCelebrating] = useState<SavingsGoal | null>(null);
 
   function contribute(goal: SavingsGoal) {
@@ -23,6 +25,7 @@ export function ChildSavings() {
   return (
     <div className="screen">
       <Header title="החיסכון שלי" subtitle={`סה"כ: ${child.savingsTotal.toLocaleString("he-IL")}₪`} back tint="playful" />
+      {preview && <PreviewBanner childName={child.name} />}
       <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 4px" }}>
         <img src={piggyIllustration} alt="" style={{ width: 96, height: "auto" }} />
       </div>
@@ -31,7 +34,7 @@ export function ChildSavings() {
         {child.savingsGoals.length === 0 && <EmptyState text="עדיין אין לך מטרת חיסכון — בקש/י מההורה שיוסיף אחת, ותתחיל/י לחסוך למשהו שממש בא לך עליו! 🎯" />}
         {child.savingsGoals.map((g) => (
           <GoalCrystal key={g.id} goal={g} color={g.current >= g.target ? "var(--teal-700)" : "var(--violet-700)"}>
-            {g.current < g.target && (
+            {!preview && g.current < g.target && (
               <button
                 onClick={() => contribute(g)}
                 disabled={child.balance < 5}

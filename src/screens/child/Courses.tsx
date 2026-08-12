@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Header } from "../../components/Header";
 import { ChildBottomNav } from "../../components/BottomNav";
-import { useActiveChild, useStore } from "../../data/store";
+import { useActiveChild, useStore, useIsParentPreview } from "../../data/store";
+import { PreviewBanner } from "../../components/PreviewBanner";
 import { KNOWLEDGE_LIBRARY, categoryLabels, MISSION_REWARD, type KnowledgeArticle, type KnowledgeCategory } from "../../data/knowledgeLibrary";
 import lightbulbIllustration from "../../assets/illustration-lightbulb.png";
 
@@ -14,7 +15,7 @@ const categoryColor: Record<KnowledgeCategory, string> = {
 
 type Stage = "reading" | "quiz" | "done";
 
-function ArticleReader({ article, read, onClose, onComplete }: { article: KnowledgeArticle; read: boolean; onClose: () => void; onComplete: () => void }) {
+function ArticleReader({ article, read, preview, onClose, onComplete }: { article: KnowledgeArticle; read: boolean; preview: boolean; onClose: () => void; onComplete: () => void }) {
   // Captured once at open time so the completion screen still shows the reward summary
   // after onComplete() flips the live `read` prop to true via the store dispatch.
   const [alreadyReadAtOpen] = useState(read);
@@ -35,7 +36,7 @@ function ArticleReader({ article, read, onClose, onComplete }: { article: Knowle
   function next() {
     if (isLast) {
       setStage("done");
-      if (!alreadyReadAtOpen) onComplete();
+      if (!alreadyReadAtOpen && !preview) onComplete();
     } else {
       setStep((s) => s + 1);
       setPicked(null);
@@ -145,7 +146,9 @@ function ArticleReader({ article, read, onClose, onComplete }: { article: Knowle
         <div style={{ padding: "36px 20px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
           <div style={{ fontSize: 64 }}>🏅</div>
           <div style={{ fontSize: 19, fontWeight: 800 }}>משימה הושלמה!</div>
-          {alreadyReadAtOpen ? (
+          {preview ? (
+            <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>תצוגת הורה — הפרס יינתן לילד/ה כשישלים/תשלים את המשימה בעצמו/ה.</div>
+          ) : alreadyReadAtOpen ? (
             <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>כבר קיבלת את הפרס על המשימה הזו בעבר.</div>
           ) : (
             <>
@@ -193,6 +196,7 @@ function ArticleReader({ article, read, onClose, onComplete }: { article: Knowle
 export function ChildCourses() {
   const child = useActiveChild();
   const { dispatch } = useStore();
+  const preview = useIsParentPreview();
   const [openId, setOpenId] = useState<string | null>(null);
 
   const openArticle = KNOWLEDGE_LIBRARY.find((a) => a.id === openId);
@@ -202,6 +206,7 @@ export function ChildCourses() {
       <ArticleReader
         article={openArticle}
         read={read}
+        preview={preview}
         onClose={() => setOpenId(null)}
         onComplete={() =>
           dispatch({ type: "COMPLETE_MISSION", childId: child.id, articleId: openArticle.id, articleTitle: openArticle.title, reward: MISSION_REWARD })
@@ -215,6 +220,7 @@ export function ChildCourses() {
   return (
     <div className="screen">
       <Header title="הידע שלי" subtitle={`השלמת ${readCount} מתוך ${KNOWLEDGE_LIBRARY.length} משימות ידע`} back tint="playful" />
+      {preview && <PreviewBanner childName={child.name} />}
       <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 4px" }}>
         <img src={lightbulbIllustration} alt="" style={{ width: 84, height: "auto" }} />
       </div>

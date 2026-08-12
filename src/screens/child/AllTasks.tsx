@@ -4,12 +4,14 @@ import { ChildBottomNav } from "../../components/BottomNav";
 import { SectionTitle } from "../../components/UI";
 import { TaskCard } from "../../components/TaskCard";
 import { MissionTrail, type MissionTrailItem } from "../../components/MissionTrail";
-import { useActiveChild, useStore } from "../../data/store";
+import { PreviewBanner } from "../../components/PreviewBanner";
+import { useActiveChild, useStore, useIsParentPreview } from "../../data/store";
 import { childrenList } from "../../data/family";
 
 export function ChildAllTasks() {
   const { state, dispatch } = useStore();
   const child = useActiveChild();
+  const preview = useIsParentPreview();
   const [offeringId, setOfferingId] = useState<string | null>(null);
 
   const siblings = childrenList(state.family).filter((c) => c.id !== child.id);
@@ -23,10 +25,10 @@ export function ChildAllTasks() {
 
   const activeItems: MissionTrailItem[] = active.map((t) => ({
     task: t,
-    actionLabel: t.status === "available" ? "התחלה" : t.status === "in_progress" ? "סיימתי" : undefined,
-    onAction: t.status !== "pending_approval" ? () => dispatch({ type: "ADVANCE_TASK", childId: child.id, taskId: t.id }) : undefined,
+    actionLabel: preview ? undefined : t.status === "available" ? "התחלה" : t.status === "in_progress" ? "סיימתי" : undefined,
+    onAction: preview || t.status === "pending_approval" ? undefined : () => dispatch({ type: "ADVANCE_TASK", childId: child.id, taskId: t.id }),
     extra:
-      siblings.length > 0 && t.status !== "pending_approval" ? (
+      !preview && siblings.length > 0 && t.status !== "pending_approval" ? (
         <div style={{ marginTop: 8 }}>
           {t.tradeOfferedTo ? (
             <button
@@ -63,6 +65,7 @@ export function ChildAllTasks() {
   return (
     <div className="screen">
       <Header title="המטלות שלי" back tint="playful" />
+      {preview && <PreviewBanner childName={child.name} />}
       <SectionTitle>המטלות שלי</SectionTitle>
       {active.length === 0 ? (
         <div style={{ color: "var(--ink-faint)", fontSize: 13.5, padding: "10px 20px 20px" }}>כל הכבוד! סיימת את כל המטלות 🎉</div>

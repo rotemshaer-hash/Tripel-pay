@@ -571,3 +571,13 @@ export function useActiveChild(): Child {
   const { state } = useStore();
   return state.family.children[state.activeChildId] ?? childrenList(state.family)[0];
 }
+
+/**
+ * True when a parent is previewing a child's screen (role parent + child view) rather
+ * than a real child login. In this mode the child's screens are read-only: the parent
+ * sees exactly what the child sees but can't perform the child's actions on their behalf.
+ */
+export function useIsParentPreview(): boolean {
+  const { state } = useStore();
+  return state.role === "parent" && state.viewMode === "child";
+}
