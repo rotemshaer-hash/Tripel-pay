@@ -54,6 +54,7 @@ type Action =
   | { type: "ADD_EXTRA_CARD"; childId: string; name: string; category: ExtraCard["category"]; cost?: number; note?: string }
   | { type: "REMOVE_EXTRA_CARD"; childId: string; cardId: string }
   | { type: "ADD_TASK_TEMPLATE"; title: string; reward: number; category: TaskCategory }
+  | { type: "UPDATE_TASK_TEMPLATE"; templateId: string; title: string; reward: number; category: TaskCategory }
   | { type: "REMOVE_TASK_TEMPLATE"; templateId: string }
   | { type: "ADD_GIFT"; title: string; cost: number; category: GiftBankItem["category"] }
   | { type: "REMOVE_GIFT"; giftId: string }
@@ -338,6 +339,17 @@ function reducer(state: AppState, action: Action): AppState {
     case "ADD_TASK_TEMPLATE": {
       const template: TaskTemplate = { id: `tb-${crypto.randomUUID()}`, title: action.title, reward: action.reward, category: action.category };
       return { ...state, family: { ...state.family, taskBank: [template, ...state.family.taskBank] } };
+    }
+    case "UPDATE_TASK_TEMPLATE": {
+      return {
+        ...state,
+        family: {
+          ...state.family,
+          taskBank: state.family.taskBank.map((t) =>
+            t.id === action.templateId ? { ...t, title: action.title, reward: action.reward, category: action.category } : t
+          ),
+        },
+      };
     }
     case "REMOVE_TASK_TEMPLATE": {
       return { ...state, family: { ...state.family, taskBank: state.family.taskBank.filter((t) => t.id !== action.templateId) } };
