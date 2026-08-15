@@ -27,9 +27,16 @@ export function ParentHome() {
       .map((t) => ({ fromChild: c, task: t, toChild: state.family.children[t.tradeOfferedTo!] }))
   );
 
+  const pendingApprovals = childrenList(state.family).flatMap((c) => c.tasks.filter((t) => t.status === "pending_approval").map((t) => ({ approveChild: c, task: t })));
+
   function assign(templateId: string, title: string) {
     dispatch({ type: "ASSIGN_TASK", childId: child.id, templateId });
     showToast(`המטלה "${title}" הוקצתה ל${child.name}`);
+  }
+
+  function approve(childId: string, taskId: string, title: string) {
+    dispatch({ type: "APPROVE_TASK", childId, taskId });
+    showToast(`אושר: ${title}`);
   }
 
   return (
@@ -85,6 +92,31 @@ export function ParentHome() {
           <FamilyMemberCard key={c.id} child={c} isActive={c.id === child.id} onSelect={() => dispatch({ type: "SET_ACTIVE_CHILD", childId: c.id })} />
         ))}
       </div>
+
+      {pendingApprovals.length > 0 && (
+        <>
+          <SectionTitle>מטלות לאישור</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 20px" }}>
+            {pendingApprovals.map(({ approveChild: c, task }) => (
+              <div key={task.id} className="glass" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: "var(--radius-sm)", boxShadow: "var(--shadow-card)" }}>
+                <EggAvatar photoUrl={c.photoUrl} color={c.avatarColor} initial={c.initial} size={36} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>
+                    {c.name} · <span className="money" style={{ color: "var(--teal-900)", fontWeight: 800 }}>+{task.reward}₪</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => approve(c.id, task.id, task.title)}
+                  style={{ background: "var(--teal-700)", color: "#ffffff", border: "none", borderRadius: 999, padding: "9px 16px", fontSize: 12.5, fontWeight: 800, boxShadow: "var(--glow-teal)", flexShrink: 0 }}
+                >
+                  אישור
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {tradeOffers.length > 0 && (
         <>

@@ -43,6 +43,7 @@ type Action =
   | { type: "APPROVE_TASK"; childId: string; taskId: string }
   | { type: "REDEEM_GIFT"; childId: string; giftId: string }
   | { type: "SEND_MONEY"; childId: string; amount: number; note: string }
+  | { type: "ACCRUE_ALLOWANCES"; now: number }
   | { type: "WITHDRAW_CASH"; childId: string; amount: number; note: string }
   | { type: "CONTRIBUTE_SAVINGS"; childId: string; goalId: string; amount: number }
   | { type: "ADD_SAVINGS_GOAL"; childId: string; goal: SavingsGoal }
@@ -242,6 +243,41 @@ function reducer(state: AppState, action: Action): AppState {
           transactions: [{ id: `tx-${crypto.randomUUID()}`, title: action.note || "העברה מההורה", amount: action.amount, date: "היום" }, ...c.transactions],
         })),
       };
+    }
+    case "ACCRUE_ALLOWANCES": {
+      // Credit every child whose weekly allowance has come due, computed here from the
+      // CURRENT state so a duplicate dispatch (e.g. StrictMode double-invoke) is a safe
+      // no-op — the second pass sees the advanced clock and finds nothing due. The first
+      // time a child is seen the clock is just stamped (pays nothing) so payments accrue
+      // from now; a long gap is capped so it never drops a huge surprise sum.
+      const WEEK = 7 * 24 * 60 * 60 * 1000;
+      let changed = false;
+      const children = { ...state.family.children };
+      for (const id of state.family.childOrder) {
+        const c = children[id];
+        if (!c) continue;
+        const weekly = c.settings?.weeklyAllowance ?? 0;
+        if (weekly <= 0) continue;
+        const last = c.lastAllowancePaidAt ? Date.parse(c.lastAllowancePaidAt) : NaN;
+        if (Number.isNaN(last)) {
+          children[id] = { ...c, lastAllowancePaidAt: new Date(action.now).toISOString() };
+          changed = true;
+          continue;
+        }
+        const weeks = Math.floor((action.now - last) / WEEK);
+        if (weeks >= 1) {
+          const amount = Math.min(weeks, 8) * weekly;
+          children[id] = {
+            ...c,
+            lastAllowancePaidAt: new Date(last + weeks * WEEK).toISOString(),
+            balance: c.balance + amount,
+            transactions: [{ id: `tx-${crypto.randomUUID()}`, title: "דמי כיס שבועיים", amount, date: "היום" }, ...c.transactions],
+          };
+          changed = true;
+        }
+      }
+      if (!changed) return state;
+      return { ...state, family: { ...state.family, children } };
     }
     case "WITHDRAW_CASH": {
       return {
@@ -476,6 +512,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveFamily(state.familyUid, state.family).catch((err) => console.error("Failed to save family to Firebase:", err));
     }
   }, [state]);
+
+  // Recurring weekly allowance: whenever a parent session is loaded, credit any child
+  // whose weekly allowance has come due, one clock-week at a time (capped so a long
+  // absence doesn't drop a huge surprise sum). The first time it's seen it just stamps
+  // the clock (pays nothing), so payments start accruing from now, and lastAllowancePaidAt
+  // advancing makes it idempotent — re-runs after the dispatch find nothing due.
+  useEffect(() => {
+    if (!state.familyUid || state.role !== "parent") return;
+    const WEEK = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const due = childrenList(state.family).some((c) => {
+      const weekly = c.settings?.weeklyAllowance ?? 0;
+      if (weekly <= 0) return false;
+      if (!c.lastAllowancePaidAt) return true;
+      const last = Date.parse(c.lastAllowancePaidAt);
+      return Number.isNaN(last) || Math.floor((now - last) / WEEK) >= 1;
+    });
+    if (due) dispatch({ type: "ACCRUE_ALLOWANCES", now });
+  }, [state.family, state.role, state.familyUid]);
 
   const completeOnboarding = useMemo(
     () => async (email: string, password: string, name: string, childNames?: string[]) => {

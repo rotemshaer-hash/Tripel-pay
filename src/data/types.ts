@@ -101,6 +101,9 @@ export interface Child {
   strengths: StrengthTopic[];
   redeemedGifts: RedeemedGift[];
   extraCards: ExtraCard[];
+  /** ISO timestamp of the last weekly-allowance payout; used to auto-credit the
+   * recurring allowance one week at a time. Absent until the allowance first runs. */
+  lastAllowancePaidAt?: string;
   settings: ChildSettings;
   achievements: {
     lessonsProgress: number;
