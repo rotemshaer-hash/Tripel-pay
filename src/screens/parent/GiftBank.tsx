@@ -6,6 +6,7 @@ import { SectionTitle, Money } from "../../components/UI";
 import { Toast, useToast } from "../../components/Toast";
 import { IconPlaneTicket, IconTicket, IconFood, IconScooter, IconToy } from "../../components/Icons";
 import { useActiveChild, useStore } from "../../data/store";
+import { childrenList } from "../../data/family";
 import type { GiftBankItem } from "../../data/types";
 
 export const giftIcons: Record<GiftBankItem["category"], ReactNode> = {
@@ -42,6 +43,16 @@ export function GiftBank() {
   const [title, setTitle] = useState("");
   const [cost, setCost] = useState("50");
   const [category, setCategory] = useState<GiftBankItem["category"]>("toy");
+  const [codeDraft, setCodeDraft] = useState<Record<string, string>>({});
+
+  const pendingVouchers = childrenList(state.family).flatMap((c) => c.redeemedGifts.filter((g) => !g.fulfilled).map((g) => ({ voucherChild: c, gift: g })));
+
+  function fulfill(childId: string, redeemedId: string) {
+    const code = (codeDraft[redeemedId] ?? "").trim();
+    dispatch({ type: "FULFILL_GIFT", childId, redeemedId, code });
+    setCodeDraft((d) => ({ ...d, [redeemedId]: "" }));
+    showToast("השובר סומן כנמסר");
+  }
 
   function addGift() {
     const costNum = Number(cost);
@@ -115,22 +126,58 @@ export function GiftBank() {
         ))}
       </div>
 
+      {pendingVouchers.length > 0 && (
+        <>
+          <SectionTitle>שוברים לטיפול</SectionTitle>
+          <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+            {pendingVouchers.map(({ voucherChild: c, gift }) => (
+              <div key={gift.id} className="glass" style={{ borderRadius: "var(--radius-sm)", padding: "13px 15px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--violet-700)", flexShrink: 0 }}>{giftIcons[gift.category]}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{gift.title}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>{c.name} מימש/ה · {gift.cost.toLocaleString("he-IL")}₪</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    placeholder="קוד השובר (אופציונלי)"
+                    value={codeDraft[gift.id] ?? ""}
+                    onChange={(e) => setCodeDraft((d) => ({ ...d, [gift.id]: e.target.value }))}
+                    style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "1px solid var(--line)", fontSize: 13 }}
+                  />
+                  <button
+                    onClick={() => fulfill(c.id, gift.id)}
+                    style={{ background: "var(--teal-700)", color: "#fff", border: "none", borderRadius: 10, padding: "0 16px", fontSize: 12.5, fontWeight: 800, boxShadow: "var(--glow-teal)", flexShrink: 0 }}
+                  >
+                    סימון כנמסר
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <SectionTitle
         action={
           <button onClick={() => setAdding((v) => !v)} style={{ background: "none", border: "none", color: "var(--violet-700)", fontSize: 13, fontWeight: 700 }}>
-            {adding ? "ביטול" : "+ הוספת מתנה"}
+            {adding ? "ביטול" : "+ הוספת הטבה"}
           </button>
         }
       >
-        מימוש בסריקת QR בחנות
+        הטבות אמיתיות לחיסכון
       </SectionTitle>
+      <div style={{ padding: "0 20px", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -6 }}>
+        הילד/ה חוסך/ת ומממש/ת הטבה אמיתית (למשל שובר BuyMe או כרטיס מתנה). אחרי המימוש היא תופיע כאן ב״שוברים לטיפול״ — רוכשים את השובר ומזינים את הקוד.
+      </div>
 
       {adding && (
         <div style={{ padding: "0 20px 16px" }}>
           <div className="glass" style={{ borderRadius: "var(--radius-sm)", padding: 14 }}>
             <label style={{ fontSize: 12, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>שם המתנה</label>
             <input
-              placeholder="למשל: כרטיס לפארק שעשועים"
+              placeholder="למשל: שובר BuyMe 50₪ / כרטיס לפארק"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)", fontSize: 14, marginBottom: 10 }}

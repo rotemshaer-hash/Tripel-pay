@@ -73,6 +73,10 @@ export interface RedeemedGift {
   category: GiftBankItem["category"];
   cost: number;
   date: string;
+  /** A redeemed reward starts unfulfilled; the parent later provides the real reward
+   * (e.g. buys the gift card) and attaches its code, which the child then sees. */
+  fulfilled?: boolean;
+  code?: string;
 }
 
 export interface ExtraCard {

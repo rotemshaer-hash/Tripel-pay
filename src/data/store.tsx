@@ -42,6 +42,7 @@ type Action =
   | { type: "ADVANCE_TASK"; childId: string; taskId: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string }
   | { type: "REDEEM_GIFT"; childId: string; giftId: string }
+  | { type: "FULFILL_GIFT"; childId: string; redeemedId: string; code: string }
   | { type: "SEND_MONEY"; childId: string; amount: number; note: string }
   | { type: "ACCRUE_ALLOWANCES"; now: number }
   | { type: "WITHDRAW_CASH"; childId: string; amount: number; note: string }
@@ -229,9 +230,18 @@ function reducer(state: AppState, action: Action): AppState {
             ...c,
             balance: c.balance - gift.cost,
             transactions: [{ id: `tx-${crypto.randomUUID()}`, title: gift.title, amount: -gift.cost, date: "היום" }, ...c.transactions],
-            redeemedGifts: [{ id: `rg-${crypto.randomUUID()}`, title: gift.title, category: gift.category, cost: gift.cost, date: "היום" }, ...c.redeemedGifts],
+            redeemedGifts: [{ id: `rg-${crypto.randomUUID()}`, title: gift.title, category: gift.category, cost: gift.cost, date: "היום", fulfilled: false }, ...c.redeemedGifts],
           };
         }),
+      };
+    }
+    case "FULFILL_GIFT": {
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => ({
+          ...c,
+          redeemedGifts: c.redeemedGifts.map((g) => (g.id === action.redeemedId ? { ...g, fulfilled: true, code: action.code } : g)),
+        })),
       };
     }
     case "SEND_MONEY": {
