@@ -7,6 +7,7 @@ import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { EggAvatar } from "../../components/EggAvatar";
 import { FamilyMemberCard } from "../../components/FamilyMemberCard";
+import { ParentNotificationsBell } from "../../components/ParentNotificationsBell";
 import { useNavigate } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
 
@@ -44,31 +45,7 @@ export function ParentHome() {
       <Header
         title="מסך הבית"
         tint="playful"
-        right={
-          <div style={{ position: "relative", fontSize: 20 }}>
-            🔔
-            <span
-              style={{
-                position: "absolute",
-                top: -4,
-                insetInlineStart: -6,
-                background: "var(--violet-700)",
-                color: "#fff",
-                fontSize: 9.5,
-                fontWeight: 700,
-                borderRadius: 999,
-                minWidth: 15,
-                height: 15,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "0 3px",
-              }}
-            >
-              2
-            </span>
-          </div>
-        }
+        right={<ParentNotificationsBell />}
       >
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div>

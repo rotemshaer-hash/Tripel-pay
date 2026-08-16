@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Money } from "./UI";
 import type { Child } from "../data/types";
@@ -38,11 +39,12 @@ export function NotificationsBell({ child }: { child: Child }) {
           />
         )}
       </button>
-      {open && anchor && (
+      {open && anchor && createPortal(
         <>
-          {/* Header has overflow:hidden for its decorative blob — position:fixed (not
-              absolute) is required here so the popover escapes that clipping box. */}
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+          {/* Rendered into <body>: the header both clips (overflow/clip-path) and forms
+              its own stacking context, which would otherwise swallow the popover's
+              clicks even at a higher z-index. */}
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 2000 }} />
           <div
             style={{
               position: "fixed",
@@ -54,7 +56,7 @@ export function NotificationsBell({ child }: { child: Child }) {
               borderRadius: "var(--radius-md)",
               boxShadow: "var(--shadow-card-solid)",
               padding: 10,
-              zIndex: 50,
+              zIndex: 2001,
               color: "var(--ink)",
               background: "#ffffff",
               border: "1px solid var(--line)",
@@ -91,7 +93,8 @@ export function NotificationsBell({ child }: { child: Child }) {
               כל התנועות ‹
             </button>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
