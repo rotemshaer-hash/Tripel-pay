@@ -1,0 +1,273 @@
+import { useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Header } from "../../components/Header";
+import { useStore } from "../../data/store";
+import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels } from "../../data/vocabulary";
+import { formatDate, formatDateTime, isOverdue } from "../../utils/datetime";
+import { resizeImageToDataUrl } from "../../utils/resizeImage";
+import type { Attachment } from "../../data/types";
+
+const statusLabels: Record<string, string> = {
+  available: "טרם התחילה",
+  in_progress: "בביצוע",
+  pending_approval: "ממתינה לאישור",
+  completed: "אושרה",
+};
+
+const statusColor: Record<string, string> = {
+  available: "#7b8794",
+  in_progress: "#f2761b",
+  pending_approval: "#8a2fb0",
+  completed: "#1f9e8a",
+};
+
+/**
+ * One task, in full: the brief and its reference files, the evidence attached on
+ * completion, the conversation, and the immutable activity trail. Everything a
+ * manager needs to prove what was asked, what was done, and when.
+ */
+export function TaskDetail() {
+  const { workerId = "", taskId = "" } = useParams();
+  const { state, dispatch } = useStore();
+  const navigate = useNavigate();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [comment, setComment] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const worker = state.family.children[workerId];
+  const task = worker?.tasks.find((t) => t.id === taskId);
+  const isManager = state.role === "parent";
+  const actor = isManager ? state.family.parentName || V.admin : worker?.name || V.worker;
+
+  if (!worker || !task) {
+    return (
+      <div className="screen">
+        <Header title={V.task} back tint="pro" />
+        <div style={{ padding: 24, color: "var(--ink-faint)", fontSize: 13.5 }}>המשימה לא נמצאה.</div>
+      </div>
+    );
+  }
+
+  // Re-bound as consts so the narrowing above survives inside the callbacks below.
+  const activeTask = task;
+  const activeWorker = worker;
+  const overdue = isOverdue(task.dueAt, task.status);
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      // Images are compressed to a data URL. Real documents (PDF etc.) need Firebase
+      // Storage, which this project doesn't use yet — so they're rejected for now
+      // rather than silently blowing past the database's per-record size limit.
+      if (!file.type.startsWith("image/")) {
+        alert("כרגע ניתן לצרף תמונות בלבד. תמיכה בקבצים תתווסף עם Firebase Storage.");
+        return;
+      }
+      const content = await resizeImageToDataUrl(file, 900, 0.75);
+      dispatch({ type: "ADD_TASK_ATTACHMENT", childId: activeWorker.id, taskId: activeTask.id, target: isManager ? "brief" : "proof", kind: "image", name: file.name, content, by: actor });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addNote() {
+    if (!note.trim()) return;
+    dispatch({ type: "ADD_TASK_ATTACHMENT", childId: activeWorker.id, taskId: activeTask.id, target: "proof", kind: "note", name: "הערת ביצוע", content: note.trim(), by: actor });
+    setNote("");
+  }
+
+  function addComment() {
+    if (!comment.trim()) return;
+    dispatch({ type: "ADD_TASK_COMMENT", childId: activeWorker.id, taskId: activeTask.id, text: comment.trim(), by: actor });
+    setComment("");
+  }
+
+  return (
+    <div className="screen">
+      <Header title={task.title} subtitle={`${worker.name}${task.site ? ` · ${task.site}` : ""}`} back tint="pro" />
+
+      <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* status strip */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <Chip text={statusLabels[task.status]} color={statusColor[task.status]} solid />
+          {task.priority && <Chip text={priorityLabels[task.priority]} color={priorityColor[task.priority]} />}
+          {task.recurrence && task.recurrence !== "none" && <Chip text={recurrenceLabels[task.recurrence]} color="#2f7fd1" />}
+          {task.dueAt && <Chip text={`יעד: ${formatDate(task.dueAt)}`} color={overdue ? "#e0224a" : "#7b8794"} solid={overdue} />}
+        </div>
+
+        {/* brief */}
+        <Panel title={V.brief}>
+          <div style={{ fontSize: 13.5, lineHeight: 1.6, color: task.brief ? "var(--ink)" : "var(--ink-faint)" }}>{task.brief || "לא נכתב פירוט."}</div>
+          <AttachmentList items={task.briefAttachments ?? []} empty="אין קבצים מצורפים לפירוט." />
+        </Panel>
+
+        {/* proof */}
+        <Panel title={V.proof}>
+          <AttachmentList items={task.proofs ?? []} empty="טרם צורפו אסמכתאות." />
+          {task.status !== "completed" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="תיאור מה בוצע…"
+                  style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13 }}
+                />
+                <button onClick={addNote} disabled={!note.trim()} style={btnStyle(!note.trim())}>
+                  הוספה
+                </button>
+              </div>
+              <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...btnStyle(busy), background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
+                {busy ? "מעלה…" : "📎 צירוף תמונה"}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: "none" }} />
+            </div>
+          )}
+        </Panel>
+
+        {/* actions */}
+        <div style={{ display: "flex", gap: 8 }}>
+          {!isManager && task.status === "available" && (
+            <button onClick={() => dispatch({ type: "ADVANCE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={btnStyle(false)}>
+              התחלת ביצוע
+            </button>
+          )}
+          {!isManager && task.status === "in_progress" && (
+            <button onClick={() => dispatch({ type: "ADVANCE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={btnStyle(false)}>
+              הגשה לאישור
+            </button>
+          )}
+          {isManager && task.status === "pending_approval" && (
+            <>
+              <button onClick={() => dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={{ ...btnStyle(false), flex: 1 }}>
+                אישור
+              </button>
+              <button
+                onClick={() => {
+                  const reason = prompt("סיבת ההחזרה לתיקון:") ?? undefined;
+                  dispatch({ type: "REOPEN_TASK", childId: worker.id, taskId: task.id, reason, by: actor });
+                }}
+                style={{ ...btnStyle(false), flex: 1, background: "#ffffff", color: "#e0224a", border: "1px solid #e0224a" }}
+              >
+                החזרה לתיקון
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* comments */}
+        <Panel title="הערות">
+          {(task.comments ?? []).length === 0 && <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>אין הערות עדיין.</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {(task.comments ?? []).map((c) => (
+              <div key={c.id} style={{ background: "var(--paper)", borderRadius: 9, padding: "8px 11px" }}>
+                <div style={{ fontSize: 13, color: "var(--ink)" }}>{c.text}</div>
+                <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginTop: 3 }}>
+                  {c.by} · {formatDateTime(c.at)}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <input
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addComment()}
+              placeholder="כתיבת הערה…"
+              style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13 }}
+            />
+            <button onClick={addComment} disabled={!comment.trim()} style={btnStyle(!comment.trim())}>
+              שליחה
+            </button>
+          </div>
+        </Panel>
+
+        {/* audit trail */}
+        <Panel title="יומן פעילות">
+          {(task.activity ?? []).length === 0 && <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>אין רישומים.</div>}
+          {(task.activity ?? [])
+            .slice()
+            .reverse()
+            .map((a) => (
+              <div key={a.id} style={{ display: "flex", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                <span style={{ fontSize: 11.5, color: "var(--ink-faint)", minWidth: 96 }}>{formatDateTime(a.at)}</span>
+                <span style={{ fontSize: 12.5, color: "var(--ink)", flex: 1 }}>
+                  {a.by ? `${a.by} — ` : ""}
+                  {activityLabels[a.action] ?? a.action}
+                  {a.detail ? ` (${a.detail})` : ""}
+                </span>
+              </div>
+            ))}
+        </Panel>
+
+        <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 13, fontWeight: 700, padding: 8 }}>
+          חזרה
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 15px" }}>
+      <h2 style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)", margin: "0 0 9px" }}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Chip({ text, color, solid }: { text: string; color: string; solid?: boolean }) {
+  return (
+    <span
+      style={{
+        fontSize: 11.5,
+        fontWeight: 700,
+        padding: "4px 10px",
+        borderRadius: 999,
+        color: solid ? "#ffffff" : color,
+        background: solid ? color : "transparent",
+        border: `1px solid ${color}`,
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+function AttachmentList({ items, empty }: { items: Attachment[]; empty: string }) {
+  if (items.length === 0) return <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 8 }}>{empty}</div>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+      {items.map((a) => (
+        <div key={a.id} style={{ background: "var(--paper)", borderRadius: 9, padding: 9 }}>
+          {a.kind === "image" ? (
+            <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
+          ) : (
+            <div style={{ fontSize: 13, color: "var(--ink)" }}>{a.content}</div>
+          )}
+          <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginTop: 5 }}>
+            {a.addedBy} · {formatDateTime(a.addedAt)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function btnStyle(disabled: boolean): React.CSSProperties {
+  return {
+    background: disabled ? "rgba(15,33,29,0.10)" : "var(--violet-700)",
+    color: disabled ? "var(--ink-faint)" : "#ffffff",
+    border: "none",
+    borderRadius: 9,
+    padding: "10px 16px",
+    fontSize: 13,
+    fontWeight: 700,
+    flexShrink: 0,
+  };
+}

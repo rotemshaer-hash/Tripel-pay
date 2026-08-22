@@ -1,11 +1,64 @@
 export type TaskCategory = "cleaning" | "dishes" | "finance" | "savings" | "other";
 
+/** How often a fixed task repeats. "none" = a one-off (variable) task. */
+export type RecurrenceRule = "none" | "daily" | "weekly" | "monthly";
+
+export type TaskPriority = "low" | "normal" | "high" | "urgent";
+
+/** A file, photo or written note hung off a task — either as part of the brief
+ * (attached by the manager) or as evidence of completion (attached by the worker).
+ * Images are held as compressed data URLs; `note` carries plain text in `content`. */
+export interface Attachment {
+  id: string;
+  kind: "image" | "file" | "note";
+  name: string;
+  /** data URL for image/file, or the raw text for a note */
+  content: string;
+  addedAt: string;
+  addedBy: string;
+}
+
+/** One immutable line in a task's audit trail — who did what, when. This is the
+ * record that email/WhatsApp can't give you, so entries are only ever appended. */
+export interface ActivityEntry {
+  id: string;
+  at: string;
+  by: string;
+  action: "created" | "assigned" | "started" | "submitted" | "approved" | "reopened" | "commented" | "attached";
+  detail?: string;
+}
+
+export interface TaskComment {
+  id: string;
+  at: string;
+  by: string;
+  text: string;
+}
+
 export interface TaskItem {
   id: string;
   title: string;
   reward: number;
   category: TaskCategory;
   status: "available" | "in_progress" | "pending_approval" | "completed";
+  // --- work-journal fields (all optional so existing records stay valid) ---
+  /** Free-text brief from the manager. */
+  brief?: string;
+  createdAt?: string;
+  dueAt?: string;
+  startedAt?: string;
+  submittedAt?: string;
+  approvedAt?: string;
+  priority?: TaskPriority;
+  recurrence?: RecurrenceRule;
+  /** Customer / site / project this task belongs to — drives billing proof and filtering. */
+  site?: string;
+  /** Instructions and reference files attached by the manager. */
+  briefAttachments?: Attachment[];
+  /** Evidence attached by the worker after doing the job. */
+  proofs?: Attachment[];
+  activity?: ActivityEntry[];
+  comments?: TaskComment[];
   /** Set false the moment a parent approves the task, then flipped to true once the
    * child taps through the reward-reveal card — lets the child screen show the reveal
    * exactly once, even across reloads, instead of tracking it in throwaway UI state. */

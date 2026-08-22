@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Money } from "./UI";
+import { formatDate } from "../utils/datetime";
 import type { Child } from "../data/types";
 
 export function NotificationsBell({ child }: { child: Child }) {
@@ -78,7 +79,7 @@ export function NotificationsBell({ child }: { child: Child }) {
               >
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>{tx.date}</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>{formatDate(tx.date)}</div>
                 </div>
                 <Money value={tx.amount} />
               </div>

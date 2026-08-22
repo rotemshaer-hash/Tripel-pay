@@ -31,6 +31,9 @@ import { ChildMyVouchers } from "./screens/child/MyVouchers";
 import { ChildMyCards } from "./screens/child/MyCards";
 import { ChildAllTasks } from "./screens/child/AllTasks";
 
+import { WorkJournal } from "./screens/work/WorkJournal";
+import { TaskDetail } from "./screens/work/TaskDetail";
+
 function RequireOnboarded({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   if (!state.onboarded) return <Navigate to="/onboarding/splash" replace />;
@@ -75,6 +78,10 @@ export default function App() {
           <Route path="/parent/achievements" element={<RequireParent><ParentAchievements /></RequireParent>} />
           <Route path="/parent/settings" element={<RequireParent><ParentSettings /></RequireParent>} />
           <Route path="/parent/house-rules" element={<RequireParent><HouseRules /></RequireParent>} />
+
+          {/* work-journal (business mode) */}
+          <Route path="/work/journal" element={<RequireParent><WorkJournal /></RequireParent>} />
+          <Route path="/work/task/:workerId/:taskId" element={<RequireOnboarded><TaskDetail /></RequireOnboarded>} />
 
           <Route path="/child" element={<RequireOnboarded><ChildHome /></RequireOnboarded>} />
           <Route path="/child/courses" element={<RequireOnboarded><ChildCourses /></RequireOnboarded>} />

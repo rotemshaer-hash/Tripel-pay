@@ -53,22 +53,27 @@ export function Header({
   back?: boolean;
   right?: ReactNode;
   tall?: boolean;
-  tint?: "red" | "purple" | "transparent" | "playful";
+  /** "pro" is the business/work-journal look: a calm slate bar, no melt edge or
+   * floating decorations — deliberately sober next to the family app's playful sky. */
+  tint?: "red" | "purple" | "transparent" | "playful" | "pro";
   children?: ReactNode;
 }) {
   const navigate = useNavigate();
   const playful = tint === "playful";
+  const pro = tint === "pro";
   return (
     <header
       className={playful ? "dream-sky" : undefined}
       style={{
         background: playful
           ? "linear-gradient(120deg, var(--header-gradient) 0%, var(--violet-700) 45%, var(--amber-600) 75%, var(--header-gradient) 100%)"
-          : tint === "transparent"
-            ? "none"
-            : tint === "purple"
-              ? "var(--violet-700)"
-              : "var(--header-gradient)",
+          : pro
+            ? "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)"
+            : tint === "transparent"
+              ? "none"
+              : tint === "purple"
+                ? "var(--violet-700)"
+                : "var(--header-gradient)",
         color: "#fff",
         padding: tall ? "20px 20px 34px" : playful ? "16px 20px 32px" : "16px 20px 20px",
         borderRadius: 0,
@@ -79,6 +84,7 @@ export function Header({
         position: "relative",
         overflow: playful ? "hidden" : undefined,
         clipPath: playful ? MELT_CLIP : undefined,
+        boxShadow: pro ? "0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 10px -4px rgba(16,24,40,0.5)" : undefined,
       }}
     >
       {playful && <SurrealBackdrop />}

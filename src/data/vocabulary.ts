@@ -1,0 +1,113 @@
+/**
+ * The product's whole user-facing vocabulary in one place.
+ *
+ * The underlying mechanics — assign work, do it, submit evidence, approve, log it —
+ * are identical whether the pair is parent/child or manager/employee. Keeping every
+ * label here means the same codebase serves both markets, and switching verticals is
+ * a one-line change instead of a rewrite. Screens must read labels from here rather
+ * than hardcoding Hebrew strings.
+ */
+
+export type ProductMode = "work" | "family";
+
+/** The vertical this build ships as. */
+export const MODE: ProductMode = "work";
+
+interface Vocabulary {
+  admin: string;
+  adminPlural: string;
+  worker: string;
+  workerPlural: string;
+  task: string;
+  taskPlural: string;
+  taskBank: string;
+  journal: string;
+  rules: string;
+  training: string;
+  achievements: string;
+  reward: string;
+  rewardBalance: string;
+  rewardCatalogue: string;
+  goal: string;
+  brief: string;
+  proof: string;
+  site: string;
+}
+
+const WORK: Vocabulary = {
+  admin: "מנהל",
+  adminPlural: "מנהלים",
+  worker: "עובד",
+  workerPlural: "עובדים",
+  task: "משימה",
+  taskPlural: "משימות",
+  taskBank: "תבניות משימות",
+  journal: "יומן עבודה",
+  rules: "נהלי העבודה",
+  training: "הדרכות",
+  achievements: "ביצועים",
+  reward: "תמריץ",
+  rewardBalance: "יתרת תמריצים",
+  rewardCatalogue: "קטלוג תגמולים",
+  goal: "יעד",
+  brief: "פירוט המשימה",
+  proof: "אסמכתאות",
+  site: "לקוח / אתר",
+};
+
+const FAMILY: Vocabulary = {
+  admin: "הורה",
+  adminPlural: "הורים",
+  worker: "ילד",
+  workerPlural: "ילדים",
+  task: "מטלה",
+  taskPlural: "מטלות",
+  taskBank: "מאגר מטלות",
+  journal: "יומן",
+  rules: "כללי הבית",
+  training: "הידע שלי",
+  achievements: "הישגים",
+  reward: "תגמול",
+  rewardBalance: "הארנק שלי",
+  rewardCatalogue: "מאגר המתנות",
+  goal: "מטרת חיסכון",
+  brief: "פירוט",
+  proof: "הוכחה",
+  site: "קטגוריה",
+};
+
+export const V: Vocabulary = MODE === "work" ? WORK : FAMILY;
+
+export const priorityLabels: Record<string, string> = {
+  low: "נמוכה",
+  normal: "רגילה",
+  high: "גבוהה",
+  urgent: "דחוף",
+};
+
+export const priorityColor: Record<string, string> = {
+  low: "#7b8794",
+  normal: "#2f7fd1",
+  high: "#f2761b",
+  urgent: "#e0224a",
+};
+
+/** Hebrew wording for each audit-trail action — shared by the journal feed and the
+ * per-task trail so one entry never reads differently in two places. */
+export const activityLabels: Record<string, string> = {
+  created: "נוצרה",
+  assigned: "הוקצתה",
+  started: "התחילו לבצע",
+  submitted: "הוגשה לאישור",
+  approved: "אושרה",
+  reopened: "הוחזרה לתיקון",
+  commented: "הערה",
+  attached: "צורף קובץ",
+};
+
+export const recurrenceLabels: Record<string, string> = {
+  none: "חד־פעמית",
+  daily: "יומית",
+  weekly: "שבועית",
+  monthly: "חודשית",
+};

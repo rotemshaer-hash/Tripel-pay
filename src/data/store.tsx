@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useReducer, type ReactNode } from "react";
 import { seedFamily } from "./seed";
 import { childrenList, normalizeFamily } from "./family";
-import type { Child, ChildSettings, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskTemplate } from "./types";
+import type { ActivityEntry, Attachment, Child, ChildSettings, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
 import {
   onAuthChange,
   registerParent,
@@ -38,9 +38,23 @@ type Action =
   | { type: "SET_VIEW_MODE"; mode: ViewMode }
   | { type: "SET_CHILD_PHOTO"; childId: string; photoUrl: string | null }
   | { type: "COMPLETE_MISSION"; childId: string; articleId: string; articleTitle: string; reward: number }
-  | { type: "ASSIGN_TASK"; childId: string; templateId: string }
-  | { type: "ADVANCE_TASK"; childId: string; taskId: string }
-  | { type: "APPROVE_TASK"; childId: string; taskId: string }
+  | {
+      type: "ASSIGN_TASK";
+      childId: string;
+      templateId: string;
+      by?: string;
+      at?: string;
+      brief?: string;
+      dueAt?: string;
+      priority?: TaskPriority;
+      recurrence?: TaskItem["recurrence"];
+      site?: string;
+    }
+  | { type: "ADVANCE_TASK"; childId: string; taskId: string; by?: string; at?: string }
+  | { type: "APPROVE_TASK"; childId: string; taskId: string; by?: string; at?: string }
+  | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
+  | { type: "ADD_TASK_ATTACHMENT"; childId: string; taskId: string; target: "brief" | "proof"; kind: Attachment["kind"]; name: string; content: string; by: string; at?: string }
+  | { type: "ADD_TASK_COMMENT"; childId: string; taskId: string; text: string; by: string; at?: string }
   | { type: "REDEEM_GIFT"; childId: string; giftId: string }
   | { type: "FULFILL_GIFT"; childId: string; redeemedId: string; code: string }
   | { type: "SEND_MONEY"; childId: string; amount: number; note: string }
@@ -121,6 +135,20 @@ function mapChild(family: Family, childId: string, fn: (c: Child) => Child): Fam
   return { ...family, children: { ...family.children, [childId]: fn(existing) } };
 }
 
+/** Append one line to a task's audit trail. Entries are only ever added — the trail is
+ * the record that replaces "but I told you on WhatsApp", so nothing rewrites history. */
+function logActivity(task: TaskItem, entry: Omit<ActivityEntry, "id" | "at">, at: string): TaskItem {
+  return {
+    ...task,
+    activity: [...(task.activity ?? []), { id: `ac-${crypto.randomUUID()}`, at, ...entry }],
+  };
+}
+
+/** Applies a single task update inside a child, keeping the rest untouched. */
+function mapTask(c: Child, taskId: string, fn: (t: TaskItem) => TaskItem): Child {
+  return { ...c, tasks: c.tasks.map((t) => (t.id === taskId ? fn(t) : t)) };
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "HYDRATE": {
@@ -174,49 +202,107 @@ function reducer(state: AppState, action: Action): AppState {
     case "ASSIGN_TASK": {
       const template = state.family.taskBank.find((t) => t.id === action.templateId);
       if (!template) return state;
-      const newTask: TaskItem = {
-        id: `t-${crypto.randomUUID()}`,
-        title: template.title,
-        reward: template.reward,
-        category: template.category,
-        status: "available",
-      };
+      const at = action.at ?? new Date().toISOString();
+      const newTask: TaskItem = logActivity(
+        {
+          id: `t-${crypto.randomUUID()}`,
+          title: template.title,
+          reward: template.reward,
+          category: template.category,
+          status: "available",
+          createdAt: at,
+          brief: action.brief,
+          dueAt: action.dueAt,
+          priority: action.priority ?? "normal",
+          recurrence: action.recurrence ?? "none",
+          site: action.site,
+          activity: [],
+        },
+        { by: action.by ?? "", action: "assigned", detail: action.dueAt ? `יעד: ${action.dueAt.slice(0, 10)}` : undefined },
+        at
+      );
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: [newTask, ...c.tasks] })),
       };
     }
     case "ADVANCE_TASK": {
+      const at = action.at ?? new Date().toISOString();
       return {
         ...state,
-        family: mapChild(state.family, action.childId, (c) => ({
-          ...c,
-          tasks: c.tasks.map((t) => {
-            if (t.id !== action.taskId) return t;
-            if (t.status === "available") return { ...t, status: "in_progress" };
-            if (t.status === "in_progress") return { ...t, status: "pending_approval" };
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => {
+            if (t.status === "available") return logActivity({ ...t, status: "in_progress", startedAt: at }, { by: action.by ?? "", action: "started" }, at);
+            if (t.status === "in_progress") return logActivity({ ...t, status: "pending_approval", submittedAt: at }, { by: action.by ?? "", action: "submitted" }, at);
             return t;
-          }),
-        })),
+          })
+        ),
       };
     }
     case "APPROVE_TASK": {
+      const at = action.at ?? new Date().toISOString();
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) => {
           const task = c.tasks.find((t) => t.id === action.taskId);
           if (!task) return c;
+          const approved = mapTask(c, action.taskId, (t) =>
+            logActivity({ ...t, status: "completed", approvedAt: at, rewardRevealed: false }, { by: action.by ?? "", action: "approved" }, at)
+          );
           return {
-            ...c,
+            ...approved,
             balance: c.balance + task.reward,
-            tasks: c.tasks.map((t) => (t.id === action.taskId ? { ...t, status: "completed", rewardRevealed: false } : t)),
-            transactions: [{ id: `tx-${crypto.randomUUID()}`, title: task.title, amount: task.reward, date: "היום" }, ...c.transactions],
+            transactions: [{ id: `tx-${crypto.randomUUID()}`, title: task.title, amount: task.reward, date: at }, ...c.transactions],
             achievements: {
               ...c.achievements,
               tasksCompletedCount: c.achievements.tasksCompletedCount + 1,
             },
           };
         }),
+      };
+    }
+    case "REOPEN_TASK": {
+      // The manager sends work back: status returns to in-progress and the rejection
+      // (with its reason) stays permanently in the trail.
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => logActivity({ ...t, status: "in_progress" }, { by: action.by ?? "", action: "reopened", detail: action.reason }, at))
+        ),
+      };
+    }
+    case "ADD_TASK_ATTACHMENT": {
+      const at = action.at ?? new Date().toISOString();
+      const att: Attachment = { id: `at-${crypto.randomUUID()}`, kind: action.kind, name: action.name, content: action.content, addedAt: at, addedBy: action.by };
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) =>
+            logActivity(
+              action.target === "proof"
+                ? { ...t, proofs: [...(t.proofs ?? []), att] }
+                : { ...t, briefAttachments: [...(t.briefAttachments ?? []), att] },
+              { by: action.by, action: "attached", detail: action.name },
+              at
+            )
+          )
+        ),
+      };
+    }
+    case "ADD_TASK_COMMENT": {
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) =>
+            logActivity(
+              { ...t, comments: [...(t.comments ?? []), { id: `cm-${crypto.randomUUID()}`, at, by: action.by, text: action.text }] },
+              { by: action.by, action: "commented" },
+              at
+            )
+          )
+        ),
       };
     }
     case "REDEEM_GIFT": {
