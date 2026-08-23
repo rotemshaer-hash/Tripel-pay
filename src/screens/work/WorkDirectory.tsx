@@ -5,6 +5,7 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { V, work } from "../../data/vocabulary";
 import { formatDate } from "../../utils/datetime";
+import { fileIcon, formatBytes } from "../../utils/files";
 import { resizeImageToDataUrl } from "../../utils/resizeImage";
 import type { CompanyDoc, Supplier } from "../../data/types";
 
@@ -185,7 +186,7 @@ function SupplierForm({
 }
 
 function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m: string) => void }) {
-  const { state, dispatch } = useStore();
+  const { state, dispatch, uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
   const docs = state.family.documents ?? [];
   const fileRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
@@ -193,6 +194,7 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
   const [linkUrl, setLinkUrl] = useState("");
   const [noteText, setNoteText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [open, setOpen] = useState<CompanyDoc | null>(null);
   const actor = state.family.parentName || V.admin;
 
@@ -201,15 +203,29 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
     e.target.value = "";
     if (!file || !title.trim()) return;
     setBusy(true);
+    setUploadError("");
     try {
-      if (!file.type.startsWith("image/")) {
-        showToast("כרגע ניתן לצרף תמונות בלבד");
+      // Photos stay inline as a compressed data URL — small, and they load with the
+      // record. A real document goes to Storage: there is no lossy version of a PDF,
+      // and putting one inside the database record would blow past its size limit.
+      if (file.type.startsWith("image/")) {
+        const content = await resizeImageToDataUrl(file, 1200, 0.72);
+        dispatch({ type: "ADD_DOCUMENT", title: title.trim(), kind: "image", content, by: actor });
+        reset();
+        showToast("המסמך נוסף");
         return;
       }
-      const content = await resizeImageToDataUrl(file, 1200, 0.72);
-      dispatch({ type: "ADD_DOCUMENT", title: title.trim(), kind: "image", content, by: actor });
+      if (file.size > maxUploadBytes) {
+        setUploadError(`הקובץ גדול מדי (עד ${Math.round(maxUploadBytes / 1024 / 1024)}MB)`);
+        return;
+      }
+      const stored = await uploadAttachment("documents", file);
+      dispatch({ type: "ADD_DOCUMENT", title: title.trim(), kind: "file", content: stored.url, path: stored.path, size: stored.size, mime: stored.mime, by: actor });
       reset();
-      showToast("המסמך נוסף");
+      showToast("הקובץ הועלה");
+    } catch (err) {
+      console.error("Document upload failed:", err);
+      setUploadError(describeUploadFailure(err));
     } finally {
       setBusy(false);
     }
@@ -233,7 +249,9 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
       {docs.map((d) => (
         <div key={d.id} style={cardStyle}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <span style={{ fontSize: 17, flexShrink: 0, lineHeight: 1.3 }}>{d.kind === "image" ? "🖼" : d.kind === "link" ? "🔗" : "📄"}</span>
+            <span style={{ fontSize: 17, flexShrink: 0, lineHeight: 1.3 }}>
+              {d.kind === "image" ? "🖼" : d.kind === "link" ? "🔗" : d.kind === "file" ? fileIcon(d.mime) : "📄"}
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 700 }}>{d.title}</div>
               <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>
@@ -261,6 +279,16 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
               {d.content}
             </a>
           )}
+          {d.kind === "file" && (
+            <a
+              href={d.content}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 9, background: work.ink, color: "#ffffff", borderRadius: 9, padding: "10px", fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}
+            >
+              פתיחת הקובץ{d.size ? ` · ${formatBytes(d.size)}` : ""}
+            </a>
+          )}
           {d.kind === "image" && (
             <button onClick={() => setOpen(d)} style={{ display: "block", width: "100%", border: "none", background: "none", padding: 0, marginTop: 9 }}>
               <img src={d.content} alt={d.title} style={{ width: "100%", borderRadius: 9, display: "block" }} />
@@ -280,9 +308,10 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
               disabled={busy || !title.trim()}
               style={{ ...actionBtn, background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)", marginBottom: 8, opacity: busy || !title.trim() ? 0.45 : 1 }}
             >
-              {busy ? "מעלה…" : "🖼 תמונה"}
+              {busy ? "מעלה…" : "🖼 תמונה או קובץ (PDF, Word, Excel)"}
             </button>
-            <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: "none" }} />
+            <input ref={fileRef} type="file" onChange={onPickFile} style={{ display: "none" }} />
+            {uploadError && <div style={{ fontSize: 12, color: work.alert, marginBottom: 8 }}>{uploadError}</div>}
 
             <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
               <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} dir="ltr" placeholder="https://…" style={{ ...inputStyle, marginBottom: 0, textAlign: "start" }} />

@@ -5,6 +5,7 @@ import { useStore } from "../../data/store";
 import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { resizeImageToDataUrl } from "../../utils/resizeImage";
+import { fileIcon, formatBytes } from "../../utils/files";
 import type { Attachment } from "../../data/types";
 
 
@@ -15,12 +16,13 @@ import type { Attachment } from "../../data/types";
  */
 export function TaskDetail() {
   const { workerId = "", taskId = "" } = useParams();
-  const { state, dispatch } = useStore();
+  const { state, dispatch, uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const worker = state.family.children[workerId];
   const task = worker?.tasks.find((t) => t.id === taskId);
@@ -59,16 +61,39 @@ export function TaskDetail() {
     e.target.value = "";
     if (!file) return;
     setBusy(true);
+    setUploadError("");
     try {
-      // Images are compressed to a data URL. Real documents (PDF etc.) need Firebase
-      // Storage, which this project doesn't use yet — so they're rejected for now
-      // rather than silently blowing past the database's per-record size limit.
-      if (!file.type.startsWith("image/")) {
-        alert("כרגע ניתן לצרף תמונות בלבד. תמיכה בקבצים תתווסף עם Firebase Storage.");
+      const target = isManager ? "brief" : "proof";
+      // Photos stay inline as a compressed data URL: they are small once resized, they
+      // load with the record, and every one already stored is in that form. Real
+      // documents go to Storage — a PDF has no lossy version, and putting one inside
+      // the database record would blow past its size limit.
+      if (file.type.startsWith("image/")) {
+        const content = await resizeImageToDataUrl(file, 900, 0.75);
+        dispatch({ type: "ADD_TASK_ATTACHMENT", childId: activeWorker.id, taskId: activeTask.id, target, kind: "image", name: file.name, content, by: actor });
         return;
       }
-      const content = await resizeImageToDataUrl(file, 900, 0.75);
-      dispatch({ type: "ADD_TASK_ATTACHMENT", childId: activeWorker.id, taskId: activeTask.id, target: isManager ? "brief" : "proof", kind: "image", name: file.name, content, by: actor });
+      if (file.size > maxUploadBytes) {
+        setUploadError(`הקובץ גדול מדי (עד ${Math.round(maxUploadBytes / 1024 / 1024)}MB)`);
+        return;
+      }
+      const stored = await uploadAttachment(`tasks/${activeTask.id}`, file);
+      dispatch({
+        type: "ADD_TASK_ATTACHMENT",
+        childId: activeWorker.id,
+        taskId: activeTask.id,
+        target,
+        kind: "file",
+        name: stored.name,
+        content: stored.url,
+        path: stored.path,
+        size: stored.size,
+        mime: stored.mime,
+        by: actor,
+      });
+    } catch (err) {
+      console.error("Attachment upload failed:", err);
+      setUploadError(describeUploadFailure(err));
     } finally {
       setBusy(false);
     }
@@ -176,9 +201,10 @@ export function TaskDetail() {
                 </button>
               </div>
               <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...btnStyle(busy), background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
-                {busy ? "מעלה…" : "📎 צירוף תמונה"}
+                {busy ? "מעלה…" : "📎 צירוף תמונה או קובץ"}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: "none" }} />
+              <input ref={fileRef} type="file" onChange={onPickFile} style={{ display: "none" }} />
+              {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
             </div>
           )}
         </Panel>
@@ -331,6 +357,20 @@ function AttachmentList({ items, empty }: { items: Attachment[]; empty: string }
         <div key={a.id} style={{ background: "var(--paper)", borderRadius: 9, padding: 9 }}>
           {a.kind === "image" ? (
             <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
+          ) : a.kind === "file" ? (
+            // A stored file is a thing to open, not a URL to read.
+            <a
+              href={a.content}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: "var(--ink)" }}
+            >
+              <span style={{ fontSize: 17, flexShrink: 0 }}>{fileIcon(a.mime)}</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-faint)", marginTop: 1 }}>{formatBytes(a.size)} · פתיחה</span>
+              </span>
+            </a>
           ) : (
             <div style={{ fontSize: 13, color: "var(--ink)" }}>{a.content}</div>
           )}

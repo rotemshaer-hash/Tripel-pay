@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getDatabase, connectDatabaseEmulator } from "firebase/database";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // The Firebase project is still named triplepay-prod, from before the product was
 // renamed to Work It. That is deliberate: it is a real infrastructure id holding real
@@ -20,10 +21,12 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig);
 export const auth = getAuth(firebaseApp);
 export const db = getDatabase(firebaseApp);
+export const storage = getStorage(firebaseApp);
 
 // When running against the local Firebase Emulator Suite (npm run emulators),
 // point the SDK at the emulators instead of a real project.
 if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === "true") {
   connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
   connectDatabaseEmulator(db, "127.0.0.1", 9000);
+  connectStorageEmulator(storage, "127.0.0.1", 9199);
 }

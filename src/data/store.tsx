@@ -18,6 +18,7 @@ import {
   deleteOwnAccount,
 } from "../firebase/auth";
 import { auth } from "../firebase/config";
+import { uploadFile as uploadToStorage, deleteStoredFile, describeUploadError, MAX_UPLOAD_BYTES, type StoredFile } from "../firebase/storage";
 import { subscribeFamily, saveFamily, saveChildOnly } from "../firebase/db";
 
 type ViewMode = "parent" | "child";
@@ -69,7 +70,7 @@ type Action =
   | { type: "ADVANCE_TASK"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
-  | { type: "ADD_TASK_ATTACHMENT"; childId: string; taskId: string; target: "brief" | "proof"; kind: Attachment["kind"]; name: string; content: string; by: string; at?: string }
+  | { type: "ADD_TASK_ATTACHMENT"; childId: string; taskId: string; target: "brief" | "proof"; kind: Attachment["kind"]; name: string; content: string; path?: string; size?: number; mime?: string; by: string; at?: string }
   | { type: "ADD_TASK_COMMENT"; childId: string; taskId: string; text: string; by: string; at?: string }
   | { type: "REDEEM_GIFT"; childId: string; giftId: string }
   | { type: "FULFILL_GIFT"; childId: string; redeemedId: string; code: string }
@@ -87,7 +88,7 @@ type Action =
   | { type: "ADD_SUPPLIER"; name: string; phone: string; category?: string; email?: string; note?: string; at?: string }
   | { type: "UPDATE_SUPPLIER"; supplierId: string; name: string; phone: string; category?: string; email?: string; note?: string }
   | { type: "REMOVE_SUPPLIER"; supplierId: string }
-  | { type: "ADD_DOCUMENT"; title: string; kind: CompanyDoc["kind"]; content: string; note?: string; by: string; at?: string }
+  | { type: "ADD_DOCUMENT"; title: string; kind: CompanyDoc["kind"]; content: string; path?: string; size?: number; mime?: string; note?: string; by: string; at?: string }
   | { type: "REMOVE_DOCUMENT"; docId: string }
   | { type: "ADD_WORKER"; name: string }
   | { type: "ADD_HOUSE_RULE"; text: string }
@@ -332,7 +333,18 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case "ADD_TASK_ATTACHMENT": {
       const at = action.at ?? new Date().toISOString();
-      const att: Attachment = { id: `at-${crypto.randomUUID()}`, kind: action.kind, name: action.name, content: action.content, addedAt: at, addedBy: action.by };
+      const att: Attachment = {
+        id: `at-${crypto.randomUUID()}`,
+        kind: action.kind,
+        name: action.name,
+        content: action.content,
+        addedAt: at,
+        addedBy: action.by,
+        // Firebase's set() rejects undefined, so absent metadata is an absent key.
+        ...(action.path ? { path: action.path } : {}),
+        ...(action.size !== undefined ? { size: action.size } : {}),
+        ...(action.mime ? { mime: action.mime } : {}),
+      };
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) =>
@@ -666,12 +678,20 @@ function reducer(state: AppState, action: Action): AppState {
         content: action.content,
         addedAt: action.at ?? new Date().toISOString(),
         addedBy: action.by,
+        ...(action.path ? { path: action.path } : {}),
+        ...(action.size !== undefined ? { size: action.size } : {}),
+        ...(action.mime ? { mime: action.mime } : {}),
         ...(action.note?.trim() ? { note: action.note.trim() } : {}),
       };
       if (!doc.title || !doc.content) return state;
       return { ...state, family: { ...state.family, documents: [doc, ...(state.family.documents ?? [])] } };
     }
     case "REMOVE_DOCUMENT": {
+      // Removing the record must not leave its file behind in the bucket paying rent
+      // forever. Fire-and-forget: a failed cleanup is untidy, but it must never stop
+      // the removal the user asked for.
+      const doc = (state.family.documents ?? []).find((d) => d.id === action.docId);
+      if (doc?.path) void deleteStoredFile(doc.path);
       return { ...state, family: { ...state.family, documents: (state.family.documents ?? []).filter((d) => d.id !== action.docId) } };
     }
     case "ADD_WORKER": {
@@ -814,6 +834,9 @@ interface StoreContextValue {
   registerSecondParentSession: (code: string, email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
+  uploadAttachment: (folder: string, file: File) => Promise<StoredFile>;
+  describeUploadFailure: (err: unknown) => string;
+  maxUploadBytes: number;
   resetPassword: (email: string) => Promise<void>;
 }
 
@@ -997,6 +1020,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useMemo(() => async () => logoutParent(), []);
+  // Screens are not allowed to reach Firebase directly, so uploading goes through
+  // here like every other write.
+  const uploadAttachment = useMemo(
+    () => async (folder: string, file: File) => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error("not-signed-in");
+      return uploadToStorage(uid, folder, file);
+    },
+    []
+  );
   // Only the account owner can close the account. A second admin shares write access
   // to the record but the login being deleted is not theirs, so the two halves would
   // come apart: the data gone, the owner's sign-in still live and pointing at nothing.
@@ -1010,8 +1043,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, resetPassword }),
-    [state, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, resetPassword]
+    () => ({ state, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

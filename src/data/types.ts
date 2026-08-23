@@ -12,8 +12,15 @@ export interface Attachment {
   id: string;
   kind: "image" | "file" | "note";
   name: string;
-  /** data URL for image/file, or the raw text for a note */
+  /** A compressed data URL for an image, a Storage download URL for a file, or the
+   * raw text for a note. */
   content: string;
+  /** The object's path in the Storage bucket — present only for files kept there.
+   * Required to delete the object later, because a download URL cannot be turned
+   * back into a path. */
+  path?: string;
+  size?: number;
+  mime?: string;
   addedAt: string;
   addedBy: string;
 }
@@ -216,9 +223,14 @@ export interface Supplier {
 export interface CompanyDoc {
   id: string;
   title: string;
-  /** image = compressed data URL · link = http(s) address · note = the text itself */
-  kind: "image" | "link" | "note";
+  /** image = compressed data URL · file = Storage download URL · link = http(s)
+   * address · note = the text itself */
+  kind: "image" | "file" | "link" | "note";
   content: string;
+  /** Storage object path, for files — see Attachment.path. */
+  path?: string;
+  size?: number;
+  mime?: string;
   note?: string;
   addedAt: string;
   addedBy: string;
