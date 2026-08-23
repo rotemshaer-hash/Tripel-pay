@@ -41,7 +41,10 @@ export function describeUploadError(err: unknown): string {
  * keeps a file private.
  */
 export async function uploadFile(uid: string, folder: string, file: File): Promise<StoredFile> {
-  if (file.size > MAX_UPLOAD_BYTES) throw new Error("file-too-large");
+  // The rule is `size < 10MB`, so a file of exactly 10MB is refused by it. Checking
+  // with > here would let that one file through to the server and come back as
+  // "no permission" — a message pointing at the rules when the cause is the size.
+  if (file.size >= MAX_UPLOAD_BYTES) throw new Error("file-too-large");
   // The stored name is generated: a real filename can carry characters that break a
   // path, and two people uploading "סריקה.pdf" must not overwrite each other.
   const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
