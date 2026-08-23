@@ -90,8 +90,12 @@ export function Header({
       }}
     >
       {playful && <SurrealBackdrop />}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+      {/* The actions wrap onto their own line rather than squeezing the title: with a
+          role switcher and two buttons on a narrow phone there is simply not enough
+          width for all of it, and flex correctly gave the title whatever was left —
+          which was nothing. A floor on the title's width is what forces the wrap. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, rowGap: 10, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: "1 1 190px" }}>
           {back && (
             <button
               onClick={() => navigate(-1)}
@@ -127,10 +131,13 @@ export function Header({
             >
               {title}
             </div>
-            {subtitle && <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3 }}>{subtitle}</div>}
+            {subtitle && (
+              // A subtitle that wraps to four lines is never what was intended.
+              <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtitle}</div>
+            )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginInlineStart: "auto" }}>
           {right}
           <RoleSwitcher />
         </div>

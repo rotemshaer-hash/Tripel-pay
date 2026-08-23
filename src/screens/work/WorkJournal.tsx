@@ -83,24 +83,7 @@ export function WorkJournal() {
         title={V.journal}
         subtitle="תיעוד מלא של העבודה"
         tint="pro"
-        right={
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
-              style={{ background: "#ffffff", color: "#232a3b", border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, fontWeight: 800 }}
-            >
-              דוח PDF
-            </button>
-            {feed.length > 0 && (
-              <button
-                onClick={exportRange}
-                style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, fontWeight: 800 }}
-              >
-                CSV
-              </button>
-            )}
-          </div>
-        }
+
       />
 
       {/* range switch */}
@@ -144,7 +127,27 @@ export function WorkJournal() {
 
       {/* activity feed */}
       <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)" }}>יומן פעילות</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)" }}>יומן פעילות</div>
+          {/* Exporting acts on this feed, so the controls sit with it rather than in
+              the title bar, where they left the title no room to exist. */}
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
+              style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800 }}
+            >
+              דוח PDF
+            </button>
+            {feed.length > 0 && (
+              <button
+                onClick={exportRange}
+                style={{ background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}
+              >
+                CSV
+              </button>
+            )}
+          </div>
+        </div>
         {feed.length === 0 && (
           <div style={{ fontSize: 13, color: "var(--ink-faint)", background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 14px", textAlign: "center" }}>
             אין פעילות מתועדת בטווח הזה
