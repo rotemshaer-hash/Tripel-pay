@@ -4,7 +4,7 @@ import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, priorityColor, priorityLabels, recurrenceLabels, taskStatusLabels } from "../../data/vocabulary";
+import { V, priorityColor, priorityLabels, recurrenceLabels, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, isOverdue } from "../../utils/datetime";
 import type { Child, TaskItem } from "../../data/types";
 
@@ -72,7 +72,7 @@ export function WorkTasks() {
               fontSize: 13,
               fontWeight: 700,
               border: filter === f ? "none" : "1px solid var(--line)",
-              background: filter === f ? "#232a3b" : "#ffffff",
+              background: filter === f ? work.ink : "#ffffff",
               color: filter === f ? "#ffffff" : "var(--ink-soft)",
             }}
           >
@@ -105,7 +105,7 @@ export function WorkTasks() {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: priorityColor[task.priority ?? "normal"], flexShrink: 0 }} />
                 <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
-                {overdue && <span style={{ fontSize: 10.5, fontWeight: 800, color: "#ffffff", background: "#e0224a", borderRadius: 999, padding: "3px 8px" }}>באיחור</span>}
+                {overdue && <span style={{ fontSize: 10.5, fontWeight: 800, color: "#ffffff", background: work.alert, borderRadius: 999, padding: "3px 8px" }}>באיחור</span>}
               </div>
               <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 5, display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <span>{worker.name}</span>
@@ -114,7 +114,7 @@ export function WorkTasks() {
                 {task.dueAt && (
                   <>
                     <span>·</span>
-                    <span style={{ color: overdue ? "#e0224a" : "inherit", fontWeight: overdue ? 700 : 400 }}>יעד {formatDate(task.dueAt)}</span>
+                    <span style={{ color: overdue ? work.alert : "inherit", fontWeight: overdue ? 700 : 400 }}>יעד {formatDate(task.dueAt)}</span>
                   </>
                 )}
                 {task.site && (
@@ -143,7 +143,7 @@ export function WorkTasks() {
                       style={{
                         height: "100%",
                         width: `${Math.round(((task.checklist ?? []).filter((i) => i.done).length / (task.checklist ?? []).length) * 100)}%`,
-                        background: (task.checklist ?? []).every((i) => i.done) ? "#1f9e8a" : "#232a3b",
+                        background: (task.checklist ?? []).every((i) => i.done) ? work.done : work.ink,
                         borderRadius: 999,
                       }}
                     />

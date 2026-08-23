@@ -5,7 +5,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V } from "../../data/vocabulary";
+import { V, work } from "../../data/vocabulary";
 
 /**
  * Account settings for the business build.
@@ -58,7 +58,7 @@ export function WorkSettings() {
             <button
               onClick={addWorker}
               disabled={!name.trim()}
-              style={{ background: "#232a3b", color: "#ffffff", border: "none", borderRadius: 9, padding: "0 16px", fontSize: 13, fontWeight: 800, opacity: name.trim() ? 1 : 0.5 }}
+              style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 9, padding: "0 16px", fontSize: 13, fontWeight: 800, opacity: name.trim() ? 1 : 0.5 }}
             >
               הוספה
             </button>
@@ -70,7 +70,7 @@ export function WorkSettings() {
             await logout();
             navigate("/onboarding/splash");
           }}
-          style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, color: "#e0224a" }}
+          style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, color: work.alert }}
         >
           התנתקות
         </button>

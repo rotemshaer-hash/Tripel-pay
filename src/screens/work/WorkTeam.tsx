@@ -3,7 +3,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V } from "../../data/vocabulary";
+import { V, work } from "../../data/vocabulary";
 import { isOverdue } from "../../utils/datetime";
 
 /** The team roster: who's on staff, what's on their plate, and how to get a new
@@ -39,7 +39,7 @@ export function WorkTeam() {
                     width: 36,
                     height: 36,
                     borderRadius: 9,
-                    background: "#232a3b",
+                    background: work.ink,
                     color: "#ffffff",
                     display: "flex",
                     alignItems: "center",
@@ -55,7 +55,7 @@ export function WorkTeam() {
                   <div style={{ fontSize: 14.5, fontWeight: 700 }}>{w.name}</div>
                   <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
                     {open} פתוחות · {awaiting} לאישור
-                    {late > 0 && <span style={{ color: "#e0224a", fontWeight: 700 }}> · {late} באיחור</span>}
+                    {late > 0 && <span style={{ color: work.alert, fontWeight: 700 }}> · {late} באיחור</span>}
                   </div>
                 </div>
                 {!w.authUid && (

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useStore } from "./data/store";
 import { MODE } from "./data/vocabulary";
+import { homePath } from "./data/routes";
 
 import { Splash } from "./screens/onboarding/Splash";
 import { Welcome } from "./screens/onboarding/Welcome";
@@ -51,7 +52,7 @@ function RequireOnboarded({ children }: { children: React.ReactNode }) {
 function RequireParent({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   if (!state.onboarded) return <Navigate to="/onboarding/splash" replace />;
-  if (state.role === "child") return <Navigate to={MODE === "work" ? "/work/tasks" : "/child"} replace />;
+  if (state.role === "child") return <Navigate to={homePath("child")} replace />;
   return <>{children}</>;
 }
 
@@ -61,13 +62,7 @@ export default function App() {
   // In business mode the family surfaces (wallet, savings, rewards, lessons) aren't
   // part of the product, so the entry point goes straight to the work screens:
   // managers land on the journal, workers on their own task list.
-  const home = !state.onboarded
-    ? "/onboarding/splash"
-    : MODE === "work"
-      ? state.viewMode === "parent"
-        ? "/work/journal"
-        : "/work/tasks"
-      : `/${state.viewMode}`;
+  const home = state.onboarded ? homePath(state.viewMode) : "/onboarding/splash";
 
   return (
     <div className="app-backdrop">

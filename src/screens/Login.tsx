@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
+import { homePath } from "../data/routes";
 import { V } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
@@ -49,10 +50,10 @@ export function Login() {
     try {
       if (role === "parent") {
         await login(email.trim(), password);
-        navigate("/parent");
+        navigate(homePath("parent"));
       } else {
         await loginChildSession(username, password);
-        navigate("/child");
+        navigate(homePath("child"));
       }
     } catch (err) {
       console.error("Login failed:", err);

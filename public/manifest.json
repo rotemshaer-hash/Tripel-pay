@@ -1,10 +1,10 @@
 {
-  "name": "Triple Pay",
+  "name": "Triple Pay — יומן עבודה",
   "short_name": "Triple Pay",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#72cec0",
+  "theme_color": "#232a3b",
   "dir": "rtl",
   "lang": "he",
   "icons": [

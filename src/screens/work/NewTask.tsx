@@ -5,7 +5,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, priorityColor, priorityLabels, recurrenceLabels } from "../../data/vocabulary";
+import { V, priorityColor, priorityLabels, recurrenceLabels, work } from "../../data/vocabulary";
 import type { RecurrenceRule, TaskPriority } from "../../data/types";
 
 const priorities: TaskPriority[] = ["low", "normal", "high", "urgent"];
@@ -21,6 +21,7 @@ export function NewTask() {
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const workers = childrenList(state.family);
+  const templates = state.family.taskBank;
 
   const [title, setTitle] = useState("");
   const [brief, setBrief] = useState("");
@@ -75,6 +76,30 @@ export function NewTask() {
       <div style={{ padding: "16px 20px 28px", display: "flex", flexDirection: "column", gap: 14 }}>
         <Field label="מה צריך לעשות" required>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="לדוגמה: ניקיון חדר ישיבות" style={inputStyle} />
+          {templates.length > 0 && (
+            <>
+              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", margin: "10px 0 7px" }}>או בחירה מהתבניות:</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTitle(t.title)}
+                    style={{
+                      padding: "6px 11px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      border: "1px solid var(--line)",
+                      background: title === t.title ? work.ink : "#ffffff",
+                      color: title === t.title ? "#ffffff" : "var(--ink-soft)",
+                    }}
+                  >
+                    {t.title}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </Field>
 
         <Field label={V.brief}>
@@ -100,7 +125,7 @@ export function NewTask() {
                   <button
                     onClick={() => setSteps((list) => list.filter((_, j) => j !== i))}
                     aria-label={`הסרת שלב ${i + 1}`}
-                    style={{ background: "none", border: "none", color: "#e0224a", fontSize: 15, fontWeight: 800, padding: "0 4px" }}
+                    style={{ background: "none", border: "none", color: work.alert, fontSize: 15, fontWeight: 800, padding: "0 4px" }}
                   >
                     ×
                   </button>
@@ -129,11 +154,11 @@ export function NewTask() {
 
         <Field label={`${V.worker} אחראי`} required>
           {workers.length === 0 ? (
-            <div style={{ fontSize: 12.5, color: "#e0224a" }}>אין עובדים במערכת — יש להוסיף עובד קודם.</div>
+            <div style={{ fontSize: 12.5, color: work.alert }}>אין עובדים במערכת — יש להוסיף עובד קודם.</div>
           ) : (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {workers.map((w) => (
-                <Chip key={w.id} label={w.name} active={assignee === w.id} onClick={() => setAssignee(w.id)} activeColor="#232a3b" />
+                <Chip key={w.id} label={w.name} active={assignee === w.id} onClick={() => setAssignee(w.id)} activeColor={work.ink} />
               ))}
             </div>
           )}
@@ -188,7 +213,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
     <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "12px 14px" }}>
       <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "var(--ink-soft)", marginBottom: 8 }}>
         {label}
-        {required && <span style={{ color: "#e0224a" }}> *</span>}
+        {required && <span style={{ color: work.alert }}> *</span>}
       </label>
       {children}
     </section>
@@ -224,7 +249,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: "#232a3b",
+  background: work.ink,
   color: "#ffffff",
   border: "none",
   borderRadius: 10,

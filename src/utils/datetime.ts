@@ -33,6 +33,18 @@ export function formatDate(value: string | undefined): string {
   return d.toLocaleDateString(HE, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
+/**
+ * An always-absolute date: "23.08.2026".
+ *
+ * The relative form ("היום") is right on screen and wrong in an exported file — a
+ * report read next week must still say which day it means.
+ */
+export function formatDateExact(value: string | undefined): string {
+  const d = toDate(value);
+  if (!d) return value ?? "";
+  return d.toLocaleDateString(HE, { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 export function formatTime(value: string | undefined): string {
   const d = toDate(value);
   if (!d) return "";

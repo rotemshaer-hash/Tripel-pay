@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../data/store";
+import { homePath } from "../data/routes";
 import { V } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
@@ -20,7 +21,7 @@ export function ChildRegister() {
     setError("");
     try {
       await registerChildSession(code, username, password);
-      navigate("/child");
+      navigate(homePath("child"));
     } catch (err) {
       console.error("Child registration failed:", err);
       const message = err instanceof Error ? err.message : "";

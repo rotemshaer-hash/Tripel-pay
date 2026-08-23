@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useStore } from "../data/store";
-import { MODE, V } from "../data/vocabulary";
+import { homePath } from "../data/routes";
+import { V } from "../data/vocabulary";
 import { IconParentUser, IconChildUser } from "./Icons";
 import { SurrealBackdrop } from "./SurrealBackdrop";
 
@@ -17,11 +18,7 @@ function RoleSwitcher() {
 
   function go(mode: "parent" | "child") {
     dispatch({ type: "SET_VIEW_MODE", mode });
-    if (MODE === "work") {
-      navigate(mode === "parent" ? "/work/journal" : "/work/tasks");
-      return;
-    }
-    navigate(`/${mode}`);
+    navigate(homePath(mode));
   }
 
   return (

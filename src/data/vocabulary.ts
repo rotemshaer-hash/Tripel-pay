@@ -8,6 +8,26 @@
  * than hardcoding Hebrew strings.
  */
 
+/**
+ * The business build's state palette. Every screen reads its colours from here, so
+ * "waiting on the manager" cannot be indigo in the task list and purple in the
+ * journal — a reader learns one colour per meaning and it holds everywhere.
+ */
+export const work = {
+  /** The product's ink: active tabs, primary buttons, headers. */
+  ink: "#232a3b",
+  /** Something is wrong or is being undone: overdue, rejected, stopped, destructive. */
+  alert: "#e0224a",
+  /** Finished and accepted. */
+  done: "#1f9e8a",
+  /** Waiting on somebody. */
+  waiting: "#4756b3",
+  /** In motion. */
+  active: "#f2761b",
+  /** Not started / neutral. */
+  idle: "#7b8794",
+} as const;
+
 export type ProductMode = "work" | "family";
 
 /** The vertical this build ships as. */
@@ -86,10 +106,10 @@ export const priorityLabels: Record<string, string> = {
 };
 
 export const priorityColor: Record<string, string> = {
-  low: "#7b8794",
+  low: work.idle,
   normal: "#2f7fd1",
-  high: "#f2761b",
-  urgent: "#e0224a",
+  high: work.active,
+  urgent: work.alert,
 };
 
 /** Hebrew wording for each audit-trail action — shared by the journal feed and the
@@ -115,11 +135,12 @@ export const taskStatusLabels: Record<string, string> = {
   completed: "אושרה",
 };
 
+
 export const taskStatusColor: Record<string, string> = {
-  available: "#7b8794",
-  in_progress: "#f2761b",
-  pending_approval: "#4756b3",
-  completed: "#1f9e8a",
+  available: work.idle,
+  in_progress: work.active,
+  pending_approval: work.waiting,
+  completed: work.done,
 };
 
 export const recurrenceLabels: Record<string, string> = {

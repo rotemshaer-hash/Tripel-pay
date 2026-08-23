@@ -1,7 +1,8 @@
 import type { Child, Family, GiftBankItem, TaskTemplate } from "./types";
 import { genInviteCode, slugifyId } from "./family";
+import { MODE } from "./vocabulary";
 
-const taskBank: TaskTemplate[] = [
+const familyTaskBank: TaskTemplate[] = [
   { id: "tb-1", title: "לימוד פיננסי - 15 דק'", reward: 15, category: "finance" },
   { id: "tb-2", title: "לשטוף כלים", reward: 12, category: "dishes" },
   { id: "tb-3", title: "לסדר את השולחן", reward: 8, category: "dishes" },
@@ -10,6 +11,20 @@ const taskBank: TaskTemplate[] = [
   { id: "tb-6", title: "להפקיד לחיסכון", reward: 10, category: "savings" },
   { id: "tb-7", title: "לסדר את המיטה", reward: 5, category: "cleaning" },
   { id: "tb-8", title: "לעזור בשיעורי בית", reward: 14, category: "other" },
+];
+
+/** Starting templates for a business account — the jobs a small team actually repeats,
+ * offered as one-tap fills when the manager writes a task. Rewards are zero: work is
+ * paid by salary, not by the app. */
+const workTaskBank: TaskTemplate[] = [
+  { id: "wb-1", title: "ניקיון משרד — סוף יום", reward: 0, category: "cleaning" },
+  { id: "wb-2", title: "ניקיון חדר ישיבות", reward: 0, category: "cleaning" },
+  { id: "wb-3", title: "בדיקת מלאי והזמנת חומרים", reward: 0, category: "other" },
+  { id: "wb-4", title: "פתיחת סניף / הכנה לפתיחה", reward: 0, category: "other" },
+  { id: "wb-5", title: "סגירת סניף — נוהל סוף יום", reward: 0, category: "other" },
+  { id: "wb-6", title: "טיפול בפנייה מלקוח", reward: 0, category: "other" },
+  { id: "wb-7", title: "אחזקה שוטפת — בדיקת תקינות", reward: 0, category: "other" },
+  { id: "wb-8", title: "דוח סיום עבודה באתר", reward: 0, category: "other" },
 ];
 
 const giftBank: GiftBankItem[] = [
@@ -22,7 +37,7 @@ const giftBank: GiftBankItem[] = [
   { id: "gb-7", title: "ארוחה במקדונלדס", cost: 45, category: "food" },
 ];
 
-const houseRules = [
+const familyHouseRules = [
   { id: "hr-1", text: "לפני שיוצאים לשחק, המיטה מסודרת והחדר נקי" },
   { id: "hr-2", text: "שיעורי בית קודם, מסך אחר כך" },
   { id: "hr-3", text: "מי שמלכלך בכלים - שוטף אותם בעצמו" },
@@ -81,7 +96,8 @@ export function templateChild(index: number, name: string): Child {
 }
 
 export function seedFamily(parentName: string, parentEmail: string, childNames?: string[]): Family {
-  const names = childNames && childNames.length > 0 ? childNames.map((n, i) => (n.trim() ? n : `ילד/ה ${i + 1}`)) : ["ילד/ה 1"];
+  const fallback = MODE === "work" ? "עובד/ת" : "ילד/ה";
+  const names = childNames && childNames.length > 0 ? childNames.map((n, i) => (n.trim() ? n : `${fallback} ${i + 1}`)) : [`${fallback} 1`];
   const kids = names.map((n, i) => templateChild(i, n));
   return {
     parentName: parentName || "דנה",
@@ -89,8 +105,10 @@ export function seedFamily(parentName: string, parentEmail: string, childNames?:
     parentInviteCode: genInviteCode(),
     children: Object.fromEntries(kids.map((c) => [c.id, c])),
     childOrder: kids.map((c) => c.id),
-    taskBank,
-    giftBank,
-    houseRules,
+    // A business account has no gift catalogue and no house rules — seeding them would
+    // write family furniture into every company's record for screens that don't exist.
+    taskBank: MODE === "work" ? workTaskBank : familyTaskBank,
+    giftBank: MODE === "work" ? [] : giftBank,
+    houseRules: MODE === "work" ? [] : familyHouseRules,
   };
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../data/store";
+import { homePath } from "../data/routes";
 import { MODE, V } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
@@ -21,7 +22,7 @@ export function SecondParentRegister() {
     setError("");
     try {
       await registerSecondParentSession(code, email.trim(), password, name);
-      navigate("/parent");
+      navigate(homePath("parent"));
     } catch (err) {
       console.error("Second-parent registration failed:", err);
       const message = err instanceof Error ? err.message : "";

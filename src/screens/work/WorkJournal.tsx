@@ -4,18 +4,18 @@ import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, activityLabels } from "../../data/vocabulary";
-import { formatDate, formatDateTime, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
+import { V, activityLabels, work } from "../../data/vocabulary";
+import { formatDateExact, formatDateTime, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import { downloadCsv, toCsv } from "../../utils/exportCsv";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
 const actionColor: Record<ActivityEntry["action"], string> = {
-  created: "#7b8794",
+  created: work.idle,
   assigned: "#2f7fd1",
-  started: "#f2761b",
-  submitted: "#8a2fb0",
-  approved: "#1f9e8a",
-  reopened: "#e0224a",
+  started: work.active,
+  submitted: work.waiting,
+  approved: work.done,
+  reopened: work.alert,
   commented: "#5c5f6b",
   attached: "#2f7fd1",
 };
@@ -63,7 +63,7 @@ export function WorkJournal() {
   // manager sends on always matches the journal they were just looking at.
   function exportRange() {
     const rows = feed.map(({ entry, task, worker }) => [
-      formatDate(entry.at),
+      formatDateExact(entry.at),
       formatTime(entry.at),
       worker.name,
       task.title,
@@ -71,10 +71,10 @@ export function WorkJournal() {
       activityLabels[entry.action] ?? entry.action,
       entry.by,
       entry.detail ?? "",
-      task.dueAt ? formatDate(task.dueAt) : "",
+      task.dueAt ? formatDateExact(task.dueAt) : "",
     ]);
     const csv = toCsv(["תאריך", "שעה", V.worker, V.task, V.site, "פעולה", "בוצע על ידי", "פירוט", "תאריך יעד"], rows);
-    downloadCsv(`work-journal-${rangeLabels[range]}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`work-journal-${range}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
   return (
@@ -108,7 +108,7 @@ export function WorkJournal() {
               fontSize: 13,
               fontWeight: 700,
               border: range === r ? "none" : "1px solid var(--line)",
-              background: range === r ? "#232a3b" : "#ffffff",
+              background: range === r ? work.ink : "#ffffff",
               color: range === r ? "#ffffff" : "var(--ink-soft)",
             }}
           >
@@ -119,9 +119,9 @@ export function WorkJournal() {
 
       {/* summary */}
       <div style={{ display: "flex", gap: 8, padding: "12px 20px 0" }}>
-        <Stat label="הושלמו" value={done} color="#1f9e8a" />
-        <Stat label="ממתינות לאישור" value={awaiting} color="#8a2fb0" />
-        <Stat label="באיחור" value={overdue} color="#e0224a" />
+        <Stat label="הושלמו" value={done} color={work.done} />
+        <Stat label="ממתינות לאישור" value={awaiting} color={work.waiting} />
+        <Stat label="באיחור" value={overdue} color={work.alert} />
       </div>
 
       {/* worker filter */}
@@ -195,7 +195,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
         fontSize: 12.5,
         fontWeight: 700,
         border: active ? "none" : "1px solid var(--line)",
-        background: active ? "#232a3b" : "#ffffff",
+        background: active ? work.ink : "#ffffff",
         color: active ? "#ffffff" : "var(--ink-soft)",
       }}
     >
