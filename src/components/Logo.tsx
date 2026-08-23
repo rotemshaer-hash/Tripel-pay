@@ -1,3 +1,5 @@
+import { V } from "../data/vocabulary";
+
 export function Logo({ size = 64 }: { size?: number }) {
   const u = size / 24;
   const marker = (x: number, y: number) => (
@@ -9,7 +11,7 @@ export function Logo({ size = 64 }: { size?: number }) {
   );
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Triple Pay">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={V.appName}>
       {marker(0, 0)}
       {marker(11 * u, 0)}
       {marker(0, 11 * u)}

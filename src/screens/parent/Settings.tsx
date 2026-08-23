@@ -7,6 +7,7 @@ import { SectionTitle, Card, Toggle } from "../../components/UI";
 import { Toast, useToast } from "../../components/Toast";
 import { useActiveChild, useStore } from "../../data/store";
 import type { Family } from "../../data/types";
+import { V } from "../../data/vocabulary";
 
 function Row({ label, hint, important, children }: { label: string; hint?: string; important?: boolean; children: React.ReactNode }) {
   return (
@@ -33,14 +34,14 @@ function Row({ label, hint, important, children }: { label: string; hint?: strin
 
 function ShareAppCard({ showToast }: { showToast: (msg: string) => void }) {
   const link = `${window.location.origin}${window.location.pathname}`;
-  const shareText = "מכירים את Triple Pay? אפליקציה לדמי כיס, מטלות וחיסכון למשפחה. שווה הצצה:";
+  const shareText = `מכירים את ${V.appName}? אפליקציה לדמי כיס, מטלות וחיסכון למשפחה. שווה הצצה:`;
   const mailBody = `${shareText}\n${link}`;
-  const mailtoHref = `mailto:?subject=${encodeURIComponent("Triple Pay – אפליקציה למשפחה")}&body=${encodeURIComponent(mailBody)}`;
+  const mailtoHref = `mailto:?subject=${encodeURIComponent(`${V.appName} – אפליקציה למשפחה`)}&body=${encodeURIComponent(mailBody)}`;
 
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Triple Pay", text: shareText, url: link });
+        await navigator.share({ title: V.appName, text: shareText, url: link });
       } catch {
         /* user cancelled the native share sheet — not an error, nothing to show */
       }
@@ -56,7 +57,7 @@ function ShareAppCard({ showToast }: { showToast: (msg: string) => void }) {
 
   return (
     <Card>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>שתפו את Triple Pay</div>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{`שתפו את ${V.appName}`}</div>
       <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, marginBottom: 10 }}>
         מכירים משפחה שתאהב את זה? שלחו להם קישור ישיר לאפליקציה.
       </div>
@@ -90,8 +91,8 @@ function SecondParentInvite({ family, showToast }: { family: Family; showToast: 
   }
 
   const link = `${window.location.origin}${window.location.pathname}#/parent-register?code=${family.parentInviteCode}`;
-  const mailBody = `היי! ${family.parentName} מזמין/ה אותך להצטרף כהורה נוסף לחשבון Triple Pay שלנו:\n${link}\n\nקוד ההזמנה: ${family.parentInviteCode}`;
-  const mailtoHref = `mailto:?subject=${encodeURIComponent("הזמנה ל-Triple Pay")}&body=${encodeURIComponent(mailBody)}`;
+  const mailBody = `היי! ${family.parentName} מזמין/ה אותך להצטרף כהורה נוסף לחשבון ${V.appName} שלנו:\n${link}\n\nקוד ההזמנה: ${family.parentInviteCode}`;
+  const mailtoHref = `mailto:?subject=${encodeURIComponent(`הזמנה ל-${V.appName}`)}&body=${encodeURIComponent(mailBody)}`;
 
   async function copyLink() {
     try {

@@ -1,5 +1,6 @@
 import { Mascot } from "./Mascot";
 import { IconPiggyBank } from "./Icons";
+import { V } from "../data/vocabulary";
 
 export function WalletCard({ holderName, onClick }: { holderName: string; onClick?: () => void }) {
   return (
@@ -53,7 +54,7 @@ export function WalletCard({ holderName, onClick }: { holderName: string; onClic
         }}
       >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--ink)", letterSpacing: "0.03em" }}>Triple Pay</span>
+        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--ink)", letterSpacing: "0.03em" }}>{V.appName}</span>
         <div style={{ color: "var(--ink)", opacity: 0.75 }}>
           <IconPiggyBank size={20} />
         </div>

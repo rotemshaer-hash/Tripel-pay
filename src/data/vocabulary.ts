@@ -34,6 +34,9 @@ export type ProductMode = "work" | "family";
 export const MODE: ProductMode = "work";
 
 interface Vocabulary {
+  /** The product's name. It differs by vertical, so it lives here with everything
+   * else that does — never written out in a screen. */
+  appName: string;
   admin: string;
   adminPlural: string;
   worker: string;
@@ -55,6 +58,7 @@ interface Vocabulary {
 }
 
 const WORK: Vocabulary = {
+  appName: "Work It",
   admin: "מנהל",
   adminPlural: "מנהלים",
   worker: "עובד",
@@ -76,6 +80,7 @@ const WORK: Vocabulary = {
 };
 
 const FAMILY: Vocabulary = {
+  appName: "Triple Pay",
   admin: "הורה",
   adminPlural: "הורים",
   worker: "ילד",

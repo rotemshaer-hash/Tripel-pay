@@ -9,11 +9,12 @@ import { Toast, useToast } from "../../components/Toast";
 import { useActiveChild, useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import type { Child } from "../../data/types";
+import { V } from "../../data/vocabulary";
 
 function ChildInviteCard({ child, parentName, showToast }: { child: Child; parentName: string; showToast: (msg: string) => void }) {
   const link = `${window.location.origin}${window.location.pathname}#/child-register?code=${child.inviteCode}`;
-  const mailBody = `היי ${child.name}! ${parentName || "אנחנו"} הצטרפנו ל-Triple Pay. תיכנס/י לקישור ותירשם/י עם שם משתמש וסיסמה משלך:\n${link}\n\nקוד ההזמנה שלך: ${child.inviteCode}`;
-  const mailtoHref = `mailto:?subject=${encodeURIComponent(`הזמנה ל-Triple Pay`)}&body=${encodeURIComponent(mailBody)}`;
+  const mailBody = `היי ${child.name}! ${parentName || "אנחנו"} הצטרפנו ל-${V.appName}. תיכנס/י לקישור ותירשם/י עם שם משתמש וסיסמה משלך:\n${link}\n\nקוד ההזמנה שלך: ${child.inviteCode}`;
+  const mailtoHref = `mailto:?subject=${encodeURIComponent(`הזמנה ל-${V.appName}`)}&body=${encodeURIComponent(mailBody)}`;
 
   async function copyLink() {
     try {

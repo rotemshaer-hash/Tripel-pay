@@ -2,7 +2,10 @@ import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 
-// This is a SEPARATE project from Drushe's (kidemy-83a17) — never point Triple Pay at that project.
+// The Firebase project is still named triplepay-prod, from before the product was
+// renamed to Work It. That is deliberate: it is a real infrastructure id holding real
+// accounts, and "renaming" it means migrating to a new project and losing the data —
+// it is not a text edit. Never point this at Drushe's project (kidemy-83a17) either.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBtXCf1yM7I45qeskazLsxUFDniq5X2deQ",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "triplepay-prod.firebaseapp.com",

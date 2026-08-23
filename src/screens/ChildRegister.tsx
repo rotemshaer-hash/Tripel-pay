@@ -36,7 +36,7 @@ export function ChildRegister() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "70px 24px 28px", position: "relative", overflow: "hidden" }}>
       <BrandDecor />
       <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>ברוך הבא ל-Triple Pay</div>
+        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>{`ברוך הבא ל-${V.appName}`}</div>
         <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 32 }}>{`ה${V.admin} הזמין אותך! בחר/י שם משתמש וסיסמה כדי ליצור את החשבון האישי שלך.`}</div>
 
         <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>קוד ההזמנה</label>

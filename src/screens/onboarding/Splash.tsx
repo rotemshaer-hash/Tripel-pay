@@ -1,10 +1,62 @@
 import { useNavigate } from "react-router-dom";
 import { BrandDecor } from "../../components/BrandDecor";
-import { MODE } from "../../data/vocabulary";
+import { MODE, V, work } from "../../data/vocabulary";
 import { HeroBanner } from "../../components/Illustrations";
 
+/**
+ * The first screen anyone sees, and the one that sets expectations for everything
+ * behind it. The family build opens with a mascot and candy colours because it is
+ * talking to a child; the business build cannot — a cartoon egg and "free! ✨" on the
+ * way into a work journal reads as a toy, so the work mode is sober by design rather
+ * than the same screen with different words.
+ */
 export function Splash() {
   const navigate = useNavigate();
+  const [firstWord, ...restOfName] = V.appName.split(" ");
+
+  // The business build gets its own layout rather than the family one restyled: a dark
+  // panel that is sized by the text inside it, over a white footer holding the two
+  // ways in. An absolutely-positioned band of fixed height would clip the wording the
+  // moment it wrapped to another line or the viewport got shorter.
+  if (MODE === "work") {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#ffffff", overflow: "hidden" }}>
+        <div
+          style={{
+            background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)",
+            padding: "0 26px 34px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
+            {firstWord} <span style={{ color: "#8fa0ff" }}>{restOfName.join(" ")}</span>
+          </div>
+          <div style={{ fontSize: 14.5, color: "rgba(255,255,255,0.72)", marginTop: 10, lineHeight: 1.65 }}>
+            יומן עבודה לצוותים קטנים — משימות עם אחראי ותאריך יעד, אסמכתאות לכל ביצוע, ותיעוד של מי עשה מה ומתי.
+          </div>
+        </div>
+
+        <div style={{ padding: "22px 26px calc(28px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+          <button
+            onClick={() => navigate("/onboarding/welcome")}
+            style={{ width: "100%", padding: "15px", borderRadius: 11, border: "none", background: work.ink, color: "#ffffff", fontSize: 15, fontWeight: 800 }}
+          >
+            פתיחת חשבון לעסק
+          </button>
+          <button
+            onClick={() => navigate("/login")}
+            style={{ width: "100%", padding: "15px", borderRadius: 11, border: "1px solid var(--line)", background: "#ffffff", color: "var(--ink)", fontSize: 14, fontWeight: 700 }}
+          >
+            כניסה לחשבון קיים
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -52,9 +104,10 @@ export function Splash() {
         <HeroBanner width={300} height={150} />
       </div>
       <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.01em", position: "relative", zIndex: 1, color: "var(--ink)" }}>
-        Triple<span style={{ color: "var(--violet-700)" }}>Pay</span>
+        {firstWord}
+        <span style={{ color: "var(--violet-700)" }}>{restOfName.join(" ")}</span>
       </div>
-      <div style={{ fontSize: 13.5, color: "var(--ink-soft)", position: "relative", zIndex: 1, marginBottom: 12 }}>{MODE === "work" ? "משימות · אסמכתאות · יומן עבודה" : "דמי כיס · מטלות · חיסכון"}</div>
+      <div style={{ fontSize: 13.5, color: "var(--ink-soft)", position: "relative", zIndex: 1, marginBottom: 12 }}>דמי כיס · מטלות · חיסכון</div>
       <div style={{ flex: 1 }} />
 
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12, position: "relative", zIndex: 1 }}>

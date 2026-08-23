@@ -2,11 +2,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
 import { homePath } from "../data/routes";
-import { V } from "../data/vocabulary";
+import { MODE, V, work } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
 
+const fieldStyle = (isWork: boolean): React.CSSProperties => ({
+  width: "100%",
+  padding: isWork ? "13px 14px" : "16px",
+  borderRadius: isWork ? 10 : 16,
+  border: isWork ? "1px solid var(--line)" : undefined,
+  fontSize: isWork ? 14.5 : 16,
+  textAlign: isWork ? "start" : "center",
+  marginBottom: 14,
+});
+
 export function Login() {
+  const isWork = MODE === "work";
   const [role, setRole] = useState<"parent" | "child">("parent");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -67,14 +78,23 @@ export function Login() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "70px 24px 28px", position: "relative", overflow: "hidden" }}>
-      <BrandDecor />
+      {MODE !== "work" && <BrandDecor />}
       <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>Triple Pay</div>
+        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>{V.appName}</div>
         <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 20 }}>
           שלום אורח, טוב לראות אותך. בחרו איך להיכנס.
         </div>
 
-        <div className="glass" style={{ display: "flex", borderRadius: 999, padding: 4, marginBottom: 20 }}>
+        <div
+          className={isWork ? undefined : "glass"}
+          style={{
+            display: "flex",
+            gap: isWork ? 6 : 0,
+            borderRadius: isWork ? 0 : 999,
+            padding: isWork ? 0 : 4,
+            marginBottom: 20,
+          }}
+        >
           {(["parent", "child"] as const).map((r) => (
             <button
               key={r}
@@ -84,12 +104,12 @@ export function Login() {
               }}
               style={{
                 flex: 1,
-                border: "none",
-                borderRadius: 999,
+                borderRadius: isWork ? 10 : 999,
                 padding: "10px 0",
                 fontSize: 13.5,
                 fontWeight: 700,
-                background: role === r ? "var(--violet-700)" : "transparent",
+                border: isWork && role !== r ? "1px solid var(--line)" : "none",
+                background: role === r ? (isWork ? work.ink : "var(--violet-700)") : isWork ? "#ffffff" : "transparent",
                 color: role === r ? "#fff" : "var(--ink-soft)",
               }}
             >
@@ -105,14 +125,14 @@ export function Login() {
             placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{ width: "100%", padding: "16px", borderRadius: 16, fontSize: 16, textAlign: "center", marginBottom: 14 }}
+            style={fieldStyle(isWork)}
           />
         ) : (
           <input
             placeholder="שם משתמש"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            style={{ width: "100%", padding: "16px", borderRadius: 16, fontSize: 16, textAlign: "center", marginBottom: 14 }}
+            style={fieldStyle(isWork)}
           />
         )}
         <input
@@ -120,13 +140,13 @@ export function Login() {
           placeholder="סיסמה"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", padding: "16px", borderRadius: 16, fontSize: 16, textAlign: "center", marginBottom: 14 }}
+          style={fieldStyle(isWork)}
         />
         {role === "parent" && (
           <button
             onClick={forgotPassword}
             disabled={resetLoading}
-            style={{ display: "block", margin: "-4px auto 14px", background: "none", border: "none", color: "var(--violet-700)", fontSize: 13, fontWeight: 700 }}
+            style={{ display: "block", margin: "-4px auto 14px", background: "none", border: "none", color: isWork ? work.waiting : "var(--violet-700)", fontSize: 13, fontWeight: 700 }}
           >
             {resetLoading ? "שולח מייל…" : "שכחתי סיסמה"}
           </button>
@@ -137,9 +157,29 @@ export function Login() {
           </div>
         )}
         {error && <div style={{ fontSize: 13, color: "var(--coral-600)", textAlign: "center", marginBottom: 14 }}>{error}</div>}
+        {isWork ? (
+          <button
+            onClick={submit}
+            disabled={loading || !canSubmit}
+            style={{
+              width: "100%",
+              padding: "15px",
+              borderRadius: 11,
+              border: "none",
+              background: work.ink,
+              color: "#ffffff",
+              fontSize: 15,
+              fontWeight: 800,
+              opacity: loading || !canSubmit ? 0.45 : 1,
+            }}
+          >
+            {loading ? "רגע…" : "כניסה"}
+          </button>
+        ) : (
         <PrimaryButton onClick={submit} disabled={loading || !canSubmit}>
           {loading ? "נכנסים…" : "כניסה"}
         </PrimaryButton>
+        )}
       </div>
     </div>
   );
