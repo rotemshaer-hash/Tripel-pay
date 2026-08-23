@@ -95,11 +95,13 @@ export function templateChild(index: number, name: string): Child {
   };
 }
 
-export function seedFamily(parentName: string, parentEmail: string, childNames?: string[]): Family {
+export function seedFamily(parentName: string, parentEmail: string, childNames?: string[], companyName?: string): Family {
   const fallback = MODE === "work" ? "עובד/ת" : "ילד/ה";
   const names = childNames && childNames.length > 0 ? childNames.map((n, i) => (n.trim() ? n : `${fallback} ${i + 1}`)) : [`${fallback} 1`];
   const kids = names.map((n, i) => templateChild(i, n));
   return {
+    // Firebase's set() rejects undefined, so an absent company name is an absent key.
+    ...(companyName?.trim() ? { companyName: companyName.trim() } : {}),
     parentName: parentName || "דנה",
     parentEmail,
     parentInviteCode: genInviteCode(),

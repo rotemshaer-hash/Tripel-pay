@@ -746,7 +746,7 @@ function reducer(state: AppState, action: Action): AppState {
 interface StoreContextValue {
   state: AppState;
   dispatch: React.Dispatch<Action>;
-  completeOnboarding: (email: string, password: string, name: string, childNames?: string[]) => Promise<void>;
+  completeOnboarding: (email: string, password: string, name: string, childNames?: string[], companyName?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   registerChildSession: (code: string, username: string, password: string) => Promise<void>;
   loginChildSession: (username: string, password: string) => Promise<void>;
@@ -861,8 +861,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state.family, state.familyUid]);
 
   const completeOnboarding = useMemo(
-    () => async (email: string, password: string, name: string, childNames?: string[]) => {
-      await registerParent(email, password, name, childNames);
+    () => async (email: string, password: string, name: string, childNames?: string[], companyName?: string) => {
+      await registerParent(email, password, name, childNames, companyName);
       // registerParent already wrote the family to Firebase. Fetch and dispatch it
       // directly here rather than waiting on the separate onAuthChange listener —
       // that listener can fire (and resolve) before this function even starts

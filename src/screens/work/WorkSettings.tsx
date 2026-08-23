@@ -37,6 +37,7 @@ export function WorkSettings() {
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
         <section style={card}>
           <div style={cardTitle}>פרטי החשבון</div>
+          <Row label="שם העסק" value={state.family.companyName ?? ""} />
           <Row label={V.admin} value={state.family.parentName} />
           <Row label="אימייל" value={state.family.parentEmail} ltr />
           <Row label={V.workerPlural} value={String(workers.length)} />

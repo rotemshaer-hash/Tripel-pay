@@ -76,6 +76,9 @@ export default function App() {
           <Route path="/onboarding/children" element={<ChildrenDetails />} />
           <Route path="/onboarding/success" element={<Success />} />
           <Route path="/login" element={<Login />} />
+          {/* /join is the short, shareable form; the original path stays valid so
+              links already sent to people keep working. */}
+          <Route path="/join" element={<ChildRegister />} />
           <Route path="/child-register" element={<ChildRegister />} />
           <Route path="/parent-register" element={<SecondParentRegister />} />
 

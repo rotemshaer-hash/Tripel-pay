@@ -35,7 +35,7 @@ export function onAuthChange(cb: (user: User | null) => void) {
   return onAuthStateChanged(auth, cb);
 }
 
-export async function registerParent(email: string, password: string, name: string, childNames?: string[]): Promise<Family> {
+export async function registerParent(email: string, password: string, name: string, childNames?: string[], companyName?: string): Promise<Family> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
 
   // Same known Firebase race as Drushe: auth.currentUser updates in JS before the
@@ -45,7 +45,7 @@ export async function registerParent(email: string, password: string, name: stri
   await cred.user.getIdToken(true).catch(() => {});
   await updateProfile(cred.user, { displayName: name }).catch(() => {});
 
-  const family = seedFamily(name, email, childNames);
+  const family = seedFamily(name, email, childNames, companyName);
   const delays = [1200, 2500, 4500];
   let lastErr: unknown = null;
   for (let attempt = 0; attempt <= delays.length; attempt++) {

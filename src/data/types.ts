@@ -198,6 +198,9 @@ export interface HouseRule {
 }
 
 export interface Family {
+  /** The business this account belongs to. Absent on family accounts, and on business
+   * accounts created before the field existed — every reader must tolerate that. */
+  companyName?: string;
   parentName: string;
   parentEmail: string;
   secondParentName?: string;

@@ -8,6 +8,7 @@ import { Toast, useToast } from "../../components/Toast";
 import { useActiveChild, useStore } from "../../data/store";
 import type { Family } from "../../data/types";
 import { V } from "../../data/vocabulary";
+import { adminInviteLink } from "../../data/routes";
 
 function Row({ label, hint, important, children }: { label: string; hint?: string; important?: boolean; children: React.ReactNode }) {
   return (
@@ -90,7 +91,7 @@ function SecondParentInvite({ family, showToast }: { family: Family; showToast: 
     );
   }
 
-  const link = `${window.location.origin}${window.location.pathname}#/parent-register?code=${family.parentInviteCode}`;
+  const link = adminInviteLink(family.parentInviteCode);
   const mailBody = `היי! ${family.parentName} מזמין/ה אותך להצטרף כהורה נוסף לחשבון ${V.appName} שלנו:\n${link}\n\nקוד ההזמנה: ${family.parentInviteCode}`;
   const mailtoHref = `mailto:?subject=${encodeURIComponent(`הזמנה ל-${V.appName}`)}&body=${encodeURIComponent(mailBody)}`;
 
