@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
 import { childrenList } from "../data/family";
 import { work } from "../data/vocabulary";
-import { IconChecklist, IconMountain, IconParentUser, IconPeopleCoin, IconReceipt } from "./Icons";
+import { IconMountain, IconParentUser, IconPeopleCoin, IconReceipt, IconCardCheck } from "./Icons";
 
 interface NavItem {
   to: string;
@@ -19,6 +19,10 @@ interface NavItem {
  * Navigation for the business build. Deliberately narrow: the family app's wallet,
  * savings, rewards and lessons are not reachable here — a work journal is about
  * assigning, evidencing and auditing work, and nothing else.
+ *
+ * Writing a task is not a tab. It is an action, it already has a button on the task
+ * list, and giving it a tab of its own pushed this bar to six — at which point every
+ * label is too small to read and nothing is easy to hit.
  */
 export function WorkBottomNav() {
   const { state } = useStore();
@@ -36,12 +40,13 @@ export function WorkBottomNav() {
     ? [
         { to: "/work/journal", label: "יומן", icon: <IconReceipt size={21} />, match: (p) => p === "/work/journal" },
         { to: "/work/tasks", label: "משימות", icon: <IconMountain size={21} />, match: (p) => p === "/work/tasks", badge: awaiting },
-        { to: "/work/new", label: "משימה חדשה", icon: <IconChecklist size={21} />, match: (p) => p === "/work/new" },
+        { to: "/work/directory", label: "ספקים", icon: <IconCardCheck size={21} />, match: (p) => p === "/work/directory" },
         { to: "/work/team", label: "צוות", icon: <IconPeopleCoin size={21} />, match: (p) => p === "/work/team" },
         { to: "/work/settings", label: "הגדרות", icon: <IconParentUser size={21} />, match: (p) => p === "/work/settings" },
       ]
     : [
         { to: "/work/tasks", label: "המשימות שלי", icon: <IconMountain size={21} />, match: (p) => p === "/work/tasks", badge: open },
+        { to: "/work/directory", label: "ספקים", icon: <IconCardCheck size={21} />, match: (p) => p === "/work/directory" },
         { to: "/work/journal", label: "יומן", icon: <IconReceipt size={21} />, match: (p) => p === "/work/journal" },
       ];
 

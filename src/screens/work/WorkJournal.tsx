@@ -84,14 +84,22 @@ export function WorkJournal() {
         subtitle="תיעוד מלא של העבודה"
         tint="pro"
         right={
-          feed.length > 0 ? (
+          <div style={{ display: "flex", gap: 6 }}>
             <button
-              onClick={exportRange}
-              style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 800 }}
+              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
+              style={{ background: "#ffffff", color: "#232a3b", border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, fontWeight: 800 }}
             >
-              ייצוא
+              דוח PDF
             </button>
-          ) : undefined
+            {feed.length > 0 && (
+              <button
+                onClick={exportRange}
+                style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, fontWeight: 800 }}
+              >
+                CSV
+              </button>
+            )}
+          </div>
         }
       />
 

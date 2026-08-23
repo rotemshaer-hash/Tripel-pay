@@ -52,6 +52,8 @@ export function normalizeFamily(family: Family): Family {
     children,
     childOrder: family.childOrder ?? [],
     taskBank: family.taskBank ?? [],
+    suppliers: family.suppliers ?? [],
+    documents: family.documents ?? [],
     giftBank: family.giftBank ?? [],
     houseRules: family.houseRules ?? [],
   };

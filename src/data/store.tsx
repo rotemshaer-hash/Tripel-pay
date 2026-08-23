@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useReducer, type
 import { seedFamily, templateChild } from "./seed";
 import { childrenList, normalizeFamily } from "./family";
 import { endOfDay, nextDueDate, toDate } from "../utils/datetime";
-import type { ActivityEntry, Attachment, ChecklistItem, Child, ChildSettings, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
+import type { ActivityEntry, Attachment, ChecklistItem, Child, ChildSettings, CompanyDoc, Supplier, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
 import {
   onAuthChange,
   registerParent,
@@ -84,6 +84,11 @@ type Action =
   | { type: "STOP_TASK_SERIES"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "RESUME_TASK_SERIES"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "TOGGLE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string; by?: string; at?: string }
+  | { type: "ADD_SUPPLIER"; name: string; phone: string; category?: string; email?: string; note?: string; at?: string }
+  | { type: "UPDATE_SUPPLIER"; supplierId: string; name: string; phone: string; category?: string; email?: string; note?: string }
+  | { type: "REMOVE_SUPPLIER"; supplierId: string }
+  | { type: "ADD_DOCUMENT"; title: string; kind: CompanyDoc["kind"]; content: string; note?: string; by: string; at?: string }
+  | { type: "REMOVE_DOCUMENT"; docId: string }
   | { type: "ADD_WORKER"; name: string }
   | { type: "ADD_HOUSE_RULE"; text: string }
   | { type: "REMOVE_HOUSE_RULE"; ruleId: string }
@@ -613,6 +618,61 @@ function reducer(state: AppState, action: Action): AppState {
           }))
         ),
       };
+    }
+    case "ADD_SUPPLIER": {
+      // Firebase's set() rejects undefined, so an omitted optional field is an omitted
+      // key rather than a key holding undefined.
+      const supplier: Supplier = {
+        id: `sp-${crypto.randomUUID()}`,
+        name: action.name.trim(),
+        phone: action.phone.trim(),
+        addedAt: action.at ?? new Date().toISOString(),
+        ...(action.category?.trim() ? { category: action.category.trim() } : {}),
+        ...(action.email?.trim() ? { email: action.email.trim() } : {}),
+        ...(action.note?.trim() ? { note: action.note.trim() } : {}),
+      };
+      if (!supplier.name || !supplier.phone) return state;
+      return { ...state, family: { ...state.family, suppliers: [...(state.family.suppliers ?? []), supplier] } };
+    }
+    case "UPDATE_SUPPLIER": {
+      return {
+        ...state,
+        family: {
+          ...state.family,
+          suppliers: (state.family.suppliers ?? []).map((sp) =>
+            sp.id !== action.supplierId
+              ? sp
+              : {
+                  id: sp.id,
+                  addedAt: sp.addedAt,
+                  name: action.name.trim(),
+                  phone: action.phone.trim(),
+                  ...(action.category?.trim() ? { category: action.category.trim() } : {}),
+                  ...(action.email?.trim() ? { email: action.email.trim() } : {}),
+                  ...(action.note?.trim() ? { note: action.note.trim() } : {}),
+                }
+          ),
+        },
+      };
+    }
+    case "REMOVE_SUPPLIER": {
+      return { ...state, family: { ...state.family, suppliers: (state.family.suppliers ?? []).filter((sp) => sp.id !== action.supplierId) } };
+    }
+    case "ADD_DOCUMENT": {
+      const doc: CompanyDoc = {
+        id: `dc-${crypto.randomUUID()}`,
+        title: action.title.trim(),
+        kind: action.kind,
+        content: action.content,
+        addedAt: action.at ?? new Date().toISOString(),
+        addedBy: action.by,
+        ...(action.note?.trim() ? { note: action.note.trim() } : {}),
+      };
+      if (!doc.title || !doc.content) return state;
+      return { ...state, family: { ...state.family, documents: [doc, ...(state.family.documents ?? [])] } };
+    }
+    case "REMOVE_DOCUMENT": {
+      return { ...state, family: { ...state.family, documents: (state.family.documents ?? []).filter((d) => d.id !== action.docId) } };
     }
     case "ADD_WORKER": {
       // A hire joins after onboarding. Built by the same factory the onboarding flow

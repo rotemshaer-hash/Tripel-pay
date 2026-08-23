@@ -197,6 +197,33 @@ export interface HouseRule {
   text: string;
 }
 
+/** A number somebody needs while standing in front of a problem: the cleaning-supply
+ * rep, the electrician, the landlord. Shared with the whole team, because the person
+ * on site at 7am is the one who needs it, not the manager. */
+export interface Supplier {
+  id: string;
+  name: string;
+  /** What they are for — "חומרי ניקיון", "חשמלאי". */
+  category?: string;
+  phone: string;
+  email?: string;
+  note?: string;
+  addedAt?: string;
+}
+
+/** Something the team needs to be able to look up: a safety procedure, an equipment
+ * photo, a form, a link to a supplier's catalogue. */
+export interface CompanyDoc {
+  id: string;
+  title: string;
+  /** image = compressed data URL · link = http(s) address · note = the text itself */
+  kind: "image" | "link" | "note";
+  content: string;
+  note?: string;
+  addedAt: string;
+  addedBy: string;
+}
+
 export interface Family {
   /** The business this account belongs to. Absent on family accounts, and on business
    * accounts created before the field existed — every reader must tolerate that. */
@@ -211,4 +238,7 @@ export interface Family {
   taskBank: TaskTemplate[];
   giftBank: GiftBankItem[];
   houseRules: HouseRule[];
+  /** Optional so records written before these existed stay valid. */
+  suppliers?: Supplier[];
+  documents?: CompanyDoc[];
 }

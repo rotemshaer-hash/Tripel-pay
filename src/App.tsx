@@ -39,6 +39,8 @@ import { NewTask } from "./screens/work/NewTask";
 import { WorkTasks } from "./screens/work/WorkTasks";
 import { WorkTeam } from "./screens/work/WorkTeam";
 import { WorkSettings } from "./screens/work/WorkSettings";
+import { WorkDirectory } from "./screens/work/WorkDirectory";
+import { WorkReport } from "./screens/work/WorkReport";
 
 function RequireOnboarded({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
@@ -116,6 +118,9 @@ export default function App() {
           <Route path="/work/new" element={<RequireParent><NewTask /></RequireParent>} />
           <Route path="/work/team" element={<RequireParent><WorkTeam /></RequireParent>} />
           <Route path="/work/settings" element={<RequireParent><WorkSettings /></RequireParent>} />
+          {/* Suppliers and documents are for whoever is on site, so a worker reads them too. */}
+          <Route path="/work/directory" element={<RequireOnboarded><WorkDirectory /></RequireOnboarded>} />
+          <Route path="/work/report" element={<RequireParent><WorkReport /></RequireParent>} />
           <Route path="/work/task/:workerId/:taskId" element={<RequireOnboarded><TaskDetail /></RequireOnboarded>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
