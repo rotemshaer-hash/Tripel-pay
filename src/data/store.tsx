@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useReducer, type ReactNode } from "react";
-import { seedFamily } from "./seed";
+import { seedFamily, templateChild } from "./seed";
 import { childrenList, normalizeFamily } from "./family";
 import type { ActivityEntry, Attachment, Child, ChildSettings, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
 import {
@@ -50,6 +50,19 @@ type Action =
       recurrence?: TaskItem["recurrence"];
       site?: string;
     }
+  | {
+      type: "CREATE_TASK";
+      childId: string;
+      title: string;
+      brief?: string;
+      dueAt?: string;
+      priority?: TaskPriority;
+      recurrence?: TaskItem["recurrence"];
+      site?: string;
+      category?: TaskCategory;
+      by?: string;
+      at?: string;
+    }
   | { type: "ADVANCE_TASK"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
@@ -64,6 +77,7 @@ type Action =
   | { type: "ADD_SAVINGS_GOAL"; childId: string; goal: SavingsGoal }
   | { type: "UPDATE_SETTINGS"; childId: string; patch: Partial<ChildSettings> }
   | { type: "ADD_AUTHORIZED_PERSON"; childId: string; name: string; relation: string }
+  | { type: "ADD_WORKER"; name: string }
   | { type: "ADD_HOUSE_RULE"; text: string }
   | { type: "REMOVE_HOUSE_RULE"; ruleId: string }
   | { type: "RESET_CHILD_PROGRESS"; childId: string }
@@ -224,6 +238,32 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: [newTask, ...c.tasks] })),
+      };
+    }
+    case "CREATE_TASK": {
+      // A free-form task written by the manager, with no template behind it.
+      const at = action.at ?? new Date().toISOString();
+      const task: TaskItem = logActivity(
+        {
+          id: `t-${crypto.randomUUID()}`,
+          title: action.title,
+          reward: 0,
+          category: action.category ?? "other",
+          status: "available",
+          createdAt: at,
+          brief: action.brief,
+          dueAt: action.dueAt,
+          priority: action.priority ?? "normal",
+          recurrence: action.recurrence ?? "none",
+          site: action.site,
+          activity: [],
+        },
+        { by: action.by ?? "", action: "assigned", detail: action.dueAt ? `יעד: ${action.dueAt.slice(0, 10)}` : undefined },
+        at
+      );
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: [task, ...c.tasks] })),
       };
     }
     case "ADVANCE_TASK": {
@@ -425,6 +465,24 @@ function reducer(state: AppState, action: Action): AppState {
             authorizedPeople: [...c.settings.authorizedPeople, { id: `ap-${crypto.randomUUID()}`, name: action.name, relation: action.relation }],
           },
         })),
+      };
+    }
+    case "ADD_WORKER": {
+      // A hire joins after onboarding. Built by the same factory the onboarding flow
+      // uses, so a person added on day 100 is structurally identical to one added on
+      // day 1 — and gets an invite code to sign in with, no work email required.
+      const name = action.name.trim();
+      if (!name) return state;
+      const worker = templateChild(state.family.childOrder.length, name);
+      // Two people can share a first name; keep ids unique so neither overwrites the other.
+      const id = state.family.children[worker.id] ? `${worker.id}-${state.family.childOrder.length + 1}` : worker.id;
+      return {
+        ...state,
+        family: {
+          ...state.family,
+          children: { ...state.family.children, [id]: { ...worker, id } },
+          childOrder: [...state.family.childOrder, id],
+        },
       };
     }
     case "ADD_HOUSE_RULE": {

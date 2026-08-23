@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BrandDecor } from "../../components/BrandDecor";
-import { SceneBroom, ScenePiggyBank, SceneGraduation } from "../../components/Illustrations";
+import { SceneBroom, ScenePiggyBank, SceneGraduation, SceneLedger, SceneAchievementBadge } from "../../components/Illustrations";
+import { MODE } from "../../data/vocabulary";
 
-const slides = [
+// The pitch differs by vertical: the family build sells chores-for-allowance and
+// savings; the business build sells documented work — the same three-screen shape,
+// a different promise.
+const familySlides = [
   {
     icon: <SceneBroom size={132} />,
     title: "מטלות בתמורה לתגמול",
@@ -20,6 +24,26 @@ const slides = [
     subtitle: "המסע של ילדיכם לבגרות פיננסית עומד להתחיל!",
   },
 ];
+
+const workSlides = [
+  {
+    icon: <SceneBroom size={132} />,
+    title: "משימות עם אחראי ותאריך יעד",
+    subtitle: "לא עוד הודעת וואטסאפ שנעלמת — לכל משימה יש עובד אחראי, פירוט ומועד.",
+  },
+  {
+    icon: <SceneAchievementBadge size={132} />,
+    title: "אסמכתאות לכל ביצוע",
+    subtitle: "העובד מצרף תמונה או הערה בסיום, והמנהל מאשר או מחזיר לתיקון.",
+  },
+  {
+    icon: <SceneLedger size={132} />,
+    title: "יומן עבודה מסודר",
+    subtitle: "כל מה שבוצע — יומי, שבועי וחודשי, עם תיעוד מלא של מי עשה מה ומתי.",
+  },
+];
+
+const slides = MODE === "work" ? workSlides : familySlides;
 
 export function Welcome() {
   const [index, setIndex] = useState(0);

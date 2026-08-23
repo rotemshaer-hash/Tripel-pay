@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../data/store";
+import { MODE, V } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
 
@@ -36,8 +37,8 @@ export function SecondParentRegister() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "70px 24px 28px", position: "relative", overflow: "hidden" }}>
       <BrandDecor />
       <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>הצטרפות כהורה נוסף</div>
-        <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 32 }}>הוזמנת להצטרף לחשבון Triple Pay המשפחתי. תיצור/י את הכניסה האישית שלך.</div>
+        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>{`הצטרפות כ${V.admin} נוסף`}</div>
+        <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 32 }}>{`הוזמנת להצטרף לחשבון ${MODE === "work" ? "החברה" : "Triple Pay המשפחתי"}. תיצור/י את הכניסה האישית שלך.`}</div>
 
         <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>קוד ההזמנה</label>
         <input

@@ -67,8 +67,10 @@ function blankChild(name: string, colorIndex: number): Child {
 }
 
 /** Builds one real child at `index` — every new child starts at zero balance/savings
- * with no tasks, transactions, or history, regardless of position. */
-function templateChild(index: number, name: string): Child {
+ * with no tasks, transactions, or history, regardless of position. Exported so a
+ * roster added after onboarding (a new hire in the business build) is built by the
+ * same factory as one added during it — one definition of "a blank person". */
+export function templateChild(index: number, name: string): Child {
   const trimmed = name.trim();
   const base = blankChild(trimmed, index);
   return {

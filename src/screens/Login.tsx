@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
+import { V } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
 
@@ -31,7 +32,7 @@ export function Login() {
       console.error("Password reset failed:", err);
       const code = (err as { code?: string })?.code;
       if (code === "auth/user-not-found") {
-        setError("לא נמצא חשבון הורה עם האימייל הזה — ודאו שנרשמתם קודם עם כתובת זו");
+        setError(`לא נמצא חשבון ${V.admin} עם האימייל הזה — יש לוודא שנרשמתם קודם עם כתובת זו`);
       } else if (code === "auth/too-many-requests") {
         setError("יותר מדי נסיונות — נסו שוב בעוד כמה דקות");
       } else {
@@ -91,7 +92,7 @@ export function Login() {
                 color: role === r ? "#fff" : "var(--ink-soft)",
               }}
             >
-              {r === "parent" ? "הורה" : "ילד/ה"}
+              {r === "parent" ? V.admin : V.worker}
             </button>
           ))}
         </div>

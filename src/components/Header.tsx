@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useStore } from "../data/store";
+import { MODE, V } from "../data/vocabulary";
 import { IconParentUser, IconChildUser } from "./Icons";
 import { SurrealBackdrop } from "./SurrealBackdrop";
 
@@ -10,12 +11,16 @@ function RoleSwitcher() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  // A real child login has no parent view to preview — this pill is only the parent's
-  // own convenience toggle for checking what their kid's screen looks like.
+  // A worker login has no manager view to preview — this pill is only the admin's own
+  // convenience toggle for checking what the other side's screen looks like.
   if (state.role === "child" || !state.onboarded || location.pathname.startsWith("/onboarding") || location.pathname === "/login") return null;
 
   function go(mode: "parent" | "child") {
     dispatch({ type: "SET_VIEW_MODE", mode });
+    if (MODE === "work") {
+      navigate(mode === "parent" ? "/work/journal" : "/work/tasks");
+      return;
+    }
     navigate(`/${mode}`);
   }
 
@@ -26,14 +31,14 @@ function RoleSwitcher() {
         onClick={() => go("parent")}
         style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        <IconParentUser size={13} strokeWidth={2.2} /> הורה
+        <IconParentUser size={13} strokeWidth={2.2} /> {V.admin}
       </button>
       <button
         className={state.viewMode === "child" ? "active" : ""}
         onClick={() => go("child")}
         style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        <IconChildUser size={13} strokeWidth={2.2} /> ילד
+        <IconChildUser size={13} strokeWidth={2.2} /> {V.worker}
       </button>
     </div>
   );

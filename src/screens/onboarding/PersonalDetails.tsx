@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { PrimaryButton } from "../../components/UI";
+import { MODE, V } from "../../data/vocabulary";
 
 export function PersonalDetails() {
   const [name, setName] = useState("");
@@ -53,7 +54,7 @@ export function PersonalDetails() {
         </div>
 
         <div>
-          <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>מספר ילדים עבורם תרצו ארנק דיגיטלי</label>
+          <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6 }}>{`מספר ${V.workerPlural} ${MODE === "work" ? "בצוות" : "עבורם תרצו ארנק דיגיטלי"}`}</label>
           <input
             type="number"
             min={1}

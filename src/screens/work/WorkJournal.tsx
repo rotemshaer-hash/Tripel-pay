@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
-import { ParentBottomNav } from "../../components/BottomNav";
+import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels } from "../../data/vocabulary";
@@ -60,7 +60,7 @@ export function WorkJournal() {
 
   return (
     <div className="screen">
-      <Header title={V.journal} subtitle="תיעוד מלא של העבודה" back tint="pro" />
+      <Header title={V.journal} subtitle="תיעוד מלא של העבודה" tint="pro" />
 
       {/* range switch */}
       <div style={{ display: "flex", gap: 6, padding: "16px 20px 0" }}>
@@ -75,7 +75,7 @@ export function WorkJournal() {
               fontSize: 13,
               fontWeight: 700,
               border: range === r ? "none" : "1px solid var(--line)",
-              background: range === r ? "var(--violet-700)" : "#ffffff",
+              background: range === r ? "#232a3b" : "#ffffff",
               color: range === r ? "#ffffff" : "var(--ink-soft)",
             }}
           >
@@ -137,7 +137,7 @@ export function WorkJournal() {
           </button>
         ))}
       </div>
-      <ParentBottomNav />
+      <WorkBottomNav />
     </div>
   );
 }
@@ -162,7 +162,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
         fontSize: 12.5,
         fontWeight: 700,
         border: active ? "none" : "1px solid var(--line)",
-        background: active ? "var(--ink)" : "#ffffff",
+        background: active ? "#232a3b" : "#ffffff",
         color: active ? "#ffffff" : "var(--ink-soft)",
       }}
     >

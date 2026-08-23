@@ -105,6 +105,23 @@ export const activityLabels: Record<string, string> = {
   attached: "צורף קובץ",
 };
 
+/** How a task's state reads and colours everywhere it's shown — the list, the detail
+ * header and the journal all take it from here, so a status never reads one way on
+ * one screen and another way on the next. */
+export const taskStatusLabels: Record<string, string> = {
+  available: "טרם התחילה",
+  in_progress: "בביצוע",
+  pending_approval: "ממתינה לאישור",
+  completed: "אושרה",
+};
+
+export const taskStatusColor: Record<string, string> = {
+  available: "#7b8794",
+  in_progress: "#f2761b",
+  pending_approval: "#4756b3",
+  completed: "#1f9e8a",
+};
+
 export const recurrenceLabels: Record<string, string> = {
   none: "חד־פעמית",
   daily: "יומית",

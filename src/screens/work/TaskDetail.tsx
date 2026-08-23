@@ -2,24 +2,11 @@ import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { useStore } from "../../data/store";
-import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels } from "../../data/vocabulary";
+import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels } from "../../data/vocabulary";
 import { formatDate, formatDateTime, isOverdue } from "../../utils/datetime";
 import { resizeImageToDataUrl } from "../../utils/resizeImage";
 import type { Attachment } from "../../data/types";
 
-const statusLabels: Record<string, string> = {
-  available: "טרם התחילה",
-  in_progress: "בביצוע",
-  pending_approval: "ממתינה לאישור",
-  completed: "אושרה",
-};
-
-const statusColor: Record<string, string> = {
-  available: "#7b8794",
-  in_progress: "#f2761b",
-  pending_approval: "#8a2fb0",
-  completed: "#1f9e8a",
-};
 
 /**
  * One task, in full: the brief and its reference files, the evidence attached on
@@ -93,7 +80,7 @@ export function TaskDetail() {
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
         {/* status strip */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <Chip text={statusLabels[task.status]} color={statusColor[task.status]} solid />
+          <Chip text={taskStatusLabels[task.status]} color={taskStatusColor[task.status]} solid />
           {task.priority && <Chip text={priorityLabels[task.priority]} color={priorityColor[task.priority]} />}
           {task.recurrence && task.recurrence !== "none" && <Chip text={recurrenceLabels[task.recurrence]} color="#2f7fd1" />}
           {task.dueAt && <Chip text={`יעד: ${formatDate(task.dueAt)}`} color={overdue ? "#e0224a" : "#7b8794"} solid={overdue} />}
@@ -261,7 +248,7 @@ function AttachmentList({ items, empty }: { items: Attachment[]; empty: string }
 
 function btnStyle(disabled: boolean): React.CSSProperties {
   return {
-    background: disabled ? "rgba(15,33,29,0.10)" : "var(--violet-700)",
+    background: disabled ? "rgba(15,33,29,0.10)" : "#232a3b",
     color: disabled ? "var(--ink-faint)" : "#ffffff",
     border: "none",
     borderRadius: 9,
