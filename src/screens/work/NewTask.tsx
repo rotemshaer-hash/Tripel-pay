@@ -29,6 +29,15 @@ export function NewTask() {
   const [priority, setPriority] = useState<TaskPriority>("normal");
   const [recurrence, setRecurrence] = useState<RecurrenceRule>("none");
   const [site, setSite] = useState("");
+  const [steps, setSteps] = useState<string[]>([]);
+  const [stepDraft, setStepDraft] = useState("");
+
+  function addStep() {
+    const text = stepDraft.trim();
+    if (!text) return;
+    setSteps((list) => [...list, text]);
+    setStepDraft("");
+  }
 
   const canSave = title.trim().length > 0 && assignee.length > 0;
 
@@ -46,12 +55,14 @@ export function NewTask() {
       priority,
       recurrence,
       site: site.trim() || undefined,
+      checklist: steps.map((text) => ({ id: `ck-${crypto.randomUUID()}`, text, done: false })),
       by: state.family.parentName || V.admin,
     });
     showToast(`המשימה הוקצתה ל${worker?.name ?? V.worker}`);
     if (andAnother) {
       setTitle("");
       setBrief("");
+      setSteps([]);
       return;
     }
     setTimeout(() => navigate("/work/journal"), 400);
@@ -74,6 +85,46 @@ export function NewTask() {
             placeholder="הנחיות מדויקות, על מה לשים לב, ציוד נדרש…"
             style={{ ...inputStyle, fontFamily: "inherit", resize: "vertical" }}
           />
+        </Field>
+
+        <Field label="שלבי ביצוע">
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.5, marginBottom: 9 }}>
+            פירוק המשימה לשלבים שהעובד מסמן תוך כדי — כך רואים מה בדיוק בוצע ומה נשאר.
+          </div>
+          {steps.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 9 }}>
+              {steps.map((text, i) => (
+                <div key={`${text}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--paper)", borderRadius: 8, padding: "7px 10px" }}>
+                  <span style={{ fontSize: 11, color: "var(--ink-faint)", fontWeight: 800, minWidth: 14 }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 13 }}>{text}</span>
+                  <button
+                    onClick={() => setSteps((list) => list.filter((_, j) => j !== i))}
+                    aria-label={`הסרת שלב ${i + 1}`}
+                    style={{ background: "none", border: "none", color: "#e0224a", fontSize: 15, fontWeight: 800, padding: "0 4px" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={stepDraft}
+              onChange={(e) => setStepDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                // Enter adds a step; without this it would submit nothing and feel broken.
+                e.preventDefault();
+                addStep();
+              }}
+              placeholder="לדוגמה: לרוקן פחים"
+              style={inputStyle}
+            />
+            <button onClick={addStep} disabled={!stepDraft.trim()} style={{ ...secondaryBtn, opacity: stepDraft.trim() ? 1 : 0.5 }}>
+              הוספה
+            </button>
+          </div>
         </Field>
 
         <Field label={`${V.worker} אחראי`} required>
@@ -107,7 +158,9 @@ export function NewTask() {
             ))}
           </div>
           {recurrence !== "none" && (
-            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>משימה קבועה — תסומן ביומן כחוזרת.</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6, lineHeight: 1.5 }}>
+              משימה קבועה — המופע הבא ייווצר אוטומטית ביום היעד שלו, כולל שלבי הביצוע. אפשר להפסיק את הסדרה בכל שלב ממסך המשימה.
+            </div>
           )}
         </Field>
 

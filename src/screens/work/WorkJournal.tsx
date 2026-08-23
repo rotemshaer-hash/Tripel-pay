@@ -5,7 +5,8 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels } from "../../data/vocabulary";
-import { formatDateTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
+import { formatDate, formatDateTime, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
+import { downloadCsv, toCsv } from "../../utils/exportCsv";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
 const actionColor: Record<ActivityEntry["action"], string> = {
@@ -58,9 +59,41 @@ export function WorkJournal() {
     return { feed: rows, done, awaiting, overdue };
   }, [workers, workerId, range]);
 
+  // Exactly what's on screen — the same range and worker filter — so the file the
+  // manager sends on always matches the journal they were just looking at.
+  function exportRange() {
+    const rows = feed.map(({ entry, task, worker }) => [
+      formatDate(entry.at),
+      formatTime(entry.at),
+      worker.name,
+      task.title,
+      task.site ?? "",
+      activityLabels[entry.action] ?? entry.action,
+      entry.by,
+      entry.detail ?? "",
+      task.dueAt ? formatDate(task.dueAt) : "",
+    ]);
+    const csv = toCsv(["תאריך", "שעה", V.worker, V.task, V.site, "פעולה", "בוצע על ידי", "פירוט", "תאריך יעד"], rows);
+    downloadCsv(`work-journal-${rangeLabels[range]}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
     <div className="screen">
-      <Header title={V.journal} subtitle="תיעוד מלא של העבודה" tint="pro" />
+      <Header
+        title={V.journal}
+        subtitle="תיעוד מלא של העבודה"
+        tint="pro"
+        right={
+          feed.length > 0 ? (
+            <button
+              onClick={exportRange}
+              style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 800 }}
+            >
+              ייצוא
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* range switch */}
       <div style={{ display: "flex", gap: 6, padding: "16px 20px 0" }}>

@@ -29,6 +29,7 @@ function normalizeChild(c: Child): Child {
       comments: t.comments ?? [],
       proofs: t.proofs ?? [],
       briefAttachments: t.briefAttachments ?? [],
+      checklist: t.checklist ?? [],
     })),
     transactions: c.transactions ?? [],
     savingsGoals: c.savingsGoals ?? [],

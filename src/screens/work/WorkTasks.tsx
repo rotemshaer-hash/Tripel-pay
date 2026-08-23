@@ -136,6 +136,23 @@ export function WorkTasks() {
                   </>
                 )}
               </div>
+              {(task.checklist ?? []).length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 7 }}>
+                  <div style={{ flex: 1, height: 4, borderRadius: 999, background: "var(--line-soft)", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${Math.round(((task.checklist ?? []).filter((i) => i.done).length / (task.checklist ?? []).length) * 100)}%`,
+                        background: (task.checklist ?? []).every((i) => i.done) ? "#1f9e8a" : "#232a3b",
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: 10.5, color: "var(--ink-faint)", fontWeight: 700 }}>
+                    {(task.checklist ?? []).filter((i) => i.done).length}/{(task.checklist ?? []).length} שלבים
+                  </span>
+                </div>
+              )}
             </button>
           );
         })}

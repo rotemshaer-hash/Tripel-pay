@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useReducer, type ReactNode } from "react";
 import { seedFamily, templateChild } from "./seed";
 import { childrenList, normalizeFamily } from "./family";
-import type { ActivityEntry, Attachment, Child, ChildSettings, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
+import { endOfDay, nextDueDate, toDate } from "../utils/datetime";
+import type { ActivityEntry, Attachment, ChecklistItem, Child, ChildSettings, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
 import {
   onAuthChange,
   registerParent,
@@ -60,6 +61,7 @@ type Action =
       recurrence?: TaskItem["recurrence"];
       site?: string;
       category?: TaskCategory;
+      checklist?: ChecklistItem[];
       by?: string;
       at?: string;
     }
@@ -77,6 +79,10 @@ type Action =
   | { type: "ADD_SAVINGS_GOAL"; childId: string; goal: SavingsGoal }
   | { type: "UPDATE_SETTINGS"; childId: string; patch: Partial<ChildSettings> }
   | { type: "ADD_AUTHORIZED_PERSON"; childId: string; name: string; relation: string }
+  | { type: "ROLL_RECURRING_TASKS"; now: number }
+  | { type: "STOP_TASK_SERIES"; childId: string; taskId: string; by?: string; at?: string }
+  | { type: "RESUME_TASK_SERIES"; childId: string; taskId: string; by?: string; at?: string }
+  | { type: "TOGGLE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string; by?: string; at?: string }
   | { type: "ADD_WORKER"; name: string }
   | { type: "ADD_HOUSE_RULE"; text: string }
   | { type: "REMOVE_HOUSE_RULE"; ruleId: string }
@@ -243,9 +249,11 @@ function reducer(state: AppState, action: Action): AppState {
     case "CREATE_TASK": {
       // A free-form task written by the manager, with no template behind it.
       const at = action.at ?? new Date().toISOString();
+      const id = `t-${crypto.randomUUID()}`;
+      const repeats = (action.recurrence ?? "none") !== "none";
       const task: TaskItem = logActivity(
         {
-          id: `t-${crypto.randomUUID()}`,
+          id,
           title: action.title,
           reward: 0,
           category: action.category ?? "other",
@@ -256,6 +264,10 @@ function reducer(state: AppState, action: Action): AppState {
           priority: action.priority ?? "normal",
           recurrence: action.recurrence ?? "none",
           site: action.site,
+          // A repeating job opens a series named after its first occurrence; every
+          // occurrence the engine generates later carries the same id.
+          ...(repeats ? { seriesId: id } : {}),
+          checklist: action.checklist ?? [],
           activity: [],
         },
         { by: action.by ?? "", action: "assigned", detail: action.dueAt ? `יעד: ${action.dueAt.slice(0, 10)}` : undefined },
@@ -465,6 +477,140 @@ function reducer(state: AppState, action: Action): AppState {
             authorizedPeople: [...c.settings.authorizedPeople, { id: `ap-${crypto.randomUUID()}`, name: action.name, relation: action.relation }],
           },
         })),
+      };
+    }
+    case "ROLL_RECURRING_TASKS": {
+      // Turn repeat rules into real tasks.
+      //
+      // Every occurrence of a repeating job shares a seriesId, so a series is just the
+      // tasks carrying that id. For each one we look at its NEWEST occurrence, step its
+      // due date forward by the rule, and create every occurrence that has come due —
+      // catching up on a gap (nobody opened the app over the weekend) in one pass.
+      //
+      // Idempotent by construction: it derives everything from the tasks present in the
+      // CURRENT state, so a second dispatch sees the occurrences the first one created
+      // and finds nothing left to generate — a StrictMode double-invoke is a no-op.
+      const horizon = endOfDay(new Date(action.now)).getTime();
+      // A neglected daily job would otherwise pile up an unbounded wall of overdue
+      // copies. Cap the open ones: three unfinished occurrences already say "this is
+      // being missed", and the trail keeps the full history either way.
+      const MAX_OPEN_PER_SERIES = 3;
+      // A hard stop on one pass, so a clock jump or a very old record can never spin.
+      const MAX_PER_PASS = 60;
+
+      let changed = false;
+      const children = { ...state.family.children };
+
+      for (const childId of state.family.childOrder) {
+        const child = children[childId];
+        if (!child) continue;
+
+        const bySeries = new Map<string, TaskItem[]>();
+        for (const t of child.tasks) {
+          if (!t.seriesId) continue;
+          const list = bySeries.get(t.seriesId);
+          if (list) list.push(t);
+          else bySeries.set(t.seriesId, [t]);
+        }
+
+        const generated: TaskItem[] = [];
+        for (const [seriesId, occurrences] of bySeries) {
+          const newest = occurrences.reduce((a, b) => ((toDate(b.dueAt)?.getTime() ?? 0) > (toDate(a.dueAt)?.getTime() ?? 0) ? b : a));
+          if (newest.seriesStoppedAt) continue;
+          const rule = newest.recurrence;
+          if (!rule || rule === "none") continue;
+          const anchor = toDate(newest.dueAt);
+          if (!anchor) continue;
+
+          // Firebase's set() rejects undefined values, so last occurrence's lifecycle
+          // stamps are dropped as keys rather than blanked out.
+          const { startedAt: _s, submittedAt: _sub, approvedAt: _a, rewardRevealed: _r, seriesStoppedAt: _st, tradeOfferedTo: _tr, ...blueprint } = newest;
+
+          // Every occurrence whose due date has arrived, oldest first...
+          const dueDates: Date[] = [];
+          let next = nextDueDate(anchor, rule);
+          while (next.getTime() <= horizon && dueDates.length < MAX_PER_PASS) {
+            dueDates.push(next);
+            next = nextDueDate(next, rule);
+          }
+          const open = occurrences.filter((t) => t.status !== "completed").length;
+          const slots = MAX_OPEN_PER_SERIES - open;
+          if (slots <= 0 || dueDates.length === 0) continue;
+          // ...but when a long gap owes more than the cap allows, keep the MOST RECENT
+          // ones. Recreating the oldest missed days instead would leave today's job
+          // missing, which is the one the worker actually needs to see; that a day was
+          // skipped is already permanent in the trail.
+          for (const when of dueDates.slice(-slots)) {
+            const at = when.toISOString();
+            generated.push(
+              logActivity(
+                {
+                  ...blueprint,
+                  id: `t-${crypto.randomUUID()}`,
+                  status: "available",
+                  dueAt: at,
+                  createdAt: at,
+                  seriesId,
+                  autoGenerated: true,
+                  // A fresh occurrence starts clean: last time's evidence, conversation
+                  // and ticked steps belong to last time's record, not to this one.
+                  proofs: [],
+                  comments: [],
+                  activity: [],
+                  checklist: (newest.checklist ?? []).map((i) => ({ id: `ck-${crypto.randomUUID()}`, text: i.text, done: false })),
+                },
+                { by: "", action: "created", detail: "אוטומטית, לפי התדירות שהוגדרה" },
+                at
+              )
+            );
+          }
+        }
+
+        if (generated.length > 0) {
+          children[childId] = { ...child, tasks: [...generated, ...child.tasks] };
+          changed = true;
+        }
+      }
+
+      if (!changed) return state;
+      return { ...state, family: { ...state.family, children } };
+    }
+    case "STOP_TASK_SERIES": {
+      // Ending a series is a property of its newest occurrence, because that's the one
+      // generation reads — no separate series record to keep in sync.
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => logActivity({ ...t, seriesStoppedAt: at }, { by: action.by ?? "", action: "commented", detail: "המשימה הקבועה הופסקה" }, at))
+        ),
+      };
+    }
+    case "RESUME_TASK_SERIES": {
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => {
+            // Firebase's set() rejects undefined, so clear the flag by dropping the key.
+            const { seriesStoppedAt: _stopped, ...rest } = t;
+            return logActivity(rest, { by: action.by ?? "", action: "commented", detail: "המשימה הקבועה חודשה" }, at);
+          })
+        ),
+      };
+    }
+    case "TOGGLE_CHECKLIST_ITEM": {
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => ({
+            ...t,
+            checklist: (t.checklist ?? []).map((i) =>
+              i.id === action.itemId ? (i.done ? { id: i.id, text: i.text, done: false } : { ...i, done: true, doneAt: at, doneBy: action.by ?? "" }) : i
+            ),
+          }))
+        ),
       };
     }
     case "ADD_WORKER": {
@@ -685,6 +831,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
     if (due) dispatch({ type: "ACCRUE_ALLOWANCES", now });
   }, [state.family, state.role, state.familyUid]);
+
+  // Recurring work: whenever the app is open, materialise every occurrence of a
+  // repeating job whose due date has arrived. The reducer derives what's missing from
+  // the tasks already present, so running this on every render pass is safe — the
+  // guard here only avoids dispatching when there is demonstrably nothing to create.
+  // Either side can trigger it: a worker opening the app on Sunday morning should see
+  // Sunday's job even if the manager hasn't logged in for a week.
+  useEffect(() => {
+    if (!state.familyUid) return;
+    const now = Date.now();
+    const horizon = endOfDay(new Date(now)).getTime();
+    const due = childrenList(state.family).some((c) => {
+      const newestBySeries = new Map<string, TaskItem>();
+      for (const t of c.tasks) {
+        if (!t.seriesId) continue;
+        const current = newestBySeries.get(t.seriesId);
+        if (!current || (toDate(t.dueAt)?.getTime() ?? 0) > (toDate(current.dueAt)?.getTime() ?? 0)) newestBySeries.set(t.seriesId, t);
+      }
+      return [...newestBySeries.values()].some((t) => {
+        if (t.seriesStoppedAt || !t.recurrence || t.recurrence === "none") return false;
+        const anchor = toDate(t.dueAt);
+        if (!anchor) return false;
+        const openInSeries = c.tasks.filter((o) => o.seriesId === t.seriesId && o.status !== "completed").length;
+        return openInSeries < 3 && nextDueDate(anchor, t.recurrence).getTime() <= horizon;
+      });
+    });
+    if (due) dispatch({ type: "ROLL_RECURRING_TASKS", now });
+  }, [state.family, state.familyUid]);
 
   const completeOnboarding = useMemo(
     () => async (email: string, password: string, name: string, childNames?: string[]) => {

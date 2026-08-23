@@ -77,3 +77,23 @@ export function isOverdue(dueAt: string | undefined, status: string): boolean {
   if (!d || status === "completed") return false;
   return d.getTime() < Date.now();
 }
+
+/** End of the given day — the moment an occurrence due "today" stops being in the future. */
+export function endOfDay(d = new Date()): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
+
+/**
+ * The due date of the occurrence that follows `from` under a repeat rule.
+ *
+ * Monthly steps keep the day-of-month and clamp to the month's length, so a job due
+ * on the 31st recurs on the 30th of a 30-day month and on the 28th of February —
+ * without silently drifting into the following month the way a naive +1 month does.
+ */
+export function nextDueDate(from: Date, rule: "daily" | "weekly" | "monthly"): Date {
+  if (rule === "daily") return new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1, from.getHours(), from.getMinutes(), from.getSeconds());
+  if (rule === "weekly") return new Date(from.getFullYear(), from.getMonth(), from.getDate() + 7, from.getHours(), from.getMinutes(), from.getSeconds());
+  const targetMonth = from.getMonth() + 1;
+  const lastDay = new Date(from.getFullYear(), targetMonth + 1, 0).getDate();
+  return new Date(from.getFullYear(), targetMonth, Math.min(from.getDate(), lastDay), from.getHours(), from.getMinutes(), from.getSeconds());
+}
