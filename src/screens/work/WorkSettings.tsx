@@ -16,10 +16,15 @@ import { V, work } from "../../data/vocabulary";
  * needs — who's on the account, adding a hire, and signing out.
  */
 export function WorkSettings() {
-  const { state, dispatch, logout } = useStore();
+  const { state, dispatch, logout, deleteAccount } = useStore();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const [name, setName] = useState("");
+  const [closing, setClosing] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const workers = childrenList(state.family);
 
   function addWorker() {
@@ -28,6 +33,29 @@ export function WorkSettings() {
     dispatch({ type: "ADD_WORKER", name: trimmed });
     showToast(`${trimmed} נוסף/ה לצוות`);
     setName("");
+  }
+
+  const CONFIRM_WORD = "מחיקה";
+  const isOwner = state.uid === state.familyUid;
+
+  async function confirmDelete() {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteAccount(password);
+      navigate("/onboarding/splash");
+    } catch (err) {
+      console.error("Account deletion failed:", err);
+      const code = (err as { code?: string })?.code;
+      setDeleteError(
+        code === "auth/wrong-password" || code === "auth/invalid-credential"
+          ? "הסיסמה שגויה"
+          : code === "auth/too-many-requests"
+            ? "יותר מדי ניסיונות — נסה שוב בעוד כמה דקות"
+            : "המחיקה נכשלה. בדוק את החיבור ונסה שוב."
+      );
+      setDeleting(false);
+    }
   }
 
   return (
@@ -71,10 +99,92 @@ export function WorkSettings() {
             await logout();
             navigate("/onboarding/splash");
           }}
-          style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, color: work.alert }}
+          style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
         >
           התנתקות
         </button>
+
+        {isOwner && (
+          <section style={{ ...card, borderColor: "#f3c0c9", marginTop: 8 }}>
+            <div style={{ ...cardTitle, color: work.alert }}>מחיקת החשבון</div>
+            {!closing ? (
+              <>
+                <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 11 }}>
+                  מוחק לצמיתות את החשבון ואת כל מה שבו — משימות, אסמכתאות ויומן העבודה. הפעולה לא ניתנת לביטול.
+                </div>
+                <button
+                  onClick={() => setClosing(true)}
+                  style={{ width: "100%", background: "#ffffff", border: `1px solid ${work.alert}`, borderRadius: 10, padding: "12px", fontSize: 13.5, fontWeight: 700, color: work.alert }}
+                >
+                  מחיקת החשבון
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.65, marginBottom: 10 }}>
+                  יימחקו לצמיתות: {workers.length} {V.workerPlural}, כל המשימות והאסמכתאות, וכל יומן העבודה.
+                  {" "}
+                  <strong>כדאי לייצא את היומן ל-CSV לפני כן.</strong>
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.6, marginBottom: 12, background: "var(--paper)", borderRadius: 8, padding: "8px 10px" }}>
+                  {`${V.workerPlural} שכבר נרשמו נשארים עם חשבון משלהם שאי אפשר למחוק מכאן — הוא פשוט לא יוביל לשום מקום. כל אחד מהם יכול למחוק אותו בעצמו.`}
+                </div>
+
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", display: "block", marginBottom: 5 }}>הסיסמה שלך</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="לאימות שזה באמת אתה"
+                  style={{ width: "100%", padding: "11px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13.5, marginBottom: 10 }}
+                />
+
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", display: "block", marginBottom: 5 }}>
+                  {`הקלד "${CONFIRM_WORD}" כדי לאשר`}
+                </label>
+                <input
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  style={{ width: "100%", padding: "11px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13.5, marginBottom: 10 }}
+                />
+
+                {deleteError && <div style={{ fontSize: 12.5, color: work.alert, marginBottom: 10 }}>{deleteError}</div>}
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={deleting || password.length < 6 || confirmText.trim() !== CONFIRM_WORD}
+                    style={{
+                      flex: 1,
+                      background: work.alert,
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 10,
+                      padding: "12px",
+                      fontSize: 13.5,
+                      fontWeight: 800,
+                      opacity: deleting || password.length < 6 || confirmText.trim() !== CONFIRM_WORD ? 0.4 : 1,
+                    }}
+                  >
+                    {deleting ? "מוחק…" : "מחיקה סופית"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setClosing(false);
+                      setPassword("");
+                      setConfirmText("");
+                      setDeleteError("");
+                    }}
+                    disabled={deleting}
+                    style={{ flex: 1, background: "#ffffff", border: "1px solid var(--line)", borderRadius: 10, padding: "12px", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+        )}
       </div>
 
       <Toast message={toastMessage} />

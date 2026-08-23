@@ -5,9 +5,12 @@ import {
   signOut,
   updateProfile,
   onAuthStateChanged,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   type User,
 } from "firebase/auth";
-import { ref, set, get } from "firebase/database";
+import { ref, set, get, remove } from "firebase/database";
 import { auth, db } from "./config";
 import { seedFamily } from "../data/seed";
 import { createInviteCode, createParentInviteCode } from "./db";
@@ -80,6 +83,53 @@ export async function resetParentPassword(email: string) {
 
 export async function logoutParent() {
   return signOut(auth);
+}
+
+/**
+ * Closes the account: the whole record, its invite codes, and the sign-in itself.
+ *
+ * Order matters and is not arbitrary.
+ *
+ * 1. Re-authenticate FIRST. Firebase refuses to delete a user whose session is not
+ *    fresh, so this is required anyway — but doing it before anything is destroyed
+ *    means a wrong password costs nothing instead of stopping halfway through with
+ *    the data already gone.
+ * 2. Then the database, while the account still exists. The security rules key every
+ *    write on the signed-in uid, so deleting the login first would lock us out of
+ *    the very records we came to remove and strand them forever.
+ * 3. The login last.
+ *
+ * Invite codes are found by name from the family record rather than by searching:
+ * the codes index is not readable as a whole (by design — it would list every
+ * account's codes), but every code this account owns is written inside its own record.
+ *
+ * What this CANNOT do, and the UI says so: an employee who already signed up has
+ * their own Firebase identity. Only that person, or a server holding admin
+ * credentials, can delete it — a manager's session cannot reach another account.
+ * Those logins are left behind with nothing to sign in to.
+ */
+export async function deleteOwnAccount(password: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error("not-signed-in");
+
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+
+  const uid = user.uid;
+  const family = await fetchFamily(uid);
+  if (family) {
+    const codes = Object.values(family.children)
+      .map((c) => c.inviteCode)
+      .filter(Boolean);
+    // One failed code must not abort the rest; a leftover code points at a record that
+    // no longer exists and simply resolves to nothing.
+    await Promise.all(codes.map((code) => remove(ref(db, `inviteCodes/${code}`)).catch(() => {})));
+    if (family.parentInviteCode) {
+      await remove(ref(db, `parentInviteCodes/${family.parentInviteCode}`)).catch(() => {});
+    }
+    await remove(ref(db, `families/${uid}`));
+  }
+
+  await deleteUser(user);
 }
 
 export async function fetchFamily(uid: string): Promise<Family | null> {

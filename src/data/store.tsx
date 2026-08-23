@@ -15,6 +15,7 @@ import {
   registerSecondParent,
   fetchParentLink,
   resetParentPassword,
+  deleteOwnAccount,
 } from "../firebase/auth";
 import { auth } from "../firebase/config";
 import { subscribeFamily, saveFamily, saveChildOnly } from "../firebase/db";
@@ -752,6 +753,7 @@ interface StoreContextValue {
   loginChildSession: (username: string, password: string) => Promise<void>;
   registerSecondParentSession: (code: string, email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
 
@@ -935,11 +937,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useMemo(() => async () => logoutParent(), []);
+  // Only the account owner can close the account. A second admin shares write access
+  // to the record but the login being deleted is not theirs, so the two halves would
+  // come apart: the data gone, the owner's sign-in still live and pointing at nothing.
+  const deleteAccount = useMemo(
+    () => async (password: string) => {
+      if (state.role !== "parent" || !state.uid || state.uid !== state.familyUid) throw new Error("not-owner");
+      await deleteOwnAccount(password);
+    },
+    [state.role, state.uid, state.familyUid]
+  );
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, resetPassword }),
-    [state, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, resetPassword]
+    () => ({ state, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, resetPassword }),
+    [state, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
