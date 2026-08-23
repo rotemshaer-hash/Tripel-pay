@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../../data/store";
+import { homePath } from "../../data/routes";
 import { Logo } from "../../components/Logo";
 import { PrimaryButton } from "../../components/UI";
 
@@ -29,7 +30,7 @@ export function Success() {
       sessionStorage.removeItem("tp-onboarding-password");
       sessionStorage.removeItem("tp-onboarding-kids");
       sessionStorage.removeItem("tp-onboarding-child-names");
-      navigate("/parent");
+      navigate(homePath("parent"));
     } catch (err) {
       console.error("Registration failed:", err);
       const code = (err as { code?: string })?.code;

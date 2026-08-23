@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
+import { homePath } from "../data/routes";
+import { V } from "../data/vocabulary";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
 
@@ -31,7 +33,7 @@ export function Login() {
       console.error("Password reset failed:", err);
       const code = (err as { code?: string })?.code;
       if (code === "auth/user-not-found") {
-        setError("לא נמצא חשבון הורה עם האימייל הזה — ודאו שנרשמתם קודם עם כתובת זו");
+        setError(`לא נמצא חשבון ${V.admin} עם האימייל הזה — יש לוודא שנרשמתם קודם עם כתובת זו`);
       } else if (code === "auth/too-many-requests") {
         setError("יותר מדי נסיונות — נסו שוב בעוד כמה דקות");
       } else {
@@ -48,10 +50,10 @@ export function Login() {
     try {
       if (role === "parent") {
         await login(email.trim(), password);
-        navigate("/parent");
+        navigate(homePath("parent"));
       } else {
         await loginChildSession(username, password);
-        navigate("/child");
+        navigate(homePath("child"));
       }
     } catch (err) {
       console.error("Login failed:", err);
@@ -91,7 +93,7 @@ export function Login() {
                 color: role === r ? "#fff" : "var(--ink-soft)",
               }}
             >
-              {r === "parent" ? "הורה" : "ילד/ה"}
+              {r === "parent" ? V.admin : V.worker}
             </button>
           ))}
         </div>

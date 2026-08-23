@@ -1,4 +1,5 @@
 import type { TransactionItem } from "../data/types";
+import { formatDate } from "../utils/datetime";
 
 /**
  * A single transaction as a floating pill with a glowing directional orb —
@@ -40,7 +41,7 @@ export function TransactionRow({ tx }: { tx: TransactionItem }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.title}</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>
-          {tx.date}
+          {formatDate(tx.date)}
           {tx.location ? ` · ${tx.location}` : ""}
         </div>
       </div>

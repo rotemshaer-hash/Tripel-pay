@@ -21,7 +21,16 @@ export function totalEarned(c: Child): number {
 function normalizeChild(c: Child): Child {
   return {
     ...c,
-    tasks: c.tasks ?? [],
+    // Task-level arrays need the same backfill as the child-level ones — an empty
+    // audit trail or attachment list comes back from Firebase as a missing key.
+    tasks: (c.tasks ?? []).map((t) => ({
+      ...t,
+      activity: t.activity ?? [],
+      comments: t.comments ?? [],
+      proofs: t.proofs ?? [],
+      briefAttachments: t.briefAttachments ?? [],
+      checklist: t.checklist ?? [],
+    })),
     transactions: c.transactions ?? [],
     savingsGoals: c.savingsGoals ?? [],
     savingsHistory: c.savingsHistory ?? [],

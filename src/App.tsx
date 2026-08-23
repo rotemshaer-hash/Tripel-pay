@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useStore } from "./data/store";
+import { MODE } from "./data/vocabulary";
+import { homePath } from "./data/routes";
 
 import { Splash } from "./screens/onboarding/Splash";
 import { Welcome } from "./screens/onboarding/Welcome";
@@ -31,30 +33,42 @@ import { ChildMyVouchers } from "./screens/child/MyVouchers";
 import { ChildMyCards } from "./screens/child/MyCards";
 import { ChildAllTasks } from "./screens/child/AllTasks";
 
+import { WorkJournal } from "./screens/work/WorkJournal";
+import { TaskDetail } from "./screens/work/TaskDetail";
+import { NewTask } from "./screens/work/NewTask";
+import { WorkTasks } from "./screens/work/WorkTasks";
+import { WorkTeam } from "./screens/work/WorkTeam";
+import { WorkSettings } from "./screens/work/WorkSettings";
+
 function RequireOnboarded({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   if (!state.onboarded) return <Navigate to="/onboarding/splash" replace />;
   return <>{children}</>;
 }
 
-// A real child login has its own account, but it's still just one linked identity
-// within the parent's family record — the parent-only screens (freeze a card, edit
-// house rules, assign tasks to a sibling) must never be reachable by typing the URL.
+// A worker login has its own account, but it's still one linked identity within the
+// company record — the manager-only screens (assign work, approve it, edit the roster)
+// must never be reachable by typing the URL.
 function RequireParent({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   if (!state.onboarded) return <Navigate to="/onboarding/splash" replace />;
-  if (state.role === "child") return <Navigate to="/child" replace />;
+  if (state.role === "child") return <Navigate to={homePath("child")} replace />;
   return <>{children}</>;
 }
 
 export default function App() {
   const { state } = useStore();
 
+  // In business mode the family surfaces (wallet, savings, rewards, lessons) aren't
+  // part of the product, so the entry point goes straight to the work screens:
+  // managers land on the journal, workers on their own task list.
+  const home = state.onboarded ? homePath(state.viewMode) : "/onboarding/splash";
+
   return (
     <div className="app-backdrop">
       <div className="phone-shell">
         <Routes>
-          <Route path="/" element={<Navigate to={state.onboarded ? `/${state.viewMode}` : "/onboarding/splash"} replace />} />
+          <Route path="/" element={<Navigate to={home} replace />} />
 
           <Route path="/onboarding/splash" element={<Splash />} />
           <Route path="/onboarding/welcome" element={<Welcome />} />
@@ -65,26 +79,41 @@ export default function App() {
           <Route path="/child-register" element={<ChildRegister />} />
           <Route path="/parent-register" element={<SecondParentRegister />} />
 
-          <Route path="/parent" element={<RequireParent><ParentHome /></RequireParent>} />
-          <Route path="/parent/tasks-bank" element={<RequireParent><TasksBank /></RequireParent>} />
-          <Route path="/parent/gift-bank" element={<RequireParent><GiftBank /></RequireParent>} />
-          <Route path="/parent/child-tasks" element={<RequireParent><ChildTasks /></RequireParent>} />
-          <Route path="/parent/child-hub" element={<RequireParent><ChildHub /></RequireParent>} />
-          <Route path="/parent/savings" element={<RequireParent><ParentSavings /></RequireParent>} />
-          <Route path="/parent/transactions" element={<RequireParent><ParentTransactions /></RequireParent>} />
-          <Route path="/parent/achievements" element={<RequireParent><ParentAchievements /></RequireParent>} />
-          <Route path="/parent/settings" element={<RequireParent><ParentSettings /></RequireParent>} />
-          <Route path="/parent/house-rules" element={<RequireParent><HouseRules /></RequireParent>} />
+          {/* The family surfaces — wallet, savings, gift bank, house rules, money
+              transfers, lessons, achievements — are a different product. In business
+              mode they aren't registered at all, so they can't be reached by typing a
+              URL either; anything unknown falls through to the redirect below. */}
+          {MODE === "family" && (
+            <>
+              <Route path="/parent" element={<RequireParent><ParentHome /></RequireParent>} />
+              <Route path="/parent/tasks-bank" element={<RequireParent><TasksBank /></RequireParent>} />
+              <Route path="/parent/gift-bank" element={<RequireParent><GiftBank /></RequireParent>} />
+              <Route path="/parent/child-tasks" element={<RequireParent><ChildTasks /></RequireParent>} />
+              <Route path="/parent/child-hub" element={<RequireParent><ChildHub /></RequireParent>} />
+              <Route path="/parent/savings" element={<RequireParent><ParentSavings /></RequireParent>} />
+              <Route path="/parent/transactions" element={<RequireParent><ParentTransactions /></RequireParent>} />
+              <Route path="/parent/achievements" element={<RequireParent><ParentAchievements /></RequireParent>} />
+              <Route path="/parent/settings" element={<RequireParent><ParentSettings /></RequireParent>} />
+              <Route path="/parent/house-rules" element={<RequireParent><HouseRules /></RequireParent>} />
+              <Route path="/child" element={<RequireOnboarded><ChildHome /></RequireOnboarded>} />
+              <Route path="/child/courses" element={<RequireOnboarded><ChildCourses /></RequireOnboarded>} />
+              <Route path="/child/savings" element={<RequireOnboarded><ChildSavings /></RequireOnboarded>} />
+              <Route path="/child/transactions" element={<RequireOnboarded><ChildTransactions /></RequireOnboarded>} />
+              <Route path="/child/achievements" element={<RequireOnboarded><ChildAchievements /></RequireOnboarded>} />
+              <Route path="/child/house-rules" element={<RequireOnboarded><ChildHouseRules /></RequireOnboarded>} />
+              <Route path="/child/vouchers" element={<RequireOnboarded><ChildMyVouchers /></RequireOnboarded>} />
+              <Route path="/child/cards" element={<RequireOnboarded><ChildMyCards /></RequireOnboarded>} />
+              <Route path="/child/tasks" element={<RequireOnboarded><ChildAllTasks /></RequireOnboarded>} />
+            </>
+          )}
 
-          <Route path="/child" element={<RequireOnboarded><ChildHome /></RequireOnboarded>} />
-          <Route path="/child/courses" element={<RequireOnboarded><ChildCourses /></RequireOnboarded>} />
-          <Route path="/child/savings" element={<RequireOnboarded><ChildSavings /></RequireOnboarded>} />
-          <Route path="/child/transactions" element={<RequireOnboarded><ChildTransactions /></RequireOnboarded>} />
-          <Route path="/child/achievements" element={<RequireOnboarded><ChildAchievements /></RequireOnboarded>} />
-          <Route path="/child/house-rules" element={<RequireOnboarded><ChildHouseRules /></RequireOnboarded>} />
-          <Route path="/child/vouchers" element={<RequireOnboarded><ChildMyVouchers /></RequireOnboarded>} />
-          <Route path="/child/cards" element={<RequireOnboarded><ChildMyCards /></RequireOnboarded>} />
-          <Route path="/child/tasks" element={<RequireOnboarded><ChildAllTasks /></RequireOnboarded>} />
+          {/* work-journal (business mode) */}
+          <Route path="/work/journal" element={<RequireParent><WorkJournal /></RequireParent>} />
+          <Route path="/work/tasks" element={<RequireOnboarded><WorkTasks /></RequireOnboarded>} />
+          <Route path="/work/new" element={<RequireParent><NewTask /></RequireParent>} />
+          <Route path="/work/team" element={<RequireParent><WorkTeam /></RequireParent>} />
+          <Route path="/work/settings" element={<RequireParent><WorkSettings /></RequireParent>} />
+          <Route path="/work/task/:workerId/:taskId" element={<RequireOnboarded><TaskDetail /></RequireOnboarded>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

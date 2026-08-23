@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { BrandDecor } from "../../components/BrandDecor";
+import { MODE } from "../../data/vocabulary";
 import { HeroBanner } from "../../components/Illustrations";
 
 export function Splash() {
@@ -53,7 +54,7 @@ export function Splash() {
       <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.01em", position: "relative", zIndex: 1, color: "var(--ink)" }}>
         Triple<span style={{ color: "var(--violet-700)" }}>Pay</span>
       </div>
-      <div style={{ fontSize: 13.5, color: "var(--ink-soft)", position: "relative", zIndex: 1, marginBottom: 12 }}>דמי כיס · מטלות · חיסכון</div>
+      <div style={{ fontSize: 13.5, color: "var(--ink-soft)", position: "relative", zIndex: 1, marginBottom: 12 }}>{MODE === "work" ? "משימות · אסמכתאות · יומן עבודה" : "דמי כיס · מטלות · חיסכון"}</div>
       <div style={{ flex: 1 }} />
 
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12, position: "relative", zIndex: 1 }}>

@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useStore } from "../data/store";
+import { homePath } from "../data/routes";
+import { V } from "../data/vocabulary";
 import { IconParentUser, IconChildUser } from "./Icons";
 import { SurrealBackdrop } from "./SurrealBackdrop";
 
@@ -10,13 +12,13 @@ function RoleSwitcher() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  // A real child login has no parent view to preview — this pill is only the parent's
-  // own convenience toggle for checking what their kid's screen looks like.
+  // A worker login has no manager view to preview — this pill is only the admin's own
+  // convenience toggle for checking what the other side's screen looks like.
   if (state.role === "child" || !state.onboarded || location.pathname.startsWith("/onboarding") || location.pathname === "/login") return null;
 
   function go(mode: "parent" | "child") {
     dispatch({ type: "SET_VIEW_MODE", mode });
-    navigate(`/${mode}`);
+    navigate(homePath(mode));
   }
 
   return (
@@ -26,14 +28,14 @@ function RoleSwitcher() {
         onClick={() => go("parent")}
         style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        <IconParentUser size={13} strokeWidth={2.2} /> הורה
+        <IconParentUser size={13} strokeWidth={2.2} /> {V.admin}
       </button>
       <button
         className={state.viewMode === "child" ? "active" : ""}
         onClick={() => go("child")}
         style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        <IconChildUser size={13} strokeWidth={2.2} /> ילד
+        <IconChildUser size={13} strokeWidth={2.2} /> {V.worker}
       </button>
     </div>
   );
@@ -53,22 +55,27 @@ export function Header({
   back?: boolean;
   right?: ReactNode;
   tall?: boolean;
-  tint?: "red" | "purple" | "transparent" | "playful";
+  /** "pro" is the business/work-journal look: a calm slate bar, no melt edge or
+   * floating decorations — deliberately sober next to the family app's playful sky. */
+  tint?: "red" | "purple" | "transparent" | "playful" | "pro";
   children?: ReactNode;
 }) {
   const navigate = useNavigate();
   const playful = tint === "playful";
+  const pro = tint === "pro";
   return (
     <header
       className={playful ? "dream-sky" : undefined}
       style={{
         background: playful
           ? "linear-gradient(120deg, var(--header-gradient) 0%, var(--violet-700) 45%, var(--amber-600) 75%, var(--header-gradient) 100%)"
-          : tint === "transparent"
-            ? "none"
-            : tint === "purple"
-              ? "var(--violet-700)"
-              : "var(--header-gradient)",
+          : pro
+            ? "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)"
+            : tint === "transparent"
+              ? "none"
+              : tint === "purple"
+                ? "var(--violet-700)"
+                : "var(--header-gradient)",
         color: "#fff",
         padding: tall ? "20px 20px 34px" : playful ? "16px 20px 32px" : "16px 20px 20px",
         borderRadius: 0,
@@ -79,6 +86,7 @@ export function Header({
         position: "relative",
         overflow: playful ? "hidden" : undefined,
         clipPath: playful ? MELT_CLIP : undefined,
+        boxShadow: pro ? "0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 10px -4px rgba(16,24,40,0.5)" : undefined,
       }}
     >
       {playful && <SurrealBackdrop />}

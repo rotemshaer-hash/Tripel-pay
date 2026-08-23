@@ -3,6 +3,7 @@ import { ChildBottomNav } from "../../components/BottomNav";
 import { Card, SectionTitle, EmptyState } from "../../components/UI";
 import { giftIcons, categoryLabels } from "../parent/GiftBank";
 import { useActiveChild } from "../../data/store";
+import { formatDate } from "../../utils/datetime";
 
 export function ChildMyVouchers() {
   const child = useActiveChild();
@@ -22,7 +23,7 @@ export function ChildMyVouchers() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{g.title}</div>
                 <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>
-                  {categoryLabels[g.category]} · {g.date}
+                  {categoryLabels[g.category]} · {formatDate(g.date)}
                 </div>
               </div>
               <span className="money" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--violet-700)" }}>
