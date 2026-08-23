@@ -22,5 +22,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
+          # Without this guard the CLI reports "Failed to authenticate, have you run
+          # firebase login?" — which sends you looking at credentials that are fine
+          # and never says the secret is simply absent. This job has failed on every
+          # run for exactly that reason, unnoticed, because nothing said so.
+          if [ -z "$GOOGLE_APPLICATION_CREDENTIALS_JSON" ]; then
+            echo "::error::The FIREBASE_SERVICE_ACCOUNT secret is not set on this repository, so the rules cannot be deployed. Add it under Settings > Secrets and variables > Actions, or paste database.rules.json and storage.rules into the Firebase console by hand."
+            exit 1
+          fi
           echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > /tmp/sa.json
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json firebase deploy --only database,storage --non-interactive
