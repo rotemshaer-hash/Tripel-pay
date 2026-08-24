@@ -290,8 +290,28 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
             </a>
           )}
           {d.kind === "image" && (
-            <button onClick={() => setOpen(d)} style={{ display: "block", width: "100%", border: "none", background: "none", padding: 0, marginTop: 9 }}>
-              <img src={d.content} alt={d.title} style={{ width: "100%", borderRadius: 9, display: "block" }} />
+            // One row that opens, not a full-height preview: a library of ten photos
+            // rendered at full width is a page nobody can scan. The thumbnail is there
+            // to identify which photo it is without opening it.
+            <button
+              onClick={() => setOpen(d)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 9,
+                width: "100%",
+                marginTop: 9,
+                background: work.ink,
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 9,
+                padding: "8px 10px",
+                fontSize: 12.5,
+                fontWeight: 700,
+              }}
+            >
+              <img src={d.content} alt="" style={{ width: 30, height: 30, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+              <span>פתיחת התמונה</span>
             </button>
           )}
         </div>
