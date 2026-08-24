@@ -69,6 +69,11 @@ type Action =
     }
   | { type: "ADVANCE_TASK"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "APPROVE_TASK"; childId: string; taskId: string; by?: string; at?: string }
+  | { type: "UPDATE_TASK"; childId: string; taskId: string; title: string; brief?: string; dueAt?: string; priority?: TaskPriority; site?: string; by?: string; at?: string }
+  | { type: "REASSIGN_TASK"; fromChildId: string; toChildId: string; taskId: string; by?: string; at?: string }
+  | { type: "DELETE_TASK"; childId: string; taskId: string }
+  | { type: "ADD_CHECKLIST_ITEM"; childId: string; taskId: string; text: string }
+  | { type: "REMOVE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string }
   | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
   | { type: "ADD_TASK_ATTACHMENT"; childId: string; taskId: string; target: "brief" | "proof"; kind: Attachment["kind"]; name: string; content: string; path?: string; size?: number; mime?: string; by: string; at?: string }
   | { type: "ADD_TASK_COMMENT"; childId: string; taskId: string; text: string; by: string; at?: string }
@@ -333,6 +338,86 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         family: mapChild(state.family, action.childId, (c) =>
           mapTask(c, action.taskId, (t) => logActivity({ ...t, status: "in_progress" }, { by: action.by ?? "", action: "reopened", detail: action.reason }, at))
+        ),
+      };
+    }
+    case "UPDATE_TASK": {
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => {
+            // Name what actually changed. "עודכנה" on its own tells a reader nothing,
+            // and this trail exists to answer "what happened to this task".
+            const changed: string[] = [];
+            if (action.title.trim() !== t.title) changed.push("כותרת");
+            if ((action.brief ?? "") !== (t.brief ?? "")) changed.push("פירוט");
+            if ((action.dueAt ?? "") !== (t.dueAt ?? "")) changed.push("תאריך יעד");
+            if ((action.priority ?? "normal") !== (t.priority ?? "normal")) changed.push("עדיפות");
+            if ((action.site ?? "") !== (t.site ?? "")) changed.push("לקוח / אתר");
+            if (changed.length === 0) return t;
+            // Firebase rejects undefined, so a cleared field is a removed key.
+            const { brief: _b, dueAt: _d, site: _s, ...rest } = t;
+            return logActivity(
+              {
+                ...rest,
+                title: action.title.trim(),
+                priority: action.priority ?? "normal",
+                ...(action.brief?.trim() ? { brief: action.brief.trim() } : {}),
+                ...(action.dueAt ? { dueAt: action.dueAt } : {}),
+                ...(action.site?.trim() ? { site: action.site.trim() } : {}),
+              },
+              { by: action.by ?? "", action: "edited", detail: changed.join(", ") },
+              at
+            );
+          })
+        ),
+      };
+    }
+    case "REASSIGN_TASK": {
+      // The task moves between two people's lists, carrying its whole history with it —
+      // re-creating it on the other side would erase everything that already happened.
+      const at = action.at ?? new Date().toISOString();
+      const from = state.family.children[action.fromChildId];
+      const to = state.family.children[action.toChildId];
+      const task = from?.tasks.find((t) => t.id === action.taskId);
+      if (!from || !to || !task || from.id === to.id) return state;
+      const moved = logActivity(task, { by: action.by ?? "", action: "reassigned", detail: `מ${from.name} ל${to.name}` }, at);
+      return {
+        ...state,
+        family: {
+          ...state.family,
+          children: {
+            ...state.family.children,
+            [from.id]: { ...from, tasks: from.tasks.filter((t) => t.id !== action.taskId) },
+            [to.id]: { ...to, tasks: [moved, ...to.tasks] },
+          },
+        },
+      };
+    }
+    case "DELETE_TASK": {
+      // Only before anyone has touched it. Once work has started the task has a record,
+      // and deleting a record is the one thing this product must never make easy.
+      const child = state.family.children[action.childId];
+      const task = child?.tasks.find((t) => t.id === action.taskId);
+      if (!task || task.status !== "available") return state;
+      return { ...state, family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: c.tasks.filter((t) => t.id !== action.taskId) })) };
+    }
+    case "ADD_CHECKLIST_ITEM": {
+      const text = action.text.trim();
+      if (!text) return state;
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => ({ ...t, checklist: [...(t.checklist ?? []), { id: `ck-${crypto.randomUUID()}`, text, done: false }] }))
+        ),
+      };
+    }
+    case "REMOVE_CHECKLIST_ITEM": {
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => ({ ...t, checklist: (t.checklist ?? []).filter((i) => i.id !== action.itemId) }))
         ),
       };
     }

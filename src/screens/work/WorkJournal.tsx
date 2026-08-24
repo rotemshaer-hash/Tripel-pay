@@ -18,6 +18,8 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   reopened: work.alert,
   commented: "#5c5f6b",
   attached: "#2f7fd1",
+  edited: work.idle,
+  reassigned: work.waiting,
 };
 
 interface FeedRow {

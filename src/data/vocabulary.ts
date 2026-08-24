@@ -141,6 +141,8 @@ export const activityLabels: Record<string, string> = {
   reopened: "הוחזרה לתיקון",
   commented: "הערה",
   attached: "צורף קובץ",
+  edited: "עודכנה",
+  reassigned: "הועברה",
 };
 
 /** How a task's state reads and colours everywhere it's shown — the list, the detail

@@ -2,11 +2,12 @@ import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { useStore, useWorkView } from "../../data/store";
+import { childrenList } from "../../data/family";
 import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { resizeImageToDataUrl } from "../../utils/resizeImage";
 import { fileIcon, formatBytes } from "../../utils/files";
-import type { Attachment } from "../../data/types";
+import type { Attachment, Child, TaskItem, TaskPriority } from "../../data/types";
 
 
 /**
@@ -23,6 +24,7 @@ export function TaskDetail() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [editing, setEditing] = useState(false);
 
   const worker = state.family.children[workerId];
   const task = worker?.tasks.find((t) => t.id === taskId);
@@ -137,7 +139,29 @@ export function TaskDetail() {
         </div>
 
         {/* brief */}
-        <Panel title={V.brief}>
+        <Panel
+          title={V.brief}
+          right={
+            isManager && task.status !== "completed" ? (
+              <button
+                onClick={() => setEditing((v) => !v)}
+                style={{ background: "none", border: "none", color: work.waiting, fontSize: 12.5, fontWeight: 800, padding: 0 }}
+              >
+                {editing ? "סגירה" : "עריכה"}
+              </button>
+            ) : undefined
+          }
+        >
+          {editing ? (
+            <TaskEditor
+              task={activeTask}
+              worker={activeWorker}
+              workers={childrenList(state.family)}
+              actor={actor}
+              onDone={() => setEditing(false)}
+            />
+          ) : (
+          <>
           <div style={{ fontSize: 13.5, lineHeight: 1.6, color: task.brief ? "var(--ink)" : "var(--ink-faint)" }}>{task.brief || "לא נכתב פירוט."}</div>
           <AttachmentList items={task.briefAttachments ?? []} empty="אין קבצים מצורפים לפירוט." />
           {isManager && task.status !== "completed" && (
@@ -153,6 +177,8 @@ export function TaskDetail() {
             <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 10 }}>
               המשימה אושרה וסגורה — לא ניתן לצרף לה קבצים נוספים.
             </div>
+          )}
+          </>
           )}
         </Panel>
 
@@ -352,14 +378,200 @@ export function TaskDetail() {
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 15px" }}>
-      <h2 style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)", margin: "0 0 9px" }}>{title}</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "0 0 9px" }}>
+        <h2 style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)", margin: 0 }}>{title}</h2>
+        {right}
+      </div>
       {children}
     </section>
   );
 }
+
+/**
+ * Changing a task after it has been written: the wording, when it is due, how urgent
+ * it is, who it belongs to, and what its steps are.
+ *
+ * Every change is written into the trail naming the field that moved, because a log
+ * that says only "updated" cannot answer the question the log exists for. Deleting is
+ * offered only while nobody has started — after that the task has a history, and
+ * destroying a history is the one thing this product must not make easy.
+ */
+function TaskEditor({
+  task,
+  worker,
+  workers,
+  actor,
+  onDone,
+}: {
+  task: TaskItem;
+  worker: Child;
+  workers: Child[];
+  actor: string;
+  onDone: () => void;
+}) {
+  const { dispatch } = useStore();
+  const navigate = useNavigate();
+  const [title, setTitle] = useState(task.title);
+  const [brief, setBrief] = useState(task.brief ?? "");
+  const [due, setDue] = useState(task.dueAt ? task.dueAt.slice(0, 10) : "");
+  const [priority, setPriority] = useState<TaskPriority>(task.priority ?? "normal");
+  const [site, setSite] = useState(task.site ?? "");
+  const [step, setStep] = useState("");
+
+  function save() {
+    if (!title.trim()) return;
+    dispatch({
+      type: "UPDATE_TASK",
+      childId: worker.id,
+      taskId: task.id,
+      title,
+      brief,
+      // A date input gives a bare day; anchor it to end of day so "due today" is not
+      // already overdue at one minute past midnight.
+      dueAt: due ? new Date(`${due}T23:59:59`).toISOString() : undefined,
+      priority,
+      site,
+      by: actor,
+    });
+    onDone();
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="מה צריך לעשות" style={editField} />
+      <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={3} placeholder="פירוט" style={{ ...editField, fontFamily: "inherit", resize: "vertical" }} />
+      <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={editField} />
+      <input value={site} onChange={(e) => setSite(e.target.value)} placeholder={V.site} style={editField} />
+
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+        {(["low", "normal", "high", "urgent"] as TaskPriority[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPriority(p)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 700,
+              border: priority === p ? "none" : "1px solid var(--line)",
+              background: priority === p ? priorityColor[p] : "#ffffff",
+              color: priority === p ? "#ffffff" : "var(--ink-soft)",
+            }}
+          >
+            {priorityLabels[p]}
+          </button>
+        ))}
+      </div>
+
+      {workers.length > 1 && (
+        <>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>{`העברה ל${V.worker} אחר — המשימה עוברת עם כל ההיסטוריה שלה`}</div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {workers.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => {
+                  if (o.id === worker.id) return;
+                  dispatch({ type: "REASSIGN_TASK", fromChildId: worker.id, toChildId: o.id, taskId: task.id, by: actor });
+                  navigate(`/work/task/${o.id}/${task.id}`, { replace: true });
+                  onDone();
+                }}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: o.id === worker.id ? "none" : "1px solid var(--line)",
+                  background: o.id === worker.id ? work.ink : "#ffffff",
+                  color: o.id === worker.id ? "#ffffff" : "var(--ink-soft)",
+                }}
+              >
+                {o.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2 }}>שלבי ביצוע</div>
+      {(task.checklist ?? []).map((i) => (
+        <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--paper)", borderRadius: 8, padding: "6px 10px" }}>
+          <span style={{ flex: 1, fontSize: 12.5 }}>{i.text}</span>
+          <button
+            onClick={() => dispatch({ type: "REMOVE_CHECKLIST_ITEM", childId: worker.id, taskId: task.id, itemId: i.id })}
+            aria-label={`הסרת ${i.text}`}
+            style={{ background: "none", border: "none", color: work.alert, fontSize: 15, fontWeight: 800, padding: "0 4px" }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 6 }}>
+        <input
+          value={step}
+          onChange={(e) => setStep(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            if (!step.trim()) return;
+            dispatch({ type: "ADD_CHECKLIST_ITEM", childId: worker.id, taskId: task.id, text: step });
+            setStep("");
+          }}
+          placeholder="שלב חדש"
+          style={{ ...editField, marginBottom: 0 }}
+        />
+        <button
+          onClick={() => {
+            if (!step.trim()) return;
+            dispatch({ type: "ADD_CHECKLIST_ITEM", childId: worker.id, taskId: task.id, text: step });
+            setStep("");
+          }}
+          style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 9, padding: "0 14px", fontSize: 12.5, fontWeight: 700, color: "var(--ink)", flexShrink: 0 }}
+        >
+          הוספה
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <button onClick={save} disabled={!title.trim()} style={{ ...btnStyle(!title.trim()), flex: 1 }}>
+          שמירת השינויים
+        </button>
+        <button onClick={onDone} style={{ ...btnStyle(false), flex: 1, background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
+          ביטול
+        </button>
+      </div>
+
+      {task.status === "available" && (
+        <button
+          onClick={() => {
+            if (!window.confirm(`למחוק את "${task.title}"? המשימה טרם התחילה, אז אין לה תיעוד לאבד.`)) return;
+            dispatch({ type: "DELETE_TASK", childId: worker.id, taskId: task.id });
+            navigate("/work/tasks", { replace: true });
+          }}
+          style={{ background: "none", border: "none", color: work.alert, fontSize: 12.5, fontWeight: 700, padding: "6px 0" }}
+        >
+          מחיקת המשימה
+        </button>
+      )}
+      {task.status !== "available" && (
+        <div style={{ fontSize: 11, color: "var(--ink-faint)", lineHeight: 1.5 }}>
+          {`המשימה כבר בעבודה ולכן לא ניתן למחוק אותה — יש לה תיעוד. אפשר להעביר ל${V.worker} אחר או להחזיר לתיקון.`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const editField: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: 9,
+  border: "1px solid var(--line)",
+  fontSize: 13.5,
+};
 
 function Chip({ text, color, solid }: { text: string; color: string; solid?: boolean }) {
   return (
