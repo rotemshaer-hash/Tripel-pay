@@ -53,8 +53,22 @@ export function WorkTasks() {
         tint="pro"
         right={
           isManager ? (
-            <button onClick={() => navigate("/work/new")} style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 800 }}>
-              + חדשה
+            // Writing a task is the whole point of this screen and no longer has a tab
+            // of its own, so it gets the one colour on the bar that means "press me".
+            <button
+              onClick={() => navigate("/work/new")}
+              style={{
+                background: work.action,
+                color: "#1b2130",
+                border: "none",
+                borderRadius: 999,
+                padding: "9px 16px",
+                fontSize: 13.5,
+                fontWeight: 800,
+                boxShadow: "0 2px 10px -2px rgba(245,165,36,0.55)",
+              }}
+            >
+              + משימה חדשה
             </button>
           ) : undefined
         }

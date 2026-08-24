@@ -26,6 +26,15 @@ export const work = {
   active: "#f2761b",
   /** Not started / neutral. */
   idle: "#7b8794",
+  /**
+   * The one colour that exists to be pressed, on the dark bar.
+   *
+   * Every other colour here means a state, so a primary action cannot borrow one
+   * without claiming to be that state. Gold is not a state in this product, it holds
+   * up against the slate, and it does not collide with the white role chip or the red
+   * text already sitting in that bar.
+   */
+  action: "#f5a524",
 } as const;
 
 export type ProductMode = "work" | "family";
