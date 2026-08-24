@@ -69,6 +69,7 @@ export function WorkSettings() {
           <Row label={V.admin} value={state.family.parentName} />
           <Row label="אימייל" value={state.family.parentEmail} ltr />
           <Row label={V.workerPlural} value={String(workers.length)} />
+          <Row label="גרסה" value={__BUILD_ID__} ltr />
         </section>
 
         <section style={card}>

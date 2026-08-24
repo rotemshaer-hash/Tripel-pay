@@ -138,6 +138,12 @@ export function TaskDetail() {
               {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
             </div>
           )}
+          {/* An absent control with no explanation reads as a broken screen. */}
+          {isManager && task.status === "completed" && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 10 }}>
+              המשימה אושרה וסגורה — לא ניתן לצרף לה קבצים נוספים.
+            </div>
+          )}
         </Panel>
 
         {/* checklist */}
@@ -218,7 +224,7 @@ export function TaskDetail() {
           )}
           {isManager && task.status !== "completed" && (
             <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.5 }}>
-              {`את האסמכתאות מצרף ה${V.worker} בסיום. לצירוף קובץ מצדך — בפירוט המשימה למעלה.`}
+              {`את האסמכתאות מצרף ה${V.worker} בסיום. לצירוף קובץ מצדך — בכרטיס "${V.brief}" למעלה.`}
             </div>
           )}
         </Panel>
