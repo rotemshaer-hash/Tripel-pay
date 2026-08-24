@@ -192,7 +192,12 @@ function reducer(state: AppState, action: Action): AppState {
         uid: action.uid,
         familyUid: action.familyUid,
         role: action.role,
-        viewMode: action.role === "child" ? "child" : state.viewMode,
+        // Signing in puts you on your OWN side. Carrying the previous viewMode over
+        // meant one tap on the worker preview stuck permanently: every later load and
+        // every later sign-in returned the manager to the worker's screen, where their
+        // own controls do not exist. Previewing is a within-session look, not a saved
+        // preference.
+        viewMode: action.role === "child" ? "child" : "parent",
         family: action.family,
         activeChildId,
       };
