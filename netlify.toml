@@ -3,6 +3,18 @@
   publish = "dist"
   command = "npm run build"
 
+# A missing asset must fail as a missing asset. Netlify serves existing files before
+# redirects, so this only catches ones that are genuinely gone — and without it the
+# catch-all below answers a request for a stale bundle with the HTML page, which the
+# browser then tries to execute as JavaScript and dies on. A blank screen is a worse
+# outcome than a stale one, and it is the exact failure a browser holding yesterday's
+# index.html would hit the moment the bundle started carrying a content hash.
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 404
+
+# Everything else is a client-side route.
 [[redirects]]
   from = "/*"
   to = "/index.html"
