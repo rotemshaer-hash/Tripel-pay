@@ -130,6 +130,14 @@ export function TaskDetail() {
         <Panel title={V.brief}>
           <div style={{ fontSize: 13.5, lineHeight: 1.6, color: task.brief ? "var(--ink)" : "var(--ink-faint)" }}>{task.brief || "לא נכתב פירוט."}</div>
           <AttachmentList items={task.briefAttachments ?? []} empty="אין קבצים מצורפים לפירוט." />
+          {isManager && task.status !== "completed" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...btnStyle(busy), background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
+                {busy ? "מעלה…" : "📎 צירוף תמונה או קובץ להנחיות"}
+              </button>
+              {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
+            </div>
+          )}
         </Panel>
 
         {/* checklist */}
@@ -184,10 +192,12 @@ export function TaskDetail() {
           </Panel>
         )}
 
-        {/* proof */}
+        <input ref={fileRef} type="file" onChange={onPickFile} style={{ display: "none" }} />
+
+        {/* proof — the worker's evidence, and only the worker adds to it */}
         <Panel title={V.proof}>
           <AttachmentList items={task.proofs ?? []} empty="טרם צורפו אסמכתאות." />
-          {task.status !== "completed" && (
+          {!isManager && task.status !== "completed" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
@@ -203,8 +213,12 @@ export function TaskDetail() {
               <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...btnStyle(busy), background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
                 {busy ? "מעלה…" : "📎 צירוף תמונה או קובץ"}
               </button>
-              <input ref={fileRef} type="file" onChange={onPickFile} style={{ display: "none" }} />
               {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
+            </div>
+          )}
+          {isManager && task.status !== "completed" && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.5 }}>
+              {`את האסמכתאות מצרף ה${V.worker} בסיום. לצירוף קובץ מצדך — בפירוט המשימה למעלה.`}
             </div>
           )}
         </Panel>
