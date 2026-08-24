@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
-import { useStore } from "../../data/store";
+import { useStore, useWorkView } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
 import { entryPath } from "../../data/routes";
@@ -15,9 +15,14 @@ import { entryPath } from "../../data/routes";
  * permissions, transfers from relatives and balance resets are family-finance
  * concerns with no counterpart at work. What's left is what a manager actually
  * needs — who's on the account, adding a hire, and signing out.
+ *
+ * A worker opens the same screen and sees only what is theirs: who they're working
+ * for, which version they're on, and the way out. Signing out is not a manager
+ * privilege — without it a worker is locked into the app on a shared phone.
  */
 export function WorkSettings() {
   const { state, dispatch, logout, deleteAccount } = useStore();
+  const { isManager } = useWorkView();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const [name, setName] = useState("");
@@ -27,6 +32,7 @@ export function WorkSettings() {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const workers = childrenList(state.family);
+  const me = workers.find((c) => c.id === state.activeChildId);
 
   function addWorker() {
     const trimmed = name.trim();
@@ -61,18 +67,28 @@ export function WorkSettings() {
 
   return (
     <div className="screen">
-      <Header title="הגדרות" subtitle="החשבון והצוות" tint="pro" />
+      <Header title="הגדרות" subtitle={isManager ? "החשבון והצוות" : "החשבון שלי"} tint="pro" />
 
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
         <section style={card}>
           <div style={cardTitle}>פרטי החשבון</div>
           <Row label="שם העסק" value={state.family.companyName ?? ""} />
-          <Row label={V.admin} value={state.family.parentName} />
-          <Row label="אימייל" value={state.family.parentEmail} ltr />
-          <Row label={V.workerPlural} value={String(workers.length)} />
+          {isManager ? (
+            <>
+              <Row label={V.admin} value={state.family.parentName} />
+              <Row label="אימייל" value={state.family.parentEmail} ltr />
+              <Row label={V.workerPlural} value={String(workers.length)} />
+            </>
+          ) : (
+            <>
+              <Row label="שם" value={me?.name ?? ""} />
+              <Row label={V.admin} value={state.family.parentName} />
+            </>
+          )}
           <Row label="גרסה" value={__BUILD_ID__} ltr />
         </section>
 
+        {isManager && (
         <section style={card}>
           <div style={cardTitle}>הוספת {V.worker}</div>
           <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, marginBottom: 10 }}>
@@ -95,6 +111,7 @@ export function WorkSettings() {
             </button>
           </div>
         </section>
+        )}
 
         <button
           onClick={async () => {

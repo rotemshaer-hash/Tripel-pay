@@ -64,7 +64,10 @@ export default function App() {
   // In business mode the family surfaces (wallet, savings, rewards, lessons) aren't
   // part of the product, so the entry point goes straight to the work screens:
   // managers land on the journal, workers on their own task list.
-  const home = state.onboarded ? homePath(state.viewMode) : entryPath();
+  // Where you land when you open the app is a question about who you ARE, not about
+  // which side you last looked at. Keying this on viewMode meant one tap on the
+  // worker preview made the app re-open on the worker's task list from then on.
+  const home = state.onboarded ? homePath(state.role === "child" ? "child" : "parent") : entryPath();
 
   return (
     <div className="app-backdrop">
@@ -117,7 +120,10 @@ export default function App() {
           <Route path="/work/tasks" element={<RequireOnboarded><WorkTasks /></RequireOnboarded>} />
           <Route path="/work/new" element={<RequireParent><NewTask /></RequireParent>} />
           <Route path="/work/team" element={<RequireParent><WorkTeam /></RequireParent>} />
-          <Route path="/work/settings" element={<RequireParent><WorkSettings /></RequireParent>} />
+          {/* Signing out, and reading which version you're on, must be reachable by a
+              worker too — otherwise a worker has no way out of the app at all. The
+              manager-only parts of the screen are hidden inside it. */}
+          <Route path="/work/settings" element={<RequireOnboarded><WorkSettings /></RequireOnboarded>} />
           {/* Suppliers and documents are for whoever is on site, so a worker reads them too. */}
           <Route path="/work/directory" element={<RequireOnboarded><WorkDirectory /></RequireOnboarded>} />
           <Route path="/work/report" element={<RequireParent><WorkReport /></RequireParent>} />
