@@ -6,6 +6,7 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
+import { entryPath } from "../../data/routes";
 
 /**
  * Account settings for the business build.
@@ -43,7 +44,7 @@ export function WorkSettings() {
     setDeleteError("");
     try {
       await deleteAccount(password);
-      navigate("/onboarding/splash");
+      navigate(entryPath());
     } catch (err) {
       console.error("Account deletion failed:", err);
       const code = (err as { code?: string })?.code;
@@ -98,7 +99,7 @@ export function WorkSettings() {
         <button
           onClick={async () => {
             await logout();
-            navigate("/onboarding/splash");
+            navigate(entryPath());
           }}
           style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
         >

@@ -17,6 +17,7 @@ import { PreviewBanner } from "../../components/PreviewBanner";
 import { useActiveChild, useStore, useIsParentPreview } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { useCountUp } from "../../hooks/useCountUp";
+import { entryPath } from "../../data/routes";
 
 export function ChildHome() {
   const child = useActiveChild();
@@ -40,7 +41,7 @@ export function ChildHome() {
 
   async function signOut() {
     await logout();
-    navigate("/onboarding/splash");
+    navigate(entryPath());
   }
 
   return (

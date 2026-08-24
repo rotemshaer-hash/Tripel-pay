@@ -77,12 +77,22 @@ export function Login() {
   const canSubmit = role === "parent" ? emailValid && password.length >= 6 : username.trim().length >= 2 && password.length >= 6;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "70px 24px 28px", position: "relative", overflow: "hidden" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isWork ? "0 0 20px" : "70px 24px 28px", position: "relative", overflow: "hidden" }}>
       {MODE !== "work" && <BrandDecor />}
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>{V.appName}</div>
+
+      {isWork && (
+        <div style={{ background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)", padding: "38px 24px 26px", flexShrink: 0 }}>
+          <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
+            {V.appName.split(" ")[0]} <span style={{ color: work.onDark }}>{V.appName.split(" ").slice(1).join(" ")}</span>
+          </div>
+          <div style={{ fontSize: 13.5, color: "rgba(255,255,255,0.7)", marginTop: 6 }}>יומן עבודה לצוותים קטנים</div>
+        </div>
+      )}
+
+      <div style={{ position: "relative", zIndex: 1, padding: isWork ? "22px 24px 0" : undefined }}>
+        {!isWork && <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>{V.appName}</div>}
         <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 20 }}>
-          שלום אורח, טוב לראות אותך. בחרו איך להיכנס.
+          {isWork ? "כניסה לחשבון" : "שלום אורח, טוב לראות אותך. בחרו איך להיכנס."}
         </div>
 
         <div
@@ -180,7 +190,35 @@ export function Login() {
           {loading ? "נכנסים…" : "כניסה"}
         </PrimaryButton>
         )}
+
+        {isWork && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "22px 0 16px" }}>
+              <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
+              <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>אין לך חשבון?</span>
+              <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
+            </div>
+            <button
+              onClick={() => navigate("/onboarding/welcome")}
+              style={{ width: "100%", padding: "14px", borderRadius: 11, border: "1px solid var(--line)", background: "#ffffff", color: "var(--ink)", fontSize: 14, fontWeight: 700 }}
+            >
+              פתיחת חשבון לעסק
+            </button>
+          </>
+        )}
       </div>
+
+      {isWork && (
+        <>
+          <div style={{ flex: 1 }} />
+          {/* The build, where anyone can read it without signing in first — which is
+              the whole point, since "are you on the latest version?" is a question
+              asked precisely of people who are stuck outside. */}
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--ink-faint)", paddingTop: 18 }}>
+            {V.appName} · גרסה <span dir="ltr">{__BUILD_ID__}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

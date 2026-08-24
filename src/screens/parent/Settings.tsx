@@ -8,7 +8,7 @@ import { Toast, useToast } from "../../components/Toast";
 import { useActiveChild, useStore } from "../../data/store";
 import type { Family } from "../../data/types";
 import { V } from "../../data/vocabulary";
-import { adminInviteLink } from "../../data/routes";
+import { adminInviteLink, entryPath } from "../../data/routes";
 
 function Row({ label, hint, important, children }: { label: string; hint?: string; important?: boolean; children: React.ReactNode }) {
   return (
@@ -272,7 +272,7 @@ export function ParentSettings() {
         <button
           onClick={async () => {
             await logout();
-            navigate("/onboarding/splash");
+            navigate(entryPath());
           }}
           style={{
             width: "100%",

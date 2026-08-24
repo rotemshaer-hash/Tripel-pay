@@ -14,6 +14,18 @@ export function homePath(side: "parent" | "child"): string {
 }
 
 /**
+ * Where someone who is not signed in belongs.
+ *
+ * The family build opens on a splash that pitches the product, because it is sold to
+ * a household that has never seen it. The business build opens on the sign-in form:
+ * almost every visit is a manager or a worker coming back to their own account, and
+ * making them tap past a poster first is a tax on the common case.
+ */
+export function entryPath(): string {
+  return MODE === "work" ? "/login" : "/onboarding/splash";
+}
+
+/**
  * The link a manager sends someone so they can create their own account.
  *
  * This app runs on BrowserRouter, so the router reads the PATH. The old links were
