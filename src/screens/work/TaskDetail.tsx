@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../../components/Header";
-import { useStore } from "../../data/store";
+import { useStore, useWorkView } from "../../data/store";
 import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { resizeImageToDataUrl } from "../../utils/resizeImage";
@@ -26,8 +26,12 @@ export function TaskDetail() {
 
   const worker = state.family.children[workerId];
   const task = worker?.tasks.find((t) => t.id === taskId);
-  const isManager = state.role === "parent";
-  const actor = isManager ? state.family.parentName || V.admin : worker?.name || V.worker;
+  const { isManager, isWorker, isPreview } = useWorkView();
+  // Whose name goes in the trail is a question about who you ARE, never about which
+  // side you are looking at. Deriving it from the view meant a manager commenting from
+  // the worker preview would be recorded as the worker — the precise falsification
+  // this screen exists to prevent.
+  const actor = state.role === "parent" ? state.family.parentName || V.admin : worker?.name || V.worker;
 
   if (!worker || !task) {
     return (
@@ -116,6 +120,12 @@ export function TaskDetail() {
       <Header title={task.title} subtitle={`${worker.name}${task.site ? ` · ${task.site}` : ""}`} back tint="pro" />
 
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+        {isPreview && (
+          <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 13px", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55 }}>
+            {`תצוגת ${V.worker} — כך המסך נראה אצלו. הפעולות שמורות ל${V.worker} עצמו, כדי שהיומן ירשום מי באמת ביצע.`}
+          </div>
+        )}
+
         {/* status strip */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <Chip text={taskStatusLabels[task.status]} color={taskStatusColor[task.status]} solid />
@@ -203,7 +213,7 @@ export function TaskDetail() {
         {/* proof — the worker's evidence, and only the worker adds to it */}
         <Panel title={V.proof}>
           <AttachmentList items={task.proofs ?? []} empty="טרם צורפו אסמכתאות." />
-          {!isManager && task.status !== "completed" && (
+          {isWorker && task.status !== "completed" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
@@ -231,12 +241,12 @@ export function TaskDetail() {
 
         {/* actions */}
         <div style={{ display: "flex", gap: 8 }}>
-          {!isManager && task.status === "available" && (
+          {isWorker && task.status === "available" && (
             <button onClick={() => dispatch({ type: "ADVANCE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={btnStyle(false)}>
               התחלת ביצוע
             </button>
           )}
-          {!isManager && task.status === "in_progress" && (
+          {isWorker && task.status === "in_progress" && (
             <button onClick={() => dispatch({ type: "ADVANCE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={btnStyle(false)}>
               הגשה לאישור
             </button>

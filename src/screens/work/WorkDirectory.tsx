@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
-import { useStore } from "../../data/store";
+import { useStore, useWorkView } from "../../data/store";
 import { V, work } from "../../data/vocabulary";
 import { formatDate } from "../../utils/datetime";
 import { fileIcon, formatBytes } from "../../utils/files";
@@ -21,10 +21,9 @@ type Tab = "suppliers" | "docs";
  * that from becoming a silent lie.
  */
 export function WorkDirectory() {
-  const { state } = useStore();
   const [tab, setTab] = useState<Tab>("suppliers");
   const { toastMessage, showToast } = useToast();
-  const isManager = state.role === "parent";
+  const { isManager } = useWorkView();
 
   return (
     <div className="screen">

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
-import { useStore } from "../../data/store";
+import { useStore, useWorkView } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, priorityColor, priorityLabels, recurrenceLabels, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, isOverdue } from "../../utils/datetime";
@@ -23,7 +23,7 @@ export function WorkTasks() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("open");
 
-  const isManager = state.role === "parent";
+  const { isManager } = useWorkView();
   const scope = isManager ? childrenList(state.family) : childrenList(state.family).filter((c) => c.id === state.activeChildId);
 
   const rows = useMemo(() => {

@@ -1065,6 +1065,27 @@ export function useActiveChild(): Child {
  * than a real child login. In this mode the child's screens are read-only: the parent
  * sees exactly what the child sees but can't perform the child's actions on their behalf.
  */
+/**
+ * Who you are, and which side you are looking at — two different things that every
+ * work screen was conflating.
+ *
+ * `role` comes from the account and cannot change; `viewMode` is the manager's toggle
+ * for seeing the worker's screen. Reading only `role` meant a manager who switched to
+ * the worker view got the worker's label over the manager's controls.
+ *
+ * Preview is deliberately look-only. This product is an audit trail: if a manager
+ * could start or submit work from the worker's screen, the log would record that the
+ * worker did it, and the record would be worth nothing.
+ */
+export function useWorkView(): { isManager: boolean; isWorker: boolean; isPreview: boolean } {
+  const { state } = useStore();
+  return {
+    isManager: state.role === "parent" && state.viewMode === "parent",
+    isWorker: state.role === "child",
+    isPreview: state.role === "parent" && state.viewMode === "child",
+  };
+}
+
 export function useIsParentPreview(): boolean {
   const { state } = useStore();
   return state.role === "parent" && state.viewMode === "child";

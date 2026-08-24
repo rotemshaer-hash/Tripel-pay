@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useStore } from "../data/store";
+import { useStore, useWorkView } from "../data/store";
 import { childrenList } from "../data/family";
 import { work } from "../data/vocabulary";
 import { IconMountain, IconParentUser, IconPeopleCoin, IconReceipt, IconCardCheck } from "./Icons";
@@ -28,7 +28,7 @@ export function WorkBottomNav() {
   const { state } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const isManager = state.role === "parent";
+  const { isManager } = useWorkView();
 
   // The manager is the bottleneck: work sits in "submitted" until they look at it.
   // A worker's own count is what they still owe, overdue first in their list.
