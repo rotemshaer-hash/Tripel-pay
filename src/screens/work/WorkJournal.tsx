@@ -81,6 +81,7 @@ export function WorkJournal() {
     <div className="screen">
       <Header
         title={V.journal}
+        titleNote={state.family.companyName}
         subtitle="תיעוד מלא של העבודה"
         tint="pro"
 

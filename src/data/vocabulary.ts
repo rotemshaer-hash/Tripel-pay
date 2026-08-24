@@ -35,6 +35,10 @@ export const work = {
    * text already sitting in that bar.
    */
   action: "#f5a524",
+  /** The identity accent on a dark ground — the product name on the splash, the
+   * company name in the title bar. Light enough to read on the slate, and quiet
+   * enough not to compete with `action`, which is the only thing there to press. */
+  onDark: "#8fa0ff",
 } as const;
 
 export type ProductMode = "work" | "family";

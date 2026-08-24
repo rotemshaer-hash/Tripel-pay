@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useStore } from "../data/store";
 import { homePath } from "../data/routes";
-import { V } from "../data/vocabulary";
+import { V, work } from "../data/vocabulary";
 import { IconParentUser, IconChildUser } from "./Icons";
 import { SurrealBackdrop } from "./SurrealBackdrop";
 
@@ -43,6 +43,7 @@ function RoleSwitcher() {
 
 export function Header({
   title,
+  titleNote,
   subtitle,
   back,
   right,
@@ -51,6 +52,10 @@ export function Header({
   children,
 }: {
   title: string;
+  /** Shown beside the title in the accent, for identity rather than description —
+   * whose journal this is. Shares the title's single line, so a long one truncates
+   * with it rather than pushing the layout around. */
+  titleNote?: string;
   subtitle?: string;
   back?: boolean;
   right?: ReactNode;
@@ -130,6 +135,9 @@ export function Header({
               }}
             >
               {title}
+              {titleNote && (
+                <span style={{ color: pro ? work.onDark : "rgba(255,255,255,0.75)", fontWeight: 700, fontSize: 15, marginInlineStart: 8 }}>{titleNote}</span>
+              )}
             </div>
             {subtitle && (
               // A subtitle that wraps to four lines is never what was intended.

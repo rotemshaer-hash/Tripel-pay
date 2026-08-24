@@ -33,7 +33,7 @@ export function Splash() {
           }}
         >
           <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
-            {firstWord} <span style={{ color: "#8fa0ff" }}>{restOfName.join(" ")}</span>
+            {firstWord} <span style={{ color: work.onDark }}>{restOfName.join(" ")}</span>
           </div>
           <div style={{ fontSize: 14.5, color: "rgba(255,255,255,0.72)", marginTop: 10, lineHeight: 1.65 }}>
             יומן עבודה לצוותים קטנים — משימות עם אחראי ותאריך יעד, אסמכתאות לכל ביצוע, ותיעוד של מי עשה מה ומתי.
