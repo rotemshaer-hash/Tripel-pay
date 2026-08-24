@@ -13,19 +13,11 @@ const familyTaskBank: TaskTemplate[] = [
   { id: "tb-8", title: "לעזור בשיעורי בית", reward: 14, category: "other" },
 ];
 
-/** Starting templates for a business account — the jobs a small team actually repeats,
- * offered as one-tap fills when the manager writes a task. Rewards are zero: work is
- * paid by salary, not by the app. */
-const workTaskBank: TaskTemplate[] = [
-  { id: "wb-1", title: "ניקיון משרד — סוף יום", reward: 0, category: "cleaning" },
-  { id: "wb-2", title: "ניקיון חדר ישיבות", reward: 0, category: "cleaning" },
-  { id: "wb-3", title: "בדיקת מלאי והזמנת חומרים", reward: 0, category: "other" },
-  { id: "wb-4", title: "פתיחת סניף / הכנה לפתיחה", reward: 0, category: "other" },
-  { id: "wb-5", title: "סגירת סניף — נוהל סוף יום", reward: 0, category: "other" },
-  { id: "wb-6", title: "טיפול בפנייה מלקוח", reward: 0, category: "other" },
-  { id: "wb-7", title: "אחזקה שוטפת — בדיקת תקינות", reward: 0, category: "other" },
-  { id: "wb-8", title: "דוח סיום עבודה באתר", reward: 0, category: "other" },
-];
+/** A business account starts with no templates: the task form asks the manager what
+ * needs doing in their own words, and nothing else reads this list in work mode.
+ * Seeding rows nothing can display is how dead data gets into every new record. */
+const workTaskBank: TaskTemplate[] = [];
+
 
 const giftBank: GiftBankItem[] = [
   { id: "gb-1", title: "טיסה ליורודיסני", cost: 3200, category: "flight" },

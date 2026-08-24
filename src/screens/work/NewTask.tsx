@@ -5,11 +5,10 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, priorityColor, priorityLabels, recurrenceLabels, work } from "../../data/vocabulary";
-import type { RecurrenceRule, TaskPriority } from "../../data/types";
+import { V, priorityColor, priorityLabels, work } from "../../data/vocabulary";
+import type { TaskPriority } from "../../data/types";
 
 const priorities: TaskPriority[] = ["low", "normal", "high", "urgent"];
-const recurrences: RecurrenceRule[] = ["none", "daily", "weekly", "monthly"];
 
 /**
  * The manager writes a new job: what, who, by when, how often, and for which site.
@@ -21,14 +20,12 @@ export function NewTask() {
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const workers = childrenList(state.family);
-  const templates = state.family.taskBank;
 
   const [title, setTitle] = useState("");
   const [brief, setBrief] = useState("");
   const [assignee, setAssignee] = useState(workers[0]?.id ?? "");
   const [due, setDue] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("normal");
-  const [recurrence, setRecurrence] = useState<RecurrenceRule>("none");
   const [site, setSite] = useState("");
   const [steps, setSteps] = useState<string[]>([]);
   const [stepDraft, setStepDraft] = useState("");
@@ -54,7 +51,6 @@ export function NewTask() {
       // already overdue at 00:01.
       dueAt: due ? new Date(`${due}T23:59:59`).toISOString() : undefined,
       priority,
-      recurrence,
       site: site.trim() || undefined,
       checklist: steps.map((text) => ({ id: `ck-${crypto.randomUUID()}`, text, done: false })),
       by: state.family.parentName || V.admin,
@@ -76,30 +72,6 @@ export function NewTask() {
       <div style={{ padding: "16px 20px 28px", display: "flex", flexDirection: "column", gap: 14 }}>
         <Field label="מה צריך לעשות" required>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="לדוגמה: ניקיון חדר ישיבות" style={inputStyle} />
-          {templates.length > 0 && (
-            <>
-              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", margin: "10px 0 7px" }}>או בחירה מהתבניות:</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {templates.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTitle(t.title)}
-                    style={{
-                      padding: "6px 11px",
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      border: "1px solid var(--line)",
-                      background: title === t.title ? work.ink : "#ffffff",
-                      color: title === t.title ? "#ffffff" : "var(--ink-soft)",
-                    }}
-                  >
-                    {t.title}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </Field>
 
         <Field label={V.brief}>
@@ -174,19 +146,6 @@ export function NewTask() {
               <Chip key={p} label={priorityLabels[p]} active={priority === p} onClick={() => setPriority(p)} activeColor={priorityColor[p]} />
             ))}
           </div>
-        </Field>
-
-        <Field label="תדירות">
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {recurrences.map((r) => (
-              <Chip key={r} label={recurrenceLabels[r]} active={recurrence === r} onClick={() => setRecurrence(r)} activeColor="#2f7fd1" />
-            ))}
-          </div>
-          {recurrence !== "none" && (
-            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6, lineHeight: 1.5 }}>
-              משימה קבועה — המופע הבא ייווצר אוטומטית ביום היעד שלו, כולל שלבי הביצוע. אפשר להפסיק את הסדרה בכל שלב ממסך המשימה.
-            </div>
-          )}
         </Field>
 
         <Field label={V.site}>
