@@ -16,7 +16,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         format: 'iife',
-        entryFileNames: 'assets/index.js',
+        // The hash is not cosmetic: without it every deploy writes to the same URL,
+        // and a browser cannot tell a new build from the one it already has. That is
+        // why updates appeared not to ship until a manual cache clear. The CSS was
+        // hashed and did update, which is what made it look like "some of it arrived".
+        entryFileNames: 'assets/index-[hash].js',
         inlineDynamicImports: true,
       },
     },

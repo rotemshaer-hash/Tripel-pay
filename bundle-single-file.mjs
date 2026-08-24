@@ -2,7 +2,10 @@ import { readFileSync, writeFileSync, readdirSync } from "fs";
 
 const dist = "./dist";
 const cssFile = readdirSync(`${dist}/assets`).find((f) => f.endsWith(".css"));
-const js = readFileSync(`${dist}/assets/index.js`, "utf8");
+// The entry is content-hashed, so it is located rather than named.
+const entry = readdirSync(`${dist}/assets`).find((f) => f.startsWith("index-") && f.endsWith(".js"));
+if (!entry) throw new Error("no built entry found in dist/assets — run npm run build first");
+const js = readFileSync(`${dist}/assets/${entry}`, "utf8");
 const css = readFileSync(`${dist}/assets/${cssFile}`, "utf8");
 const favicon = readFileSync(`${dist}/favicon.svg`, "utf8");
 const icon192 = readFileSync(`${dist}/icon-192.png`).toString("base64");
