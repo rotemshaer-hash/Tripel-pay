@@ -17,7 +17,7 @@ import type { Attachment, Child, TaskItem, TaskPriority } from "../../data/types
  */
 export function TaskDetail() {
   const { workerId = "", taskId = "" } = useParams();
-  const { state, dispatch, uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
+  const { state, connection, dispatch, uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState("");
@@ -178,6 +178,13 @@ export function TaskDetail() {
                 {busy ? "מעלה…" : "📎 צירוף תמונה או קובץ להנחיות"}
               </button>
               {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
+            </div>
+          )}
+          {/* Which account you are signed in as is invisible until something you expect
+              to see is missing. Say it here, where the missing control is. */}
+          {isWorker && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.55 }}>
+              {`צירוף קבצים להנחיות שמור ל${V.admin}. אתה מחובר כ${V.worker}${connection.signedInAs ? ` (${connection.signedInAs})` : ""} — האסמכתאות שלך מצורפות בכרטיס "${V.proof}" למטה.`}
             </div>
           )}
           {/* An absent control with no explanation reads as a broken screen. */}

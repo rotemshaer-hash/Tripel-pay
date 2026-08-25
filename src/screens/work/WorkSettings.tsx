@@ -21,7 +21,7 @@ import { entryPath } from "../../data/routes";
  * privilege — without it a worker is locked into the app on a shared phone.
  */
 export function WorkSettings() {
-  const { state, dispatch, logout, deleteAccount } = useStore();
+  const { state, connection, dispatch, logout, deleteAccount } = useStore();
   const { isManager } = useWorkView();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
@@ -85,7 +85,15 @@ export function WorkSettings() {
               <Row label={V.admin} value={state.family.parentName} />
             </>
           )}
+          <Row label="סוג חשבון" value={state.role === "child" ? V.worker : V.admin} />
+          <Row label="מחובר כ" value={connection.signedInAs ?? "לא מחובר"} ltr />
+          <Row label="מקור הנתונים" value={connection.live ? "השרת (מעודכן)" : connection.signedInAs ? "המכשיר בלבד" : "המכשיר בלבד"} />
           <Row label="גרסה" value={__BUILD_ID__} ltr />
+          {connection.error && (
+            <div style={{ fontSize: 12, color: work.alert, lineHeight: 1.55, paddingTop: 9 }}>
+              {connection.error} — מה שמוצג הוא העותק השמור במכשיר, ושינויים לא יישמרו לשרת.
+            </div>
+          )}
         </section>
 
         {isManager && (

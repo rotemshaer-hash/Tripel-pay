@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useReducer, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from "react";
 import { seedFamily, templateChild } from "./seed";
 import { childrenList, normalizeFamily } from "./family";
 import { endOfDay, nextDueDate, toDate } from "../utils/datetime";
@@ -14,6 +14,7 @@ import {
   fetchChildLink,
   registerSecondParent,
   fetchParentLink,
+  identityLabel,
   resetParentPassword,
   deleteOwnAccount,
 } from "../firebase/auth";
@@ -922,8 +923,37 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
+/**
+ * What the app knows about its own connection, as plain facts a person can read.
+ *
+ * Every "it doesn't work" in this product so far has come down to invisible state:
+ * which account is actually signed in, and whether the record on screen came from the
+ * server or from the device's cache. Guessing at that from the outside is what made
+ * those bugs take days, so the app now reports it.
+ */
+export interface ConnectionInfo {
+  /** The identity Firebase has signed in right now — not the name in the record. */
+  signedInAs: string | null;
+  /** True once the family record has actually arrived from the server this session. */
+  live: boolean;
+  /** Set when a read was refused or failed; the screen is then cache-only. */
+  error: string | null;
+}
+
+
+function describeSyncError(err: unknown): string {
+  const code = (err as { code?: string })?.code ?? "";
+  const message = (err as { message?: string })?.message ?? "";
+  if (code.includes("permission") || message.toLowerCase().includes("permission")) {
+    return "השרת דחה את הקריאה (הרשאות מסד הנתונים)";
+  }
+  if (code.includes("network") || message.toLowerCase().includes("network")) return "אין חיבור לשרת";
+  return "טעינת הנתונים מהשרת נכשלה";
+}
+
 interface StoreContextValue {
   state: AppState;
+  connection: ConnectionInfo;
   dispatch: React.Dispatch<Action>;
   completeOnboarding: (email: string, password: string, name: string, childNames?: string[], companyName?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
@@ -942,6 +972,7 @@ const StoreCtx = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitial);
+  const [connection, setConnection] = useState<ConnectionInfo>({ signedInAs: null, live: false, error: null });
   const skipNextRemoteSave = useRef(false);
 
   // Firebase auth is the real source of truth. On sign-in, figure out whether this
@@ -955,18 +986,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         unsubFamily = null;
       }
       if (user) {
-        fetchChildLink(user.uid).then(async (childLink) => {
-          const parentLink = childLink ? null : await fetchParentLink(user.uid);
-          const familyUid = childLink ? childLink.familyUid : parentLink ? parentLink.familyUid : user.uid;
-          const role: Role = childLink ? "child" : "parent";
-          unsubFamily = subscribeFamily(familyUid, (family) => {
-            if (family) {
-              skipNextRemoteSave.current = true;
-              dispatch({ type: "HYDRATE", uid: user.uid, familyUid, role, family, forcedChildId: childLink?.childId });
-            }
+        setConnection({ signedInAs: identityLabel(user.email), live: false, error: null });
+        fetchChildLink(user.uid)
+          .then(async (childLink) => {
+            const parentLink = childLink ? null : await fetchParentLink(user.uid);
+            const familyUid = childLink ? childLink.familyUid : parentLink ? parentLink.familyUid : user.uid;
+            const role: Role = childLink ? "child" : "parent";
+            unsubFamily = subscribeFamily(
+              familyUid,
+              (family) => {
+                if (family) {
+                  skipNextRemoteSave.current = true;
+                  dispatch({ type: "HYDRATE", uid: user.uid, familyUid, role, family, forcedChildId: childLink?.childId });
+                  setConnection((c) => ({ ...c, live: true, error: null }));
+                } else {
+                  // Signed in, allowed to read, and there is nothing there: a real
+                  // state (a deleted account), not a connection problem.
+                  setConnection((c) => ({ ...c, live: false, error: "לא נמצא רשומת עסק לחשבון הזה" }));
+                }
+              },
+              (err) => {
+                console.error("Family subscription failed:", err);
+                setConnection((c) => ({ ...c, live: false, error: describeSyncError(err) }));
+              }
+            );
+          })
+          // Without this the promise rejected in silence: no HYDRATE, no listener, and
+          // the app went on showing the cached record from whoever used this browser
+          // last — including the wrong role.
+          .catch((err) => {
+            console.error("Resolving the signed-in identity failed:", err);
+            setConnection((c) => ({ ...c, live: false, error: describeSyncError(err) }));
           });
-        });
       } else {
+        setConnection({ signedInAs: null, live: false, error: null });
         dispatch({ type: "SIGN_OUT" });
       }
     });
@@ -988,11 +1041,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (!state.familyUid) return;
+    // A rejected save used to end in console.error alone: the change stayed on screen,
+    // looked saved, and was gone on the next load with nothing having said so.
+    const onSaveFailed = (err: unknown) => {
+      console.error("Failed to save to Firebase:", err);
+      setConnection((c) => ({ ...c, live: false, error: describeSyncError(err) }));
+    };
     if (state.role === "child") {
       const child = state.family.children[state.activeChildId];
-      if (child) saveChildOnly(state.familyUid, state.activeChildId, child).catch((err) => console.error("Failed to save child to Firebase:", err));
+      if (child) saveChildOnly(state.familyUid, state.activeChildId, child).catch(onSaveFailed);
     } else {
-      saveFamily(state.familyUid, state.family).catch((err) => console.error("Failed to save family to Firebase:", err));
+      saveFamily(state.familyUid, state.family).catch(onSaveFailed);
     }
   }, [state]);
 
@@ -1071,10 +1130,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const parentLink = await fetchParentLink(uid);
       const familyUid = parentLink ? parentLink.familyUid : uid;
       const family = await fetchFamily(familyUid);
-      if (family) {
-        skipNextRemoteSave.current = true;
-        dispatch({ type: "HYDRATE", uid, familyUid, role: "parent", family });
-      }
+      // Returning quietly here left the sign-in "successful" while the app carried on
+      // showing whatever the browser had cached — the previous account's record, the
+      // previous account's role. A sign-in that cannot load its own data has failed.
+      if (!family) throw new Error("family-not-found");
+      skipNextRemoteSave.current = true;
+      dispatch({ type: "HYDRATE", uid, familyUid, role: "parent", family });
     },
     []
   );
@@ -1141,8 +1202,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
-    [state, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
+    () => ({ state, connection, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, connection, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

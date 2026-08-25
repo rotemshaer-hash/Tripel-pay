@@ -25,6 +25,16 @@ function usernameToEmail(username: string): string {
   return `child-${clean}@triplepay.app`;
 }
 
+/** The readable half of a signed-in identity. A worker signs in with a username, which
+ * this file turns into a synthetic address — showing them that address would be
+ * showing them something they never typed. Lives here because this is the one place
+ * that knows the shape. */
+export function identityLabel(email: string | null | undefined): string | null {
+  if (!email) return null;
+  const m = /^child-(.+)@triplepay\.app$/.exec(email);
+  return m ? m[1] : email;
+}
+
 export interface ChildLink {
   familyUid: string;
   childId: string;
