@@ -122,9 +122,17 @@ export function TaskDetail() {
       <Header title={task.title} subtitle={`${worker.name}${task.site ? ` · ${task.site}` : ""}`} back tint="pro" />
 
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Preview hides every control on purpose, which looks identical to a broken
+            screen. The banner has to say so and offer the one tap back. */}
         {isPreview && (
           <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 13px", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55 }}>
             {`תצוגת ${V.worker} — כך המסך נראה אצלו. הפעולות שמורות ל${V.worker} עצמו, כדי שהיומן ירשום מי באמת ביצע.`}
+            <button
+              onClick={() => dispatch({ type: "SET_VIEW_MODE", mode: "parent" })}
+              style={{ display: "block", marginTop: 8, background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, fontWeight: 800 }}
+            >
+              {`חזרה לתצוגת ${V.admin} — לצירוף קבצים ועריכה`}
+            </button>
           </div>
         )}
 

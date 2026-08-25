@@ -152,7 +152,15 @@ function loadInitial(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (isValidState(parsed)) return { ...parsed, uid: null, family: normalizeFamily(parsed.family) };
+      // viewMode is a preview toggle, not a saved preference: it says "right now I'm
+      // peeking at the other side's screen", and it has no business surviving a
+      // reload. Restoring it meant a manager who once tapped the worker pill came
+      // back in preview forever — and preview is deliberately look-only, so every
+      // control they were looking for (attach a file, edit, approve) was hidden.
+      // Opening the app always puts you on your own side; the pill still works within
+      // the session.
+      if (isValidState(parsed))
+        return { ...parsed, uid: null, viewMode: parsed.role === "child" ? "child" : "parent", family: normalizeFamily(parsed.family) };
       localStorage.removeItem(STORAGE_KEY);
     }
   } catch {
