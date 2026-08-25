@@ -6,7 +6,9 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, priorityColor, priorityLabels, work } from "../../data/vocabulary";
-import type { TaskPriority } from "../../data/types";
+import { AttachButton, AttachmentList } from "../../components/Attachments";
+import { draftToAttachment } from "../../data/attachments";
+import type { Attachment, TaskPriority } from "../../data/types";
 
 const priorities: TaskPriority[] = ["low", "normal", "high", "urgent"];
 
@@ -29,6 +31,11 @@ export function NewTask() {
   const [site, setSite] = useState("");
   const [steps, setSteps] = useState<string[]>([]);
   const [stepDraft, setStepDraft] = useState("");
+  // The task's id is decided here, not in the reducer, so a file can be uploaded into
+  // this task's own folder while the task is still being written.
+  const [taskId, setTaskId] = useState(() => `t-${crypto.randomUUID()}`);
+  const [files, setFiles] = useState<Attachment[]>([]);
+  const actor = state.family.parentName || V.admin;
 
   function addStep() {
     const text = stepDraft.trim();
@@ -45,21 +52,25 @@ export function NewTask() {
     dispatch({
       type: "CREATE_TASK",
       childId: assignee,
+      id: taskId,
       title: title.trim(),
       brief: brief.trim() || undefined,
+      briefAttachments: files,
       // A date input gives a bare day; anchor it to end of day so "due today" isn't
       // already overdue at 00:01.
       dueAt: due ? new Date(`${due}T23:59:59`).toISOString() : undefined,
       priority,
       site: site.trim() || undefined,
       checklist: steps.map((text) => ({ id: `ck-${crypto.randomUUID()}`, text, done: false })),
-      by: state.family.parentName || V.admin,
+      by: actor,
     });
     showToast(`המשימה הוקצתה ל${worker?.name ?? V.worker}`);
     if (andAnother) {
       setTitle("");
       setBrief("");
       setSteps([]);
+      setFiles([]);
+      setTaskId(`t-${crypto.randomUUID()}`);
       return;
     }
     setTimeout(() => navigate("/work/journal"), 400);
@@ -81,6 +92,14 @@ export function NewTask() {
             rows={3}
             placeholder="הנחיות מדויקות, על מה לשים לב, ציוד נדרש…"
             style={{ ...inputStyle, fontFamily: "inherit", resize: "vertical" }}
+          />
+          {/* Attaching the plan, the spec or the photo belongs here, with the
+              instructions being written — not only on the task after it exists. */}
+          <AttachmentList items={files} empty="" onRemove={(id) => setFiles((list) => list.filter((f) => f.id !== id))} />
+          <AttachButton
+            folder={`tasks/${taskId}`}
+            label="📎 צירוף תמונה או קובץ להנחיות"
+            onAttached={(draft) => setFiles((list) => [...list, draftToAttachment(draft, actor)])}
           />
         </Field>
 

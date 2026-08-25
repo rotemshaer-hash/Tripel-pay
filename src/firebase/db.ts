@@ -20,15 +20,28 @@ export function subscribeFamily(uid: string, cb: (family: Family | null) => void
   );
 }
 
+/**
+ * Firebase refuses a write whose payload contains `undefined` anywhere — and refuses
+ * the WHOLE write, not the offending key. An optional field left empty (a task with no
+ * brief, no due date, no site) therefore stopped the entire company record from saving,
+ * which is invisible from the screen: the change is in local state and looks saved.
+ *
+ * Dropping undefined keys belongs here, at the one boundary where the rule exists,
+ * rather than in every action that builds a record with an optional field in it.
+ */
+function forFirebase<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export async function saveFamily(uid: string, family: Family) {
-  await set(ref(db, `families/${uid}`), family);
+  await set(ref(db, `families/${uid}`), forFirebase(family));
 }
 
 // A linked child session is only ever allowed (by the security rules) to write to its
 // own child subtree, never the rest of the family — so child sessions save through
 // this narrower path instead of overwriting the whole family blob.
 export async function saveChildOnly(familyUid: string, childId: string, child: Child) {
-  await set(ref(db, `families/${familyUid}/children/${childId}`), child);
+  await set(ref(db, `families/${familyUid}/children/${childId}`), forFirebase(child));
 }
 
 export async function createInviteCode(familyUid: string, childId: string, code: string) {

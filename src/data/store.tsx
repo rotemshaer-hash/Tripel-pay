@@ -57,8 +57,12 @@ type Action =
   | {
       type: "CREATE_TASK";
       childId: string;
+      /** The form generates the id up front so files can be uploaded into the task's
+       * own folder before the task itself exists. */
+      id?: string;
       title: string;
       brief?: string;
+      briefAttachments?: Attachment[];
       dueAt?: string;
       priority?: TaskPriority;
       recurrence?: TaskItem["recurrence"];
@@ -275,7 +279,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "CREATE_TASK": {
       // A free-form task written by the manager, with no template behind it.
       const at = action.at ?? new Date().toISOString();
-      const id = `t-${crypto.randomUUID()}`;
+      const id = action.id ?? `t-${crypto.randomUUID()}`;
       const repeats = (action.recurrence ?? "none") !== "none";
       const task: TaskItem = logActivity(
         {
@@ -294,6 +298,7 @@ function reducer(state: AppState, action: Action): AppState {
           // occurrence the engine generates later carries the same id.
           ...(repeats ? { seriesId: id } : {}),
           checklist: action.checklist ?? [],
+          briefAttachments: action.briefAttachments ?? [],
           activity: [],
         },
         { by: action.by ?? "", action: "assigned", detail: action.dueAt ? `יעד: ${action.dueAt.slice(0, 10)}` : undefined },

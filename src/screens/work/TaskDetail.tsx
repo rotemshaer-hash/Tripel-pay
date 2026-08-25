@@ -1,13 +1,12 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { useStore, useWorkView } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
-import { resizeImageToDataUrl } from "../../utils/resizeImage";
-import { fileIcon, formatBytes } from "../../utils/files";
-import type { Attachment, Child, TaskItem, TaskPriority } from "../../data/types";
+import { AttachButton, AttachmentList } from "../../components/Attachments";
+import type { Child, TaskItem, TaskPriority } from "../../data/types";
 
 
 /**
@@ -17,13 +16,10 @@ import type { Attachment, Child, TaskItem, TaskPriority } from "../../data/types
  */
 export function TaskDetail() {
   const { workerId = "", taskId = "" } = useParams();
-  const { state, connection, dispatch, uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
+  const { state, connection, dispatch } = useStore();
   const navigate = useNavigate();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState("");
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [uploadError, setUploadError] = useState("");
   const [editing, setEditing] = useState(false);
 
   const worker = state.family.children[workerId];
@@ -62,47 +58,9 @@ export function TaskDetail() {
       (o) => o.seriesId === task.seriesId && o.id !== task.id && (Date.parse(o.dueAt ?? "") || 0) > (Date.parse(task.dueAt ?? "") || 0)
     );
 
-  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setBusy(true);
-    setUploadError("");
-    try {
-      const target = isManager ? "brief" : "proof";
-      // Photos stay inline as a compressed data URL: they are small once resized, they
-      // load with the record, and every one already stored is in that form. Real
-      // documents go to Storage — a PDF has no lossy version, and putting one inside
-      // the database record would blow past its size limit.
-      if (file.type.startsWith("image/")) {
-        const content = await resizeImageToDataUrl(file, 900, 0.75);
-        dispatch({ type: "ADD_TASK_ATTACHMENT", childId: activeWorker.id, taskId: activeTask.id, target, kind: "image", name: file.name, content, by: actor });
-        return;
-      }
-      if (file.size > maxUploadBytes) {
-        setUploadError(`הקובץ גדול מדי (עד ${Math.round(maxUploadBytes / 1024 / 1024)}MB)`);
-        return;
-      }
-      const stored = await uploadAttachment(`tasks/${activeTask.id}`, file);
-      dispatch({
-        type: "ADD_TASK_ATTACHMENT",
-        childId: activeWorker.id,
-        taskId: activeTask.id,
-        target,
-        kind: "file",
-        name: stored.name,
-        content: stored.url,
-        path: stored.path,
-        size: stored.size,
-        mime: stored.mime,
-        by: actor,
-      });
-    } catch (err) {
-      console.error("Attachment upload failed:", err);
-      setUploadError(describeUploadFailure(err));
-    } finally {
-      setBusy(false);
-    }
+  function attach(target: "brief" | "proof") {
+    return (draft: { kind: "image" | "file" | "note"; name: string; content: string; path?: string; size?: number; mime?: string }) =>
+      dispatch({ type: "ADD_TASK_ATTACHMENT", childId: activeWorker.id, taskId: activeTask.id, target, ...draft, by: actor });
   }
 
   function addNote() {
@@ -173,12 +131,7 @@ export function TaskDetail() {
           <div style={{ fontSize: 13.5, lineHeight: 1.6, color: task.brief ? "var(--ink)" : "var(--ink-faint)" }}>{task.brief || "לא נכתב פירוט."}</div>
           <AttachmentList items={task.briefAttachments ?? []} empty="אין קבצים מצורפים לפירוט." />
           {isManager && task.status !== "completed" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-              <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...btnStyle(busy), background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
-                {busy ? "מעלה…" : "📎 צירוף תמונה או קובץ להנחיות"}
-              </button>
-              {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
-            </div>
+            <AttachButton folder={`tasks/${activeTask.id}`} label="📎 צירוף תמונה או קובץ להנחיות" onAttached={attach("brief")} />
           )}
           {/* Which account you are signed in as is invisible until something you expect
               to see is missing. Say it here, where the missing control is. */}
@@ -249,8 +202,6 @@ export function TaskDetail() {
           </Panel>
         )}
 
-        <input ref={fileRef} type="file" onChange={onPickFile} style={{ display: "none" }} />
-
         {/* proof — the worker's evidence, and only the worker adds to it */}
         <Panel title={V.proof}>
           <AttachmentList items={task.proofs ?? []} empty="טרם צורפו אסמכתאות." />
@@ -267,10 +218,7 @@ export function TaskDetail() {
                   הוספה
                 </button>
               </div>
-              <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...btnStyle(busy), background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
-                {busy ? "מעלה…" : "📎 צירוף תמונה או קובץ"}
-              </button>
-              {uploadError && <div style={{ fontSize: 12, color: work.alert }}>{uploadError}</div>}
+              <AttachButton folder={`tasks/${activeTask.id}`} onAttached={attach("proof")} />
             </div>
           )}
           {isManager && task.status !== "completed" && (
@@ -603,40 +551,6 @@ function Chip({ text, color, solid }: { text: string; color: string; solid?: boo
     >
       {text}
     </span>
-  );
-}
-
-function AttachmentList({ items, empty }: { items: Attachment[]; empty: string }) {
-  if (items.length === 0) return <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 8 }}>{empty}</div>;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-      {items.map((a) => (
-        <div key={a.id} style={{ background: "var(--paper)", borderRadius: 9, padding: 9 }}>
-          {a.kind === "image" ? (
-            <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
-          ) : a.kind === "file" ? (
-            // A stored file is a thing to open, not a URL to read.
-            <a
-              href={a.content}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: "var(--ink)" }}
-            >
-              <span style={{ fontSize: 17, flexShrink: 0 }}>{fileIcon(a.mime)}</span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
-                <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-faint)", marginTop: 1 }}>{formatBytes(a.size)} · פתיחה</span>
-              </span>
-            </a>
-          ) : (
-            <div style={{ fontSize: 13, color: "var(--ink)" }}>{a.content}</div>
-          )}
-          <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginTop: 5 }}>
-            {a.addedBy} · {formatDateTime(a.addedAt)}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
