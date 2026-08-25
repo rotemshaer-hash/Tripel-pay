@@ -27,8 +27,14 @@ export function Login() {
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  // Set when the sign-in itself succeeded but the account has no company record —
+  // the one failure a person can actually fix from here.
+  const [needsAccountRepair, setNeedsAccountRepair] = useState(false);
+  const [repairCompany, setRepairCompany] = useState("");
+  const [repairName, setRepairName] = useState("");
+  const [repairLoading, setRepairLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, loginChildSession, resetPassword } = useStore();
+  const { login, loginChildSession, resetPassword, completeMissingAccount } = useStore();
 
   async function forgotPassword() {
     setError("");
@@ -46,6 +52,9 @@ export function Login() {
       const code = (err as { code?: string })?.code;
       if (code === "auth/user-not-found") {
         setError(`לא נמצא חשבון ${V.admin} עם האימייל הזה — יש לוודא שנרשמתם קודם עם כתובת זו`);
+        // Firebase hides whether an address is registered (so nobody can fish for
+        // accounts), so on most projects this branch never runs and the send below
+        // "succeeds" for an unknown address too. The message must not promise mail.
       } else if (code === "auth/too-many-requests") {
         setError("יותר מדי נסיונות — נסו שוב בעוד כמה דקות");
       } else {
@@ -61,6 +70,7 @@ export function Login() {
     setError("");
     try {
       if (role === "parent") {
+        setNeedsAccountRepair(false);
         await login(email.trim(), password);
         navigate(homePath("parent"));
       } else {
@@ -70,11 +80,14 @@ export function Login() {
     } catch (err) {
       console.error("Login failed:", err);
       const message = err instanceof Error ? err.message : "";
+      // The password was right — the account is simply unfinished. That is repairable
+      // from this screen, and nowhere else.
+      if (role === "parent" && message === "family-not-found") setNeedsAccountRepair(true);
       setError(
         role === "parent"
           ? message === "family-not-found"
-            ? "החשבון קיים אבל לא נמצאו לו נתונים. אם נרשמת דרך קישור הזמנה, יש להיכנס שוב דרך הקישור."
-            : "אימייל או סיסמה שגויים"
+            ? ""
+            : "אימייל או סיסמה שגויים. ייתכן גם שההרשמה לא הושלמה עד הסוף, או שהחשבון נפתח עם כתובת אחרת."
           : message === "child-link-missing"
             ? `החשבון קיים אבל לא מקושר לצוות. פתח/י את קישור ההזמנה מהמנהל והזן/י שם משתמש וסיסמה — אותם פרטים בדיוק — כדי להשלים את החיבור.`
             : "שם משתמש או סיסמה שגויים"
@@ -181,7 +194,44 @@ export function Login() {
         )}
         {resetSent && (
           <div style={{ fontSize: 13, color: "var(--teal-900)", textAlign: "center", marginBottom: 14 }}>
-            נשלח מייל לאיפוס סיסמה ל-{email.trim()} — בדקו את תיבת הדואר
+            {`אם קיים חשבון עם ${email.trim()} — נשלח אליו מייל לאיפוס (בדקו גם בספאם). לא הגיע כלום? כנראה שהחשבון נפתח עם כתובת אחרת, או שההרשמה מעולם לא הושלמה — במקרה כזה יש לפתוח חשבון חדש.`}
+          </div>
+        )}
+        {needsAccountRepair && (
+          <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 11, padding: "13px 14px", marginBottom: 14 }}>
+            <div style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6, marginBottom: 10 }}>
+              הסיסמה נכונה, אבל פתיחת החשבון לא הושלמה — לא נשמרו לו פרטי עסק. אפשר להשלים את זה עכשיו, בלי לפתוח חשבון חדש.
+            </div>
+            <input
+              value={repairCompany}
+              onChange={(e) => setRepairCompany(e.target.value)}
+              placeholder="שם העסק"
+              style={{ ...fieldStyle(isWork), marginBottom: 8 }}
+            />
+            <input
+              value={repairName}
+              onChange={(e) => setRepairName(e.target.value)}
+              placeholder={`שם ה${V.admin}`}
+              style={{ ...fieldStyle(isWork), marginBottom: 10 }}
+            />
+            <button
+              onClick={async () => {
+                setRepairLoading(true);
+                setError("");
+                try {
+                  await completeMissingAccount(repairName.trim(), repairCompany.trim());
+                  navigate(homePath("parent"));
+                } catch (err) {
+                  console.error("Completing the account failed:", err);
+                  setError("השלמת החשבון נכשלה. בדקו את החיבור ונסו שוב.");
+                  setRepairLoading(false);
+                }
+              }}
+              disabled={repairLoading || !repairCompany.trim()}
+              style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: work.ink, color: "#ffffff", fontSize: 14, fontWeight: 800, opacity: repairLoading || !repairCompany.trim() ? 0.45 : 1 }}
+            >
+              {repairLoading ? "משלימים…" : "השלמת פתיחת החשבון"}
+            </button>
           </div>
         )}
         {error && <div style={{ fontSize: 13, color: "var(--coral-600)", textAlign: "center", marginBottom: 14 }}>{error}</div>}

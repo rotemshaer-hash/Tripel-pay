@@ -58,29 +58,60 @@ export async function registerParent(email: string, password: string, name: stri
   await cred.user.getIdToken(true).catch(() => {});
   await updateProfile(cred.user, { displayName: name }).catch(() => {});
 
+  try {
+    return await writeNewFamily(cred.user, name, email, childNames, companyName);
+  } catch (err) {
+    // Roll back the auth account if the family record never saved, so registration
+    // can be retried cleanly instead of leaving an orphaned Auth-only account. When
+    // even this fails, the account survives with nothing behind it — which is what
+    // `createFamilyForCurrentUser` exists to repair.
+    await cred.user.delete().catch(() => {});
+    throw err;
+  }
+}
+
+/**
+ * Writes a brand-new company record for a signed-in account, retrying the known
+ * Firebase race where the database connection has not yet picked up the fresh token.
+ */
+async function writeNewFamily(user: User, name: string, email: string, childNames?: string[], companyName?: string): Promise<Family> {
   const family = seedFamily(name, email, childNames, companyName);
   const delays = [1200, 2500, 4500];
   let lastErr: unknown = null;
   for (let attempt = 0; attempt <= delays.length; attempt++) {
     try {
-      await set(ref(db, `families/${cred.user.uid}`), family);
+      await set(ref(db, `families/${user.uid}`), family);
       // Each seeded child gets a redeemable invite code so the parent can share it —
       // stored at the top level (not under families/{uid}) so a child, once they have
       // their own auth identity, can look it up before they're linked to anything.
-      await Promise.all(Object.values(family.children).map((c) => createInviteCode(cred.user.uid, c.id, c.inviteCode)));
-      await createParentInviteCode(cred.user.uid, family.parentInviteCode);
+      await Promise.all(Object.values(family.children).map((c) => createInviteCode(user.uid, c.id, c.inviteCode)));
+      await createParentInviteCode(user.uid, family.parentInviteCode);
       return family;
     } catch (err) {
       lastErr = err;
       if (attempt === delays.length) break;
       await new Promise((r) => setTimeout(r, delays[attempt]));
-      await cred.user.getIdToken(true).catch(() => {});
+      await user.getIdToken(true).catch(() => {});
     }
   }
-  // Roll back the auth account if the family record never saved, so registration
-  // can be retried cleanly instead of leaving an orphaned Auth-only account.
-  await cred.user.delete().catch(() => {});
   throw lastErr;
+}
+
+/**
+ * The repair for an account that exists with nothing behind it.
+ *
+ * Registration creates the login first and the company record second. If the second
+ * step fails and the rollback of the first one also fails, the person is left with a
+ * sign-in that is refused everywhere — correct password, no data, no way forward. They
+ * own that uid, so they are allowed to write its record: this finishes the job.
+ */
+export async function createFamilyForCurrentUser(name: string, companyName: string): Promise<Family> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("not-signed-in");
+  const existing = await fetchFamily(user.uid);
+  if (existing) return existing;
+  await user.getIdToken(true).catch(() => {});
+  return writeNewFamily(user, name || user.displayName || "", user.email ?? "", [], companyName);
 }
 
 export async function loginParent(email: string, password: string) {

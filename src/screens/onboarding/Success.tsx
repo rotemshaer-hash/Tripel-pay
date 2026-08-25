@@ -36,6 +36,14 @@ export function Success() {
     } catch {
       /* fall back to the default seeded roster */
     }
+    // The credentials live in sessionStorage between the steps, which is per-tab: a
+    // person who reaches this screen in a new tab (a shared link, a restarted browser)
+    // has nothing to register with, and the raw Firebase "invalid email" that follows
+    // reads as a broken app rather than "start again".
+    if (!parentEmail || !password) {
+      setError("פרטי ההרשמה לא נמצאו — יש להתחיל את פתיחת החשבון מחדש.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {

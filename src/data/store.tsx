@@ -15,6 +15,7 @@ import {
   registerSecondParent,
   fetchParentLink,
   identityLabel,
+  createFamilyForCurrentUser,
   resetParentPassword,
   deleteOwnAccount,
 } from "../firebase/auth";
@@ -977,6 +978,8 @@ interface StoreContextValue {
   dispatch: React.Dispatch<Action>;
   completeOnboarding: (email: string, password: string, name: string, childNames?: string[], companyName?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  /** Finishes an account whose login exists but whose company record never saved. */
+  completeMissingAccount: (name: string, companyName: string) => Promise<void>;
   registerChildSession: (code: string, username: string, password: string) => Promise<void>;
   loginChildSession: (username: string, password: string) => Promise<void>;
   registerSecondParentSession: (code: string, email: string, password: string, name: string) => Promise<void>;
@@ -1184,6 +1187,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const completeMissingAccount = useMemo(
+    () => async (name: string, companyName: string) => {
+      const family = await createFamilyForCurrentUser(name, companyName);
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error("not-signed-in");
+      skipNextRemoteSave.current = true;
+      dispatch({ type: "HYDRATE", uid, familyUid: uid, role: "parent", family });
+    },
+    []
+  );
+
   const registerSecondParentSession = useMemo(
     () => async (code: string, email: string, password: string, name: string) => {
       const { familyUid, family } = await registerSecondParent(code, email, password, name);
@@ -1246,8 +1260,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, connection, dispatch, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
-    [state, connection, completeOnboarding, login, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
+    () => ({ state, connection, dispatch, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, connection, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
