@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from "react";
 import { seedFamily, templateChild } from "./seed";
-import { childrenList, normalizeFamily } from "./family";
+import { childrenList, genInviteCode, normalizeFamily } from "./family";
 import { endOfDay, nextDueDate, toDate } from "../utils/datetime";
 import type { ActivityEntry, Attachment, ChecklistItem, Child, ChildSettings, CompanyDoc, Supplier, ExtraCard, Family, GiftBankItem, HouseRule, SavingsGoal, TaskCategory, TaskItem, TaskPriority, TaskTemplate } from "./types";
 import {
@@ -20,7 +20,7 @@ import {
 } from "../firebase/auth";
 import { auth } from "../firebase/config";
 import { uploadFile as uploadToStorage, deleteStoredFile, describeUploadError, MAX_UPLOAD_BYTES, type StoredFile } from "../firebase/storage";
-import { subscribeFamily, saveFamily, saveChildOnly } from "../firebase/db";
+import { subscribeFamily, saveFamily, saveChildOnly, createInviteCode } from "../firebase/db";
 
 type ViewMode = "parent" | "child";
 type Role = "parent" | "child";
@@ -101,6 +101,7 @@ type Action =
   | { type: "ADD_DOCUMENT"; title: string; kind: CompanyDoc["kind"]; content: string; path?: string; size?: number; mime?: string; note?: string; by: string; at?: string }
   | { type: "REMOVE_DOCUMENT"; docId: string }
   | { type: "ADD_WORKER"; name: string }
+  | { type: "RESET_WORKER_ACCESS"; childId: string }
   | { type: "ADD_HOUSE_RULE"; text: string }
   | { type: "REMOVE_HOUSE_RULE"; ruleId: string }
   | { type: "RESET_CHILD_PROGRESS"; childId: string }
@@ -816,6 +817,20 @@ function reducer(state: AppState, action: Action): AppState {
         },
       };
     }
+    case "RESET_WORKER_ACCESS": {
+      // A worker locked out of their own login gets a new invite code and their link
+      // cleared, so they can sign up again from a fresh link. The code index is kept in
+      // step by the effect that watches the family record, so the new code is live
+      // without anything else having to remember to publish it.
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => {
+          const next = { ...c, inviteCode: genInviteCode() };
+          delete next.authUid;
+          return next;
+        }),
+      };
+    }
     case "ADD_HOUSE_RULE": {
       const rule: HouseRule = { id: `hr-${crypto.randomUUID()}`, text: action.text };
       return { ...state, family: { ...state.family, houseRules: [...state.family.houseRules, rule] } };
@@ -1059,6 +1074,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveFamily(state.familyUid, state.family).catch(onSaveFailed);
     }
   }, [state]);
+
+  // An invite code only works if it exists at `inviteCodes/{code}`, which is where a
+  // person who is not yet linked to anything is allowed to look it up. That index was
+  // written once, at registration, for the workers who existed at that moment — so
+  // every worker added afterwards had a code printed on their invite link that the
+  // database had never heard of. Their sign-up failed with "invalid code" AFTER their
+  // login was created, leaving an account that could not get in anywhere.
+  //
+  // The family record is the truth; this keeps the index in step with it. Writing the
+  // same code again is harmless, so it also repairs every invite already handed out.
+  const publishedCodes = useRef(new Set<string>());
+  useEffect(() => {
+    // The rules let only the account owner write this index (a code names its family),
+    // so a second admin's session must not try.
+    if (!state.familyUid || state.uid !== state.familyUid) return;
+    for (const child of childrenList(state.family)) {
+      if (!child.inviteCode || publishedCodes.current.has(child.inviteCode)) continue;
+      publishedCodes.current.add(child.inviteCode);
+      createInviteCode(state.familyUid, child.id, child.inviteCode).catch((err) => {
+        publishedCodes.current.delete(child.inviteCode);
+        console.error("Publishing an invite code failed:", err);
+      });
+    }
+  }, [state.family, state.familyUid, state.uid]);
 
   // Recurring weekly allowance: whenever a parent session is loaded, credit any child
   // whose weekly allowance has come due, one clock-week at a time (capped so a long

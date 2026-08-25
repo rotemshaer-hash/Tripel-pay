@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
 import { homePath } from "../data/routes";
 import { MODE, V, work } from "../data/vocabulary";
+import { USERNAME_HINT, isUsernameUsable } from "../data/username";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
 
@@ -68,13 +69,22 @@ export function Login() {
       }
     } catch (err) {
       console.error("Login failed:", err);
-      setError(role === "parent" ? "אימייל או סיסמה שגויים" : "שם משתמש או סיסמה שגויים");
+      const message = err instanceof Error ? err.message : "";
+      setError(
+        role === "parent"
+          ? message === "family-not-found"
+            ? "החשבון קיים אבל לא נמצאו לו נתונים. אם נרשמת דרך קישור הזמנה, יש להיכנס שוב דרך הקישור."
+            : "אימייל או סיסמה שגויים"
+          : message === "child-link-missing"
+            ? `החשבון קיים אבל לא מקושר לצוות. פתח/י את קישור ההזמנה מהמנהל והזן/י שם משתמש וסיסמה — אותם פרטים בדיוק — כדי להשלים את החיבור.`
+            : "שם משתמש או סיסמה שגויים"
+      );
       setLoading(false);
     }
   }
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const canSubmit = role === "parent" ? emailValid && password.length >= 6 : username.trim().length >= 2 && password.length >= 6;
+  const canSubmit = role === "parent" ? emailValid && password.length >= 6 : isUsernameUsable(username) && password.length >= 6;
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isWork ? "0 0 20px" : "70px 24px 28px", position: "relative", overflow: "hidden" }}>
@@ -139,6 +149,7 @@ export function Login() {
           />
         ) : (
           <input
+            dir="ltr"
             placeholder="שם משתמש"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -160,6 +171,13 @@ export function Login() {
           >
             {resetLoading ? "שולח מייל…" : "שכחתי סיסמה"}
           </button>
+        )}
+        {role === "child" && (
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.55, marginBottom: 14 }}>
+            {username && !isUsernameUsable(username)
+              ? USERNAME_HINT
+              : `אין איפוס סיסמה במייל ל${V.worker} — החשבון נפתח עם שם משתמש, לא עם כתובת מייל. אם שכחת, בקש/י מהמנהל קוד הצטרפות חדש ממסך הצוות.`}
+          </div>
         )}
         {resetSent && (
           <div style={{ fontSize: 13, color: "var(--teal-900)", textAlign: "center", marginBottom: 14 }}>

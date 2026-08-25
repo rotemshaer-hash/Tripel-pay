@@ -14,6 +14,7 @@ import { ref, set, get, remove } from "firebase/database";
 import { auth, db } from "./config";
 import { seedFamily } from "../data/seed";
 import { createInviteCode, createParentInviteCode } from "./db";
+import { normalizeUsername } from "../data/username";
 import { normalizeFamily } from "../data/family";
 import type { Family } from "../data/types";
 
@@ -21,8 +22,7 @@ import type { Family } from "../data/types";
 // Drushe uses (username -> username@kidemy.app), namespaced under child- so a kid's
 // username can never collide with a parent's real email address.
 function usernameToEmail(username: string): string {
-  const clean = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "");
-  return `child-${clean}@triplepay.app`;
+  return `child-${normalizeUsername(username)}@triplepay.app`;
 }
 
 /** The readable half of a signed-in identity. A worker signs in with a username, which
@@ -154,7 +154,23 @@ export async function fetchFamily(uid: string): Promise<Family | null> {
 // child can read and write.
 export async function registerChild(code: string, username: string, password: string): Promise<{ familyUid: string; childId: string; family: Family }> {
   const email = usernameToEmail(username);
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  let cred;
+  let createdNow = true;
+  try {
+    cred = await createUserWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    // The name being taken is usually the SAME person coming back: an earlier attempt
+    // created their login and then failed to link it to the team (an invite code that
+    // was never published, a refused write), leaving an account that exists and can't
+    // get in anywhere. Signing them in and completing the link is the repair — it
+    // needs their password, so it can only be them.
+    if ((err as { code?: string })?.code === "auth/email-already-in-use") {
+      cred = await signInWithEmailAndPassword(auth, email, password);
+      createdNow = false;
+    } else {
+      throw err;
+    }
+  }
   await cred.user.getIdToken(true).catch(() => {});
 
   const delays = [1200, 2500, 4500];
@@ -167,7 +183,10 @@ export async function registerChild(code: string, username: string, password: st
         break; // a genuinely wrong code will never resolve on retry
       }
       const link = codeSnap.val() as ChildLink;
-      await set(ref(db, `childLogins/${cred.user.uid}`), link);
+      // The rules allow writing this link once and never again, so a repeat attempt by
+      // an already-linked account must not try to rewrite it.
+      const existing = await get(ref(db, `childLogins/${cred.user.uid}`));
+      if (!existing.exists()) await set(ref(db, `childLogins/${cred.user.uid}`), link);
       // Mark the child record itself as linked (so the parent's UI can stop showing
       // the invite card once this child has actually registered).
       await set(ref(db, `families/${link.familyUid}/children/${link.childId}/authUid`), cred.user.uid);
@@ -181,7 +200,10 @@ export async function registerChild(code: string, username: string, password: st
       await cred.user.getIdToken(true).catch(() => {});
     }
   }
-  await cred.user.delete().catch(() => {});
+  // Rolling the account back is only right when this call is what created it. Deleting
+  // an account that already existed would destroy the person's login over a failure
+  // that has nothing to do with them.
+  if (createdNow) await cred.user.delete().catch(() => {});
   throw lastErr;
 }
 

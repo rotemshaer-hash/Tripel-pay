@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../data/store";
 import { homePath } from "../data/routes";
 import { MODE, V, work } from "../data/vocabulary";
+import { USERNAME_HINT, isUsernameUsable, normalizeUsername } from "../data/username";
 import { BrandDecor } from "../components/BrandDecor";
 import { PrimaryButton } from "../components/UI";
 
@@ -34,9 +35,9 @@ export function ChildRegister() {
       // "something went wrong" hides — leaving the person retrying the same name.
       setError(
         message === "invalid-code"
-          ? "קוד ההצטרפות לא נכון או לא בתוקף"
-          : code === "auth/email-already-in-use"
-            ? "שם המשתמש הזה כבר תפוס — יש לבחור אחר"
+          ? "קוד ההצטרפות לא נכון או לא בתוקף — בקש/י מהמנהל קוד חדש ממסך הצוות"
+          : code === "auth/wrong-password" || code === "auth/invalid-credential"
+            ? "שם המשתמש הזה כבר קיים. אם הוא שלך — הזן/י את הסיסמה שבחרת בפעם הקודמת; אחרת בחר/י שם אחר."
             : code === "auth/weak-password"
               ? "הסיסמה קצרה מדי — לפחות 6 תווים"
               : "משהו השתבש. בדקו את החיבור ונסו שוב."
@@ -45,7 +46,11 @@ export function ChildRegister() {
     }
   }
 
-  const canSubmit = code.trim().length >= 4 && username.trim().length >= 2 && password.length >= 6;
+  // A name typed in Hebrew survives normalisation as an empty string, which used to
+  // hand two different people the same account. Say so before the account is made.
+  const usernameOk = isUsernameUsable(username);
+  const normalized = normalizeUsername(username);
+  const canSubmit = code.trim().length >= 4 && usernameOk && password.length >= 6;
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "70px 24px 28px", position: "relative", overflow: "hidden" }}>
@@ -77,10 +82,18 @@ export function ChildRegister() {
         />
         <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6, fontWeight: isWork ? 700 : 400 }}>שם משתמש</label>
         <input
+          dir="ltr"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           style={inputStyle(isWork)}
         />
+        <div style={{ fontSize: 11.5, color: username && !usernameOk ? work.alert : "var(--ink-faint)", marginTop: -8, marginBottom: 12, lineHeight: 1.5 }}>
+          {!username
+            ? USERNAME_HINT
+            : !usernameOk
+              ? USERNAME_HINT
+              : `הכניסה תהיה עם השם: ${normalized}`}
+        </div>
         <label style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "block", marginBottom: 6, fontWeight: isWork ? 700 : 400 }}>סיסמה</label>
         <input
           type="password"

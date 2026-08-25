@@ -61,12 +61,12 @@ export function WorkTeam() {
                     {late > 0 && <span style={{ color: work.alert, fontWeight: 700 }}> · {late} באיחור</span>}
                   </div>
                 </div>
-                {!w.authUid && (
+                {(
                   <button
                     onClick={() => setOpenInvite(openInvite === w.id ? null : w.id)}
                     style={{ background: openInvite === w.id ? work.ink : "#ffffff", color: openInvite === w.id ? "#ffffff" : "var(--ink)", border: "1px solid var(--line)", borderRadius: 8, padding: "7px 11px", fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}
                   >
-                    הזמנה
+                    {w.authUid ? "כניסה" : "הזמנה"}
                   </button>
                 )}
               </div>
@@ -78,6 +78,22 @@ export function WorkTeam() {
               {openInvite === w.id && (
                 <div style={{ marginTop: 11, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>
                   <InviteShare workerName={w.name} code={w.inviteCode} onNotify={showToast} />
+                  {/* Someone who registered and then can't get in had no way back: the
+                      invite disappeared the moment they signed up. This is the way back. */}
+                  <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>
+                    <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.55, marginBottom: 8 }}>
+                      {`${w.name} לא מצליח/ה להיכנס? הנפקת קוד חדש מבטלת את הקוד הקודם ומאפשרת הרשמה מחדש עם שם משתמש וסיסמה חדשים.`}
+                    </div>
+                    <button
+                      onClick={() => {
+                        dispatch({ type: "RESET_WORKER_ACCESS", childId: w.id });
+                        showToast("הונפק קוד הצטרפות חדש");
+                      }}
+                      style={{ background: "#ffffff", border: `1px solid ${work.alert}`, color: work.alert, borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800 }}
+                    >
+                      הנפקת קוד הצטרפות חדש
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
