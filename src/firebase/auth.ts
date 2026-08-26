@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  signInAnonymously,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
@@ -42,6 +43,20 @@ export interface ChildLink {
 
 export interface ParentLink {
   familyUid: string;
+}
+
+/**
+ * A session good enough to read one task link and report on it.
+ *
+ * Anonymous rather than open rules: the token is what grants access, but Firebase still
+ * wants an identity behind every read and write, and an anonymous uid gives abuse
+ * controls and a name in the record. Critically it must never run when somebody is
+ * already signed in — a manager tapping their own link would be signed out of their
+ * account by it.
+ */
+export async function ensureSomeSession(): Promise<void> {
+  if (auth.currentUser) return;
+  await signInAnonymously(auth);
 }
 
 export function onAuthChange(cb: (user: User | null) => void) {

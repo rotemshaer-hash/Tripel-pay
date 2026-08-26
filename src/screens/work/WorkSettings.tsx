@@ -8,6 +8,8 @@ import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
 import { formatDateTime } from "../../utils/datetime";
 import { adminInviteLink, entryPath } from "../../data/routes";
+import { ProfessionPicker } from "../../components/ProfessionPicker";
+import { professionById } from "../../data/professions";
 
 /**
  * Account settings for the business build.
@@ -88,6 +90,7 @@ export function WorkSettings() {
               <Row label={V.admin} value={state.family.parentName} />
             </>
           )}
+          <Row label="תחום" value={professionById(state.family.professionId)?.name ?? "לא נבחר"} />
           <Row label="סוג חשבון" value={state.role === "child" ? V.worker : V.admin} />
           <Row label="מחובר כ" value={connection.signedInAs ?? "לא מחובר"} ltr />
           <Row label="מקור הנתונים" value={connection.unsaved ? "המכשיר — יש שינויים שלא נשמרו" : connection.live ? "השרת (מעודכן)" : "המכשיר בלבד"} />
@@ -117,6 +120,22 @@ export function WorkSettings() {
             >
               {retrying ? "מסנכרן…" : "ניסיון סנכרון עכשיו"}
             </button>
+          </section>
+        )}
+
+        {isManager && (
+          <section style={card}>
+            <div style={cardTitle}>התחום של העסק</div>
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
+              קובע אילו משימות מוכנות מראש מוצעות לך במסך כתיבת משימה.
+            </div>
+            <ProfessionPicker
+              value={state.family.professionId ?? ""}
+              onChange={(professionId) => {
+                dispatch({ type: "SET_PROFESSION", professionId });
+                showToast("התחום עודכן");
+              }}
+            />
           </section>
         )}
 

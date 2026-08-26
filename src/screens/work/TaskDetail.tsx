@@ -6,7 +6,7 @@ import { childrenList } from "../../data/family";
 import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
-import { taskLink } from "../../data/routes";
+import { taskLink, taskShareLink } from "../../data/routes";
 import { whatsAppLink } from "../../utils/share";
 import type { Child, TaskItem, TaskPriority } from "../../data/types";
 
@@ -160,7 +160,7 @@ export function TaskDetail() {
                     (activeTask.dueAt ? `\nיעד: ${formatDate(activeTask.dueAt)}` : "") +
                     (activeTask.site ? `\nאתר: ${activeTask.site}` : "") +
                     (activeTask.brief ? `\n${activeTask.brief}` : "") +
-                    `\n${taskLink(activeWorker.id, activeTask.id)}`
+                    `\n${activeTask.linkToken ? taskShareLink(activeTask.linkToken) : taskLink(activeWorker.id, activeTask.id)}`
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -180,6 +180,11 @@ export function TaskDetail() {
               >
                 {`שליחה ל${activeWorker.name} בוואטסאפ`}
               </a>
+              <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6, lineHeight: 1.5 }}>
+                {activeTask.linkToken
+                  ? "ההודעה כוללת קישור אישי למשימה — העובד מדווח דרכו קבלה, התחלה, סיום, תמונה או הערה בלי להתקין כלום ובלי סיסמה."
+                  : "משימה ישנה: הקישור בהודעה מוביל לאפליקציה ומחייב כניסה. משימות חדשות נשלחות עם קישור אישי."}
+              </div>
               {!activeWorker.phone && (
                 <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6, lineHeight: 1.5 }}>
                   אין מספר טלפון שמור — וואטסאפ יבקש לבחור איש קשר. אפשר לשמור מספר במסך הצוות.

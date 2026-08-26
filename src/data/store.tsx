@@ -15,13 +15,25 @@ import {
   registerSecondParent,
   fetchParentLink,
   identityLabel,
+  ensureSomeSession,
   createFamilyForCurrentUser,
   resetParentPassword,
   deleteOwnAccount,
 } from "../firebase/auth";
 import { auth } from "../firebase/config";
 import { uploadFile as uploadToStorage, deleteStoredFile, describeUploadError, MAX_UPLOAD_BYTES, type StoredFile } from "../firebase/storage";
-import { subscribeFamily, saveFamily, saveChildOnly, createInviteCode } from "../firebase/db";
+import {
+  subscribeFamily,
+  saveFamily,
+  saveChildOnly,
+  createInviteCode,
+  publishTaskLink,
+  fetchTaskLink,
+  pushLinkUpdate,
+  subscribeLinkInbox,
+  clearInboxEntry,
+} from "../firebase/db";
+import type { LinkUpdate, TaskLinkSnapshot } from "./tasklink";
 
 type ViewMode = "parent" | "child";
 type Role = "parent" | "child";
@@ -61,6 +73,7 @@ type Action =
       /** The form generates the id up front so files can be uploaded into the task's
        * own folder before the task itself exists. */
       id?: string;
+      linkToken?: string;
       title: string;
       brief?: string;
       briefAttachments?: Attachment[];
@@ -104,6 +117,8 @@ type Action =
   | { type: "ADD_WORKER"; name: string }
   | { type: "RESET_WORKER_ACCESS"; childId: string }
   | { type: "SET_WORKER_PHONE"; childId: string; phone: string }
+  | { type: "SET_PROFESSION"; professionId: string }
+  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string }
   | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ACKNOWLEDGE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "MARK_TASK_SENT"; childId: string; taskId: string; by: string; at?: string }
@@ -286,6 +301,9 @@ function reducer(state: AppState, action: Action): AppState {
       // A free-form task written by the manager, with no template behind it.
       const at = action.at ?? new Date().toISOString();
       const id = action.id ?? `t-${crypto.randomUUID()}`;
+      // The token travels in the WhatsApp message and is the worker's whole permission,
+      // so it is created with the task rather than bolted on when someone shares it.
+      const linkToken = action.linkToken ?? crypto.randomUUID().replace(/-/g, "");
       const repeats = (action.recurrence ?? "none") !== "none";
       const task: TaskItem = logActivity(
         {
@@ -304,6 +322,7 @@ function reducer(state: AppState, action: Action): AppState {
           // occurrence the engine generates later carries the same id.
           ...(repeats ? { seriesId: id } : {}),
           checklist: action.checklist ?? [],
+          linkToken,
           briefAttachments: action.briefAttachments ?? [],
           activity: [],
         },
@@ -822,6 +841,47 @@ function reducer(state: AppState, action: Action): AppState {
         },
       };
     }
+    case "APPLY_LINK_UPDATE": {
+      // What a worker reported from the WhatsApp link, folded into the record as if
+      // they had done it in the app — same statuses, same trail, same evidence. The
+      // journal must not be able to tell the difference, because to the business there
+      // is none.
+      const at = action.at;
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => {
+            if (action.kind === "ack") {
+              if (t.acknowledgedAt) return t;
+              return logActivity({ ...t, acknowledgedAt: at, seenAt: t.seenAt ?? at }, { by: action.by, action: "acknowledged" }, at);
+            }
+            if (action.kind === "started") {
+              if (t.status !== "available") return t;
+              return logActivity({ ...t, status: "in_progress", startedAt: at, seenAt: t.seenAt ?? at }, { by: action.by, action: "started" }, at);
+            }
+            if (action.kind === "done") {
+              if (t.status === "completed" || t.status === "pending_approval") return t;
+              return logActivity({ ...t, status: "pending_approval", submittedAt: at, seenAt: t.seenAt ?? at }, { by: action.by, action: "submitted" }, at);
+            }
+            const attachment: Attachment = {
+              id: `at-${crypto.randomUUID()}`,
+              kind: action.kind === "photo" ? "image" : "note",
+              name: action.kind === "photo" ? "צילום מהשטח" : "הערת ביצוע",
+              content: action.kind === "photo" ? (action.photo ?? "") : (action.note ?? ""),
+              addedAt: at,
+              addedBy: action.by,
+            };
+            return logActivity({ ...t, proofs: [...(t.proofs ?? []), attachment] }, { by: action.by, action: "attached" }, at);
+          })
+        ),
+      };
+    }
+    case "SET_PROFESSION": {
+      const next = { ...state.family };
+      if (action.professionId) next.professionId = action.professionId;
+      else delete next.professionId;
+      return { ...state, family: next };
+    }
     case "SET_WORKER_PHONE": {
       const phone = action.phone.trim();
       return {
@@ -1039,6 +1099,10 @@ interface StoreContextValue {
   completeMissingAccount: (name: string, companyName: string) => Promise<void>;
   /** Pushes whatever is unsaved to the server again, on demand. */
   retrySync: () => Promise<void>;
+  /** Reads the one task behind a share token — for the no-account worker screen. */
+  loadTaskLink: (token: string) => Promise<TaskLinkSnapshot | null>;
+  /** Reports progress on that task back to the manager's inbox. */
+  sendLinkUpdate: (link: TaskLinkSnapshot, update: LinkUpdate) => Promise<void>;
   registerChildSession: (code: string, username: string, password: string) => Promise<void>;
   loginChildSession: (username: string, password: string) => Promise<void>;
   registerSecondParentSession: (code: string, email: string, password: string, name: string) => Promise<void>;
@@ -1187,6 +1251,70 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [state.family, state.familyUid, state.uid]);
 
+  // The link a worker opens is a snapshot of one task, republished whenever the task
+  // changes. It is deliberately a copy: the person holding the link gets that task and
+  // nothing else, never a door into the company record.
+  const publishedLinks = useRef(new Map<string, string>());
+  useEffect(() => {
+    if (!state.familyUid || state.role !== "parent") return;
+    const company = state.family.companyName || state.family.parentName;
+    for (const worker of childrenList(state.family)) {
+      for (const task of worker.tasks) {
+        if (!task.linkToken || task.status === "completed") continue;
+        const signature = [task.title, task.brief ?? "", task.dueAt ?? "", task.site ?? "", task.status, (task.checklist ?? []).map((c) => `${c.text}:${c.done}`).join("|")].join("~");
+        if (publishedLinks.current.get(task.linkToken) === signature) continue;
+        publishedLinks.current.set(task.linkToken, signature);
+        const snapshot: TaskLinkSnapshot = {
+          familyUid: state.familyUid,
+          childId: worker.id,
+          taskId: task.id,
+          company,
+          workerName: worker.name,
+          title: task.title,
+          status: task.status,
+          ...(task.brief ? { brief: task.brief } : {}),
+          ...(task.dueAt ? { dueAt: task.dueAt } : {}),
+          ...(task.site ? { site: task.site } : {}),
+          ...((task.checklist ?? []).length > 0 ? { steps: (task.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),
+        };
+        publishTaskLink(task.linkToken, snapshot).catch((err) => {
+          publishedLinks.current.delete(task.linkToken!);
+          console.error("Publishing a task link failed:", err);
+        });
+      }
+    }
+  }, [state.family, state.familyUid, state.role]);
+
+  // Everything workers reported from their links, folded into the journal. One listener
+  // on the company's own inbox rather than one per task, and each entry is removed once
+  // it has been applied so it can never land twice.
+  const appliedInboxEntries = useRef(new Set<string>());
+  useEffect(() => {
+    if (!state.familyUid || state.role !== "parent") return;
+    const familyUid = state.familyUid;
+    return subscribeLinkInbox(
+      familyUid,
+      (entries) => {
+        for (const [entryId, entry] of Object.entries(entries)) {
+          if (appliedInboxEntries.current.has(entryId)) continue;
+          appliedInboxEntries.current.add(entryId);
+          dispatch({
+            type: "APPLY_LINK_UPDATE",
+            childId: entry.childId,
+            taskId: entry.taskId,
+            kind: entry.kind,
+            at: entry.at,
+            by: entry.by,
+            ...(entry.note ? { note: entry.note } : {}),
+            ...(entry.photo ? { photo: entry.photo } : {}),
+          });
+          clearInboxEntry(familyUid, entryId).catch((err) => console.error("Clearing a link update failed:", err));
+        }
+      },
+      (err) => console.error("Watching the link inbox failed:", err)
+    );
+  }, [state.familyUid, state.role]);
+
   // Recurring weekly allowance: whenever a parent session is loaded, credit any child
   // whose weekly allowance has come due, one clock-week at a time (capped so a long
   // absence doesn't drop a huge surprise sum). The first time it's seen it just stamps
@@ -1272,6 +1400,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const loadTaskLink = useCallback(async (token: string) => {
+    await ensureSomeSession();
+    return fetchTaskLink(token);
+  }, []);
+
+  const sendLinkUpdate = useCallback(async (link: TaskLinkSnapshot, update: LinkUpdate) => {
+    await ensureSomeSession();
+    await pushLinkUpdate(link.familyUid, {
+      ...update,
+      token: link.familyUid && link.taskId ? `${link.taskId}` : "",
+      childId: link.childId,
+      taskId: link.taskId,
+      by: link.workerName,
+    });
+  }, []);
+
   const retrySync = useCallback(async () => {
     await pushToServer(latestState.current);
   }, [pushToServer]);
@@ -1349,8 +1493,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, connection, dispatch, retrySync, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
-    [state, connection, retrySync, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
+    () => ({ state, connection, dispatch, retrySync, loadTaskLink, sendLinkUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, connection, retrySync, loadTaskLink, sendLinkUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

@@ -7,6 +7,7 @@ import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, priorityColor, priorityLabels, recurrenceLabels, work } from "../../data/vocabulary";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
+import { professionById, professions } from "../../data/professions";
 import { draftToAttachment } from "../../data/attachments";
 import type { Attachment, RecurrenceRule, TaskPriority } from "../../data/types";
 
@@ -37,6 +38,9 @@ export function NewTask() {
   // this task's own folder while the task is still being written.
   const [taskId, setTaskId] = useState(() => `t-${crypto.randomUUID()}`);
   const [files, setFiles] = useState<Attachment[]>([]);
+  // The trade the account picked at sign-up decides what is offered here. An account
+  // that never picked one still gets the general list rather than a blank screen.
+  const profession = professionById(state.family.professionId) ?? professions[professions.length - 1];
   const actor = state.family.parentName || V.admin;
 
   function addStep() {
@@ -85,6 +89,38 @@ export function NewTask() {
       <Header title={`${V.task} חדשה`} subtitle="הקצאה מתועדת לעובד" back tint="pro" />
 
       <div style={{ padding: "16px 20px 28px", display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Everything this trade hands out, one tap away. Typing the first ten tasks
+            from scratch is where a new account is abandoned. */}
+        <Field label={`מוכן מראש ל${profession.name} ${profession.emoji}`}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {profession.tasks.map((t) => (
+              <button
+                key={t.title}
+                onClick={() => {
+                  setTitle(t.title);
+                  setBrief(t.brief ?? "");
+                  setSteps(t.steps ?? []);
+                  setRecurrence(t.recurrence ?? "none");
+                }}
+                style={{
+                  background: title === t.title ? work.ink : "#ffffff",
+                  color: title === t.title ? "#ffffff" : "var(--ink)",
+                  border: "1px solid var(--line)",
+                  borderRadius: 999,
+                  padding: "8px 12px",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                }}
+              >
+                {t.title}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 8, lineHeight: 1.5 }}>
+            בחירה ממלאת את הטופס — הכל ניתן לעריכה לפני השליחה.
+          </div>
+        </Field>
+
         <Field label="מה צריך לעשות" required>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="לדוגמה: ניקיון חדר ישיבות" style={inputStyle} />
         </Field>

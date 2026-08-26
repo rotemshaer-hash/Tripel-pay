@@ -86,6 +86,9 @@ export interface TaskItem {
    * stamps are the half of that claim the old journal could not answer. */
   seenAt?: string;
   acknowledgedAt?: string;
+  /** Unguessable id that lets the assigned worker open and report on this one task from
+   * a WhatsApp message, with no account. Absent on tasks written before it existed. */
+  linkToken?: string;
   /** Instructions and reference files attached by the manager. */
   briefAttachments?: Attachment[];
   /** Evidence attached by the worker after doing the job. */
@@ -248,6 +251,9 @@ export interface Family {
   /** The business this account belongs to. Absent on family accounts, and on business
    * accounts created before the field existed — every reader must tolerate that. */
   companyName?: string;
+  /** Which trade this business is in, which decides the ready-made tasks it is offered.
+   * Optional: an account that never picked one simply gets the general list. */
+  professionId?: string;
   parentName: string;
   parentEmail: string;
   secondParentName?: string;

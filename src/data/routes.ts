@@ -60,6 +60,11 @@ export function loginPathFor(intended: string): string {
   return `${entryPath()}?next=${encodeURIComponent(intended)}`;
 }
 
+/** The link that goes in the WhatsApp message: one task, no account, no install. */
+export function taskShareLink(token: string): string {
+  return `${appBase()}/w/${token}`;
+}
+
 /** Invite for someone who will do the work (a worker / a child). */
 export function workerInviteLink(code: string): string {
   return `${appBase()}/join?code=${encodeURIComponent(code)}`;

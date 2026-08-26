@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { PrimaryButton } from "../../components/UI";
 import { MODE, V, work } from "../../data/vocabulary";
+import { ProfessionPicker } from "../../components/ProfessionPicker";
 
 /**
  * Step one of opening an account. The business build asks for the company as well as
@@ -11,6 +12,7 @@ import { MODE, V, work } from "../../data/vocabulary";
  */
 export function PersonalDetails() {
   const isWork = MODE === "work";
+  const [profession, setProfession] = useState(sessionStorage.getItem("tp-onboarding-profession") || "");
   const [company, setCompany] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,6 +27,7 @@ export function PersonalDetails() {
     sessionStorage.setItem("tp-onboarding-email", email.trim());
     sessionStorage.setItem("tp-onboarding-password", password);
     sessionStorage.setItem("tp-onboarding-company", company.trim());
+    sessionStorage.setItem("tp-onboarding-profession", profession);
     navigate("/onboarding/children");
   }
 
@@ -41,6 +44,11 @@ export function PersonalDetails() {
         {isWork && (
           <Field label="שם העסק" hint="יופיע בהזמנות שתשלח לעובדים ובדוחות שתייצא">
             <input placeholder="לדוגמה: א.ב. שירותי ניקיון" value={company} onChange={(e) => setCompany(e.target.value)} style={fieldStyle(isWork)} />
+          </Field>
+        )}
+        {isWork && (
+          <Field label="התחום שלך" hint="לפי זה האפליקציה כבר תכיר את המשימות שאתה מחלק — אפשר לשנות בכל שלב">
+            <ProfessionPicker value={profession} onChange={setProfession} />
           </Field>
         )}
 

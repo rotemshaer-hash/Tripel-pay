@@ -120,7 +120,41 @@ const journal = await m.locator("body").innerText();
 check("the manager's journal shows the worker's activity", journal.includes("בדיקת מזגנים"));
 check("the trail records that the worker saw it", journal.includes("נצפתה") || journal.includes("אישרה קבלה") || journal.includes("אישר קבלה"));
 
-console.log("6. the manager signs out and back in");
+console.log("6. a worker with no account reports from the WhatsApp link");
+await m.goto(`${BASE}/work/journal`);
+await m.waitForTimeout(1200);
+await m.getByText("בדיקת מזגנים").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1200);
+const waHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
+const shareLink = decodeURIComponent(waHref).match(/https?:\/\/[^\s]+\/w\/[a-f0-9]+/)?.[0] ?? "";
+check("the sent message carries a no-account task link", shareLink.length > 0);
+
+// A third browser context with no session at all — the person on site.
+const { ctx: linkCtx, page: l } = await openPage();
+await l.goto(shareLink.replace(/^https?:\/\/[^/]+/, BASE));
+await l.waitForTimeout(2500);
+check("the link opens the task without signing in", (await l.getByText("בדיקת מזגנים").count()) > 0);
+await l.getByText("✅ קיבלתי").click();
+await l.waitForTimeout(1500);
+await l.getByPlaceholder("הערה למנהל…").fill("הוחלפו שני מסננים");
+await l.getByRole("button", { name: "שליחה" }).click();
+await l.waitForTimeout(1500);
+await l.getByText("🏁 סיימתי").click();
+await l.waitForTimeout(2000);
+check("the worker sees their reports were sent", (await l.getByText("נשלח למנהל").count()) > 0);
+
+await m.reload();
+await m.waitForTimeout(4000);
+const taskText = await m.locator("body").innerText();
+check("the manager's task shows the receipt from the link", taskText.includes("אישר") || taskText.includes("אישרה"));
+check("the note from the link landed as evidence", taskText.includes("הוחלפו שני מסננים"));
+await m.goto(`${BASE}/work/journal`);
+await m.waitForTimeout(2500);
+check("the journal records it as normal activity", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
+await linkCtx.close();
+
+console.log("7. the manager signs out and back in");
 await m.goto(`${BASE}/work/settings`);
 await m.waitForTimeout(800);
 await m.getByRole("button", { name: "התנתקות" }).click();

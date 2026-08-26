@@ -2,7 +2,6 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "families": {
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || root.child('childLogins').child(auth.uid).child('familyUid').val() == $uid || root.child('parentLogins').child(auth.uid).child('familyUid').val() == $uid)",
@@ -14,32 +13,43 @@
         }
       }
     },
-
     "inviteCodes": {
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && (!data.exists() ? auth.uid == newData.child('familyUid').val() : auth.uid == data.child('familyUid').val())"
       }
     },
-
     "parentInviteCodes": {
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && (!data.exists() ? auth.uid == newData.child('familyUid').val() : auth.uid == data.child('familyUid').val())"
       }
     },
-
     "childLogins": {
       "$childUid": {
         ".read": "auth != null && auth.uid == $childUid",
         ".write": "auth != null && auth.uid == $childUid && !data.exists()"
       }
     },
-
     "parentLogins": {
       "$parentUid": {
         ".read": "auth != null && auth.uid == $parentUid",
         ".write": "auth != null && auth.uid == $parentUid && !data.exists()"
+      }
+    },
+    "taskLinks": {
+      "$token": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() ? newData.child('familyUid').val() == auth.uid : data.child('familyUid').val() == auth.uid)"
+      }
+    },
+    "linkInbox": {
+      "$familyUid": {
+        ".read": "auth != null && auth.uid == $familyUid",
+        ".write": "auth != null && auth.uid == $familyUid",
+        "$entryId": {
+          ".write": "auth != null && !data.exists() && newData.child('taskId').exists() && newData.child('childId').exists()"
+        }
       }
     }
   }

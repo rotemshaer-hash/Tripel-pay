@@ -1,7 +1,8 @@
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, push, get, remove } from "firebase/database";
 import { db } from "./config";
 import { normalizeFamily } from "../data/family";
 import type { Child, Family } from "../data/types";
+import type { LinkUpdate, TaskLinkSnapshot } from "../data/tasklink";
 
 // Real-time listener on a parent's family record — fires immediately with the
 // current value, then again on every change from any device (parent phone,
@@ -50,4 +51,48 @@ export async function createInviteCode(familyUid: string, childId: string, code:
 
 export async function createParentInviteCode(familyUid: string, code: string) {
   await set(ref(db, `parentInviteCodes/${code}`), { familyUid });
+}
+
+
+/**
+ * The worker's way in, without an account.
+ *
+ * The product is an add-on to WhatsApp, and asking the person on a roof to install an
+ * app, invent a username and remember a password is where that promise breaks — it is
+ * exactly what broke for the first worker who tried. So a task carries an unguessable
+ * token, the link in the message contains it, and the token IS the permission: whoever
+ * holds it can see that one task and report on it, and nothing else. It is the same
+ * bargain as a Firebase download URL, which this app already relies on.
+ *
+ * `taskLinks/{token}` is the copy the worker reads — deliberately a snapshot of one
+ * task, never a door into the company record. `linkInbox/{familyUid}` is where their
+ * updates land, so the manager's app has ONE listener to watch instead of one per task.
+ */
+export async function publishTaskLink(token: string, snapshot: TaskLinkSnapshot) {
+  await set(ref(db, `taskLinks/${token}`), snapshot);
+}
+
+export async function fetchTaskLink(token: string): Promise<TaskLinkSnapshot | null> {
+  const snap = await get(ref(db, `taskLinks/${token}`));
+  return snap.exists() ? (snap.val() as TaskLinkSnapshot) : null;
+}
+
+export async function pushLinkUpdate(familyUid: string, entry: LinkUpdate & { token: string; childId: string; taskId: string; by: string }) {
+  await push(ref(db, `linkInbox/${familyUid}`), entry);
+}
+
+export function subscribeLinkInbox(
+  familyUid: string,
+  cb: (entries: Record<string, LinkUpdate & { token: string; childId: string; taskId: string; by: string }>) => void,
+  onError?: (err: Error) => void
+) {
+  return onValue(
+    ref(db, `linkInbox/${familyUid}`),
+    (snap) => cb((snap.val() as Record<string, LinkUpdate & { token: string; childId: string; taskId: string; by: string }>) ?? {}),
+    (err) => onError?.(err)
+  );
+}
+
+export async function clearInboxEntry(familyUid: string, entryId: string) {
+  await remove(ref(db, `linkInbox/${familyUid}/${entryId}`));
 }

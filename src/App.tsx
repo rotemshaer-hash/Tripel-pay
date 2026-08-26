@@ -9,6 +9,7 @@ import { PersonalDetails } from "./screens/onboarding/PersonalDetails";
 import { ChildrenDetails } from "./screens/onboarding/ChildrenDetails";
 import { Success } from "./screens/onboarding/Success";
 import { Login } from "./screens/Login";
+import { WorkerLink } from "./screens/WorkerLink";
 import { ChildRegister } from "./screens/ChildRegister";
 import { SecondParentRegister } from "./screens/SecondParentRegister";
 
@@ -86,6 +87,9 @@ export default function App() {
           <Route path="/onboarding/children" element={<ChildrenDetails />} />
           <Route path="/onboarding/success" element={<Success />} />
           <Route path="/login" element={<Login />} />
+          {/* Outside every guard on purpose: whoever holds the token is who this page
+              is for, and they have no account to be checked against. */}
+          <Route path="/w/:token" element={<WorkerLink />} />
           {/* /join is the short, shareable form; the original path stays valid so
               links already sent to people keep working. */}
           <Route path="/join" element={<ChildRegister />} />

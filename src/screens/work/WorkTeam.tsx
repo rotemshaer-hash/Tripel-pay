@@ -7,7 +7,7 @@ import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
 import { formatDate, isOverdue } from "../../utils/datetime";
-import { taskLink } from "../../data/routes";
+import { taskLink, taskShareLink } from "../../data/routes";
 import { whatsAppLink } from "../../utils/share";
 
 /** The team roster: who's on staff, what's on their plate, and how to get a new
@@ -97,7 +97,7 @@ export function WorkTeam() {
                       : `${w.name}, המשימות שלך:\n` +
                         w.tasks
                           .filter((t) => t.status === "available" || t.status === "in_progress")
-                          .map((t) => `• ${t.title}${t.dueAt ? ` (יעד: ${formatDate(t.dueAt)})` : ""}\n${taskLink(w.id, t.id)}`)
+                          .map((t) => `• ${t.title}${t.dueAt ? ` (יעד: ${formatDate(t.dueAt)})` : ""}\n${t.linkToken ? taskShareLink(t.linkToken) : taskLink(w.id, t.id)}`)
                           .join("\n")
                   )}
                   target="_blank"
