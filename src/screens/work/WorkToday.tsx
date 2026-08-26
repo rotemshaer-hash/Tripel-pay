@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
@@ -21,18 +22,56 @@ import type { Child, TaskItem } from "../../data/types";
  * The state that matters here is not "done / not done" but "did it reach them" —
  * sent, seen, taken on. That column is the thing WhatsApp can never tell you, and the
  * reason a manager would open this instead of scrolling their chat.
+ *
+ * Handing the work out is a round, not a click: WhatsApp opens one chat at a time, so
+ * the morning is "send, come back, next person" — and the screen keeps that place for
+ * you instead of leaving you to remember who you already did. Automating the round
+ * away entirely needs Meta's paid API, business verification and a server; this needs
+ * none of them and costs nothing.
  */
+const SENT_KEY = "work-it-sent-today";
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readSent(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SENT_KEY) || "{}") as { day?: string; ids?: string[] };
+    return raw.day === todayKey() ? (raw.ids ?? []) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSent(ids: string[]) {
+  try {
+    localStorage.setItem(SENT_KEY, JSON.stringify({ day: todayKey(), ids }));
+  } catch {
+    /* a blocked storage costs the manager a tick mark, nothing more */
+  }
+}
+
 export function WorkToday() {
   const { state } = useStore();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const workers = childrenList(state.family);
   const company = state.family.companyName || state.family.parentName;
+  const [sentToday, setSentToday] = useState<string[]>(() => readSent());
+
+  function markSent(workerId: string) {
+    const next = sentToday.includes(workerId) ? sentToday : [...sentToday, workerId];
+    setSentToday(next);
+    writeSent(next);
+  }
 
   const open = (w: Child) => w.tasks.filter((t) => t.status !== "completed");
   const unacknowledged = (w: Child) => open(w).filter((t) => !t.acknowledgedAt).length;
   const late = (w: Child) => open(w).filter((t) => isOverdue(t.dueAt, t.status)).length;
 
+  // Nobody needs a message about an empty plate, and nobody needs the same message twice.
+  const toSend = workers.filter((w) => open(w).length > 0 && !sentToday.includes(w.id));
   const totalOpen = workers.reduce((n, w) => n + open(w).length, 0);
   const totalWaiting = workers.reduce((n, w) => n + unacknowledged(w), 0);
 
@@ -47,6 +86,33 @@ export function WorkToday() {
         >
           + {V.task} חדשה
         </button>
+
+        {/* The morning round, kept for you. WhatsApp opens one chat at a time, so this
+            says who is next rather than pretending it can send to everyone at once. */}
+        {toSend.length > 0 && (
+          <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "13px 15px" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
+              {sentToday.length === 0 ? "עוד לא שלחת היום לצוות" : `נשלחו ${sentToday.length} מתוך ${workers.length}`}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
+              {`הבא בתור: ${toSend[0].name}. אחרי השליחה חוזרים לכאן והמסך יציג את הבא.`}
+            </div>
+            <a
+              href={whatsAppLink(toSend[0].phone, dayMessage(company, toSend[0]))}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => markSent(toSend[0].id)}
+              style={{ display: "block", textAlign: "center", background: "#25D366", color: "#ffffff", borderRadius: 11, padding: "14px", fontSize: 14.5, fontWeight: 800, textDecoration: "none" }}
+            >
+              {`שליחה ל${toSend[0].name} ←`}
+            </a>
+          </section>
+        )}
+        {toSend.length === 0 && workers.length > 0 && (
+          <div style={{ background: "#eaf7f2", border: "1px solid #bfe4d8", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "#2b6d5e", lineHeight: 1.6 }}>
+            {`נשלח היום לכל ה${V.workerPlural} ✓ מכאן זה עניין של מי מאשר ומי מדווח — התגיות ליד כל משימה מתעדכנות לבד.`}
+          </div>
+        )}
 
         {workers.length === 0 && (
           <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "20px 15px", textAlign: "center", fontSize: 13.5, color: "var(--ink-soft)" }}>
@@ -76,10 +142,13 @@ export function WorkToday() {
                   href={whatsAppLink(worker.phone, dayMessage(company, worker))}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => showToast(`המשימות של ${worker.name} מוכנות לשליחה`)}
+                  onClick={() => {
+                    markSent(worker.id);
+                    showToast(`המשימות של ${worker.name} מוכנות לשליחה`);
+                  }}
                   style={{ background: "#25D366", color: "#ffffff", borderRadius: 9, padding: "10px 13px", fontSize: 12.5, fontWeight: 800, textDecoration: "none", flexShrink: 0 }}
                 >
-                  שליחת היום
+                  {sentToday.includes(worker.id) ? "שליחה שוב" : "שליחת היום"}
                 </a>
               </div>
 
