@@ -68,7 +68,9 @@ await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill(
 // Deliberately leaving the brief empty: an optional field left blank is what used to
 // make Firebase reject the whole record.
 await m.getByRole("button", { name: "הקצאה", exact: true }).click();
-await m.waitForURL("**/work/journal", { timeout: 15000 });
+await m.waitForURL("**/work/**", { timeout: 15000 });
+await m.waitForTimeout(1500);
+await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(1500);
 check("the task shows up in the journal", (await m.getByText("בדיקת מזגנים").count()) > 0);
 
@@ -154,7 +156,34 @@ await m.waitForTimeout(2500);
 check("the journal records it as normal activity", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
 await linkCtx.close();
 
-console.log("7. the manager signs out and back in");
+console.log("7. the whole day on one link, for a worker with no account");
+await m.goto(`${BASE}/work/today`);
+await m.waitForTimeout(2500);
+check("the manager's day screen lists the crew", (await m.getByText(worker.name).count()) > 0);
+const dayHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
+const dayLink = decodeURIComponent(dayHref).match(/https?:\/\/[^\s]+\/d\/[a-f0-9]+/)?.[0] ?? "";
+check("the day message carries the worker's personal link", dayLink.length > 0);
+
+const { ctx: dayCtx, page: d } = await openPage();
+await d.goto(dayLink.replace(/^https?:\/\/[^/]+/, BASE));
+await d.waitForTimeout(2500);
+check("the daily link opens without signing in", (await d.getByText("בדיקת מזגנים").count()) > 0);
+// A single open task is expanded already — clicking the title would close it.
+if ((await d.getByPlaceholder("הערה למנהל…").count()) === 0) {
+  await d.getByText("בדיקת מזגנים").first().click();
+  await d.waitForTimeout(600);
+}
+await d.getByPlaceholder("הערה למנהל…").fill("הגעתי לאתר");
+await d.getByRole("button", { name: "שליחה" }).click();
+await d.waitForTimeout(2000);
+check("a report from the daily link is accepted", (await d.getByText("נשלח למנהל").count()) > 0);
+await dayCtx.close();
+
+await m.goto(`${BASE}/work/journal`);
+await m.waitForTimeout(4000);
+check("it reaches the manager's journal", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
+
+console.log("8. the manager signs out and back in");
 await m.goto(`${BASE}/work/settings`);
 await m.waitForTimeout(800);
 await m.getByRole("button", { name: "התנתקות" }).click();

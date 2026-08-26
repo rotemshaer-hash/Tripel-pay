@@ -2,7 +2,7 @@ import { ref, onValue, set, push, get, remove } from "firebase/database";
 import { db } from "./config";
 import { normalizeFamily } from "../data/family";
 import type { Child, Family } from "../data/types";
-import type { LinkUpdate, TaskLinkSnapshot } from "../data/tasklink";
+import type { LinkUpdate, TaskLinkSnapshot, WorkerDaySnapshot } from "../data/tasklink";
 
 // Real-time listener on a parent's family record — fires immediately with the
 // current value, then again on every change from any device (parent phone,
@@ -95,4 +95,14 @@ export function subscribeLinkInbox(
 
 export async function clearInboxEntry(familyUid: string, entryId: string) {
   await remove(ref(db, `linkInbox/${familyUid}/${entryId}`));
+}
+
+
+export async function publishWorkerDay(token: string, snapshot: WorkerDaySnapshot) {
+  await set(ref(db, `workerLinks/${token}`), snapshot);
+}
+
+export async function fetchWorkerDay(token: string): Promise<WorkerDaySnapshot | null> {
+  const snap = await get(ref(db, `workerLinks/${token}`));
+  return snap.exists() ? (snap.val() as WorkerDaySnapshot) : null;
 }

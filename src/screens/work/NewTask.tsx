@@ -8,6 +8,7 @@ import { childrenList } from "../../data/family";
 import { V, priorityColor, priorityLabels, recurrenceLabels, work } from "../../data/vocabulary";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
 import { professionById, professions } from "../../data/professions";
+import { DictateButton } from "../../components/DictateButton";
 import { draftToAttachment } from "../../data/attachments";
 import type { Attachment, RecurrenceRule, TaskPriority } from "../../data/types";
 
@@ -122,7 +123,10 @@ export function NewTask() {
         </Field>
 
         <Field label="מה צריך לעשות" required>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="לדוגמה: ניקיון חדר ישיבות" style={inputStyle} />
+          <div style={{ display: "flex", gap: 7 }}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="לדוגמה: ניקיון חדר ישיבות" style={{ ...inputStyle, flex: 1 }} />
+            <DictateButton onText={(text) => setTitle((v) => (v ? `${v} ${text}` : text))} label="🎤" />
+          </div>
         </Field>
 
         <Field label={V.brief}>
@@ -133,6 +137,9 @@ export function NewTask() {
             placeholder="הנחיות מדויקות, על מה לשים לב, ציוד נדרש…"
             style={{ ...inputStyle, fontFamily: "inherit", resize: "vertical" }}
           />
+          <div style={{ display: "flex", justifyContent: "flex-start", marginTop: -6, marginBottom: 4 }}>
+            <DictateButton onText={(text) => setBrief((v) => (v ? `${v} ${text}` : text))} label="🎤 הכתבת הנחיות" />
+          </div>
           {/* Attaching the plan, the spec or the photo belongs here, with the
               instructions being written — not only on the task after it exists. */}
           <AttachmentList items={files} empty="" onRemove={(id) => setFiles((list) => list.filter((f) => f.id !== id))} />

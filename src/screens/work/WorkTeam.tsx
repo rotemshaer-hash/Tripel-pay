@@ -6,8 +6,8 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
-import { formatDate, isOverdue } from "../../utils/datetime";
-import { taskLink, taskShareLink } from "../../data/routes";
+import { isOverdue } from "../../utils/datetime";
+import { dayMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
 
 /** The team roster: who's on staff, what's on their plate, and how to get a new
@@ -90,16 +90,7 @@ export function WorkTeam() {
                   style={{ flex: 1, minWidth: 0, padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 12.5 }}
                 />
                 <a
-                  href={whatsAppLink(
-                    w.phone,
-                    open === 0
-                      ? `${w.name}, אין לך משימות פתוחות כרגע.`
-                      : `${w.name}, המשימות שלך:\n` +
-                        w.tasks
-                          .filter((t) => t.status === "available" || t.status === "in_progress")
-                          .map((t) => `• ${t.title}${t.dueAt ? ` (יעד: ${formatDate(t.dueAt)})` : ""}\n${t.linkToken ? taskShareLink(t.linkToken) : taskLink(w.id, t.id)}`)
-                          .join("\n")
-                  )}
+                  href={whatsAppLink(w.phone, dayMessage(state.family.companyName || state.family.parentName, w))}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ background: "#25D366", color: "#ffffff", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap", alignSelf: "stretch", display: "flex", alignItems: "center" }}

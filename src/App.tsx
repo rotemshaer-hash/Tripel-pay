@@ -10,6 +10,7 @@ import { ChildrenDetails } from "./screens/onboarding/ChildrenDetails";
 import { Success } from "./screens/onboarding/Success";
 import { Login } from "./screens/Login";
 import { WorkerLink } from "./screens/WorkerLink";
+import { WorkerDay } from "./screens/WorkerDay";
 import { ChildRegister } from "./screens/ChildRegister";
 import { SecondParentRegister } from "./screens/SecondParentRegister";
 
@@ -35,6 +36,7 @@ import { ChildMyCards } from "./screens/child/MyCards";
 import { ChildAllTasks } from "./screens/child/AllTasks";
 
 import { WorkJournal } from "./screens/work/WorkJournal";
+import { WorkToday } from "./screens/work/WorkToday";
 import { TaskDetail } from "./screens/work/TaskDetail";
 import { NewTask } from "./screens/work/NewTask";
 import { WorkTasks } from "./screens/work/WorkTasks";
@@ -90,6 +92,7 @@ export default function App() {
           {/* Outside every guard on purpose: whoever holds the token is who this page
               is for, and they have no account to be checked against. */}
           <Route path="/w/:token" element={<WorkerLink />} />
+          <Route path="/d/:token" element={<WorkerDay />} />
           {/* /join is the short, shareable form; the original path stays valid so
               links already sent to people keep working. */}
           <Route path="/join" element={<ChildRegister />} />
@@ -125,6 +128,7 @@ export default function App() {
           )}
 
           {/* work-journal (business mode) */}
+          <Route path="/work/today" element={<RequireParent><WorkToday /></RequireParent>} />
           <Route path="/work/journal" element={<RequireParent><WorkJournal /></RequireParent>} />
           <Route path="/work/tasks" element={<RequireOnboarded><WorkTasks /></RequireOnboarded>} />
           <Route path="/work/new" element={<RequireParent><NewTask /></RequireParent>} />

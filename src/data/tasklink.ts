@@ -28,3 +28,22 @@ export interface LinkUpdate {
    * so the worker never needs an account for the bucket either. */
   photo?: string;
 }
+
+
+/** One person's open work, as it travels on their daily link. */
+export interface WorkerDaySnapshot {
+  familyUid: string;
+  childId: string;
+  company: string;
+  workerName: string;
+  tasks: {
+    taskId: string;
+    title: string;
+    brief?: string;
+    dueAt?: string;
+    site?: string;
+    status: string;
+    steps?: { id: string; text: string; done: boolean }[];
+    acknowledged?: boolean;
+  }[];
+}

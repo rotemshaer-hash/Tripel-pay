@@ -188,6 +188,9 @@ export interface Child {
   /** Where to reach this person. Optional: a team can run without it, but a task
    * nobody was told about is the failure this product is here to remove. */
   phone?: string;
+  /** Unguessable id behind this person's daily link — one message in the morning with
+   * everything on their plate, rather than a message per task. */
+  dayToken?: string;
   authUid?: string;
   tasks: TaskItem[];
   transactions: TransactionItem[];

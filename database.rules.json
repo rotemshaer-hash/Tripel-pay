@@ -51,6 +51,12 @@
           ".write": "auth != null && !data.exists() && newData.child('taskId').exists() && newData.child('childId').exists()"
         }
       }
+    },
+    "workerLinks": {
+      "$token": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() ? newData.child('familyUid').val() == auth.uid : data.child('familyUid').val() == auth.uid)"
+      }
     }
   }
 }

@@ -32,8 +32,10 @@ import {
   pushLinkUpdate,
   subscribeLinkInbox,
   clearInboxEntry,
+  publishWorkerDay,
+  fetchWorkerDay,
 } from "../firebase/db";
-import type { LinkUpdate, TaskLinkSnapshot } from "./tasklink";
+import type { LinkUpdate, TaskLinkSnapshot, WorkerDaySnapshot } from "./tasklink";
 
 type ViewMode = "parent" | "child";
 type Role = "parent" | "child";
@@ -118,6 +120,7 @@ type Action =
   | { type: "RESET_WORKER_ACCESS"; childId: string }
   | { type: "SET_WORKER_PHONE"; childId: string; phone: string }
   | { type: "SET_PROFESSION"; professionId: string }
+  | { type: "ENSURE_DAY_TOKENS" }
   | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string }
   | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ACKNOWLEDGE_TASK"; childId: string; taskId: string; by: string; at?: string }
@@ -829,7 +832,7 @@ function reducer(state: AppState, action: Action): AppState {
       // day 1 — and gets an invite code to sign in with, no work email required.
       const name = action.name.trim();
       if (!name) return state;
-      const worker = templateChild(state.family.childOrder.length, name);
+      const worker = { ...templateChild(state.family.childOrder.length, name), dayToken: crypto.randomUUID().replace(/-/g, "") };
       // Two people can share a first name; keep ids unique so neither overwrites the other.
       const id = state.family.children[worker.id] ? `${worker.id}-${state.family.childOrder.length + 1}` : worker.id;
       return {
@@ -875,6 +878,18 @@ function reducer(state: AppState, action: Action): AppState {
           })
         ),
       };
+    }
+    case "ENSURE_DAY_TOKENS": {
+      // Workers created before the daily link existed have no token, and a manager
+      // should never have to know that. Filling them in is idempotent, so the effect
+      // that calls this can run on every load.
+      const missing = childrenList(state.family).filter((c) => !c.dayToken);
+      if (missing.length === 0) return state;
+      let family = state.family;
+      for (const worker of missing) {
+        family = mapChild(family, worker.id, (c) => ({ ...c, dayToken: crypto.randomUUID().replace(/-/g, "") }));
+      }
+      return { ...state, family };
     }
     case "SET_PROFESSION": {
       const next = { ...state.family };
@@ -1101,6 +1116,10 @@ interface StoreContextValue {
   retrySync: () => Promise<void>;
   /** Reads the one task behind a share token — for the no-account worker screen. */
   loadTaskLink: (token: string) => Promise<TaskLinkSnapshot | null>;
+  /** Reads one person's whole open list behind their daily token. */
+  loadWorkerDay: (token: string) => Promise<WorkerDaySnapshot | null>;
+  /** Reports progress on one task from within a daily link. */
+  sendDayUpdate: (day: WorkerDaySnapshot, taskId: string, update: LinkUpdate) => Promise<void>;
   /** Reports progress on that task back to the manager's inbox. */
   sendLinkUpdate: (link: TaskLinkSnapshot, update: LinkUpdate) => Promise<void>;
   registerChildSession: (code: string, username: string, password: string) => Promise<void>;
@@ -1285,6 +1304,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [state.family, state.familyUid, state.role]);
 
+  // One person's whole plate, on one link. A message per task is how a chat turns into
+  // the mess this product exists to replace — the morning message is one link, and it
+  // stays correct as the day changes because it is republished when the work does.
+  const publishedDays = useRef(new Map<string, string>());
+  useEffect(() => {
+    if (!state.familyUid || state.role !== "parent") return;
+    if (childrenList(state.family).some((c) => !c.dayToken)) {
+      dispatch({ type: "ENSURE_DAY_TOKENS" });
+      return;
+    }
+    const company = state.family.companyName || state.family.parentName;
+    for (const worker of childrenList(state.family)) {
+      const open = worker.tasks.filter((t) => t.status !== "completed");
+      const signature = open.map((t) => `${t.id}:${t.title}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}`).join("|");
+      if (!worker.dayToken || publishedDays.current.get(worker.dayToken) === signature) continue;
+      publishedDays.current.set(worker.dayToken, signature);
+      const snapshot: WorkerDaySnapshot = {
+        familyUid: state.familyUid,
+        childId: worker.id,
+        company,
+        workerName: worker.name,
+        tasks: open.map((t) => ({
+          taskId: t.id,
+          title: t.title,
+          status: t.status,
+          ...(t.brief ? { brief: t.brief } : {}),
+          ...(t.dueAt ? { dueAt: t.dueAt } : {}),
+          ...(t.site ? { site: t.site } : {}),
+          ...((t.checklist ?? []).length > 0 ? { steps: (t.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),
+          ...(t.acknowledgedAt ? { acknowledged: true } : {}),
+        })),
+      };
+      publishWorkerDay(worker.dayToken, snapshot).catch((err) => {
+        publishedDays.current.delete(worker.dayToken!);
+        console.error("Publishing a worker day link failed:", err);
+      });
+    }
+  }, [state.family, state.familyUid, state.role]);
+
   // Everything workers reported from their links, folded into the journal. One listener
   // on the company's own inbox rather than one per task, and each entry is removed once
   // it has been applied so it can never land twice.
@@ -1416,6 +1474,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const loadWorkerDay = useCallback(async (token: string) => {
+    await ensureSomeSession();
+    return fetchWorkerDay(token);
+  }, []);
+
+  const sendDayUpdate = useCallback(async (day: WorkerDaySnapshot, taskId: string, update: LinkUpdate) => {
+    await ensureSomeSession();
+    await pushLinkUpdate(day.familyUid, { ...update, token: taskId, childId: day.childId, taskId, by: day.workerName });
+  }, []);
+
   const retrySync = useCallback(async () => {
     await pushToServer(latestState.current);
   }, [pushToServer]);
@@ -1493,8 +1561,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, connection, dispatch, retrySync, loadTaskLink, sendLinkUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
-    [state, connection, retrySync, loadTaskLink, sendLinkUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
+    () => ({ state, connection, dispatch, retrySync, loadTaskLink, sendLinkUpdate, loadWorkerDay, sendDayUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, connection, retrySync, loadTaskLink, sendLinkUpdate, loadWorkerDay, sendDayUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

@@ -9,7 +9,9 @@ import { MODE } from "./vocabulary";
  * moment in the product survives only by bouncing through the catch-all redirect.
  */
 export function homePath(side: "parent" | "child"): string {
-  if (MODE === "work") return side === "parent" ? "/work/journal" : "/work/tasks";
+  // A manager opens the app to hand work out and to see who has not answered, not to
+  // read a feed of what already happened. The journal is the record; "today" is the job.
+  if (MODE === "work") return side === "parent" ? "/work/today" : "/work/tasks";
   return side === "parent" ? "/parent" : "/child";
 }
 
@@ -63,6 +65,11 @@ export function loginPathFor(intended: string): string {
 /** The link that goes in the WhatsApp message: one task, no account, no install. */
 export function taskShareLink(token: string): string {
   return `${appBase()}/w/${token}`;
+}
+
+/** One person's daily link: everything on their plate, one message, no account. */
+export function workerDayLink(token: string): string {
+  return `${appBase()}/d/${token}`;
 }
 
 /** Invite for someone who will do the work (a worker / a child). */
