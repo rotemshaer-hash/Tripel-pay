@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "check:db-boundary": "node scripts/check-db-boundary.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "e2e": "node e2e/smoke.mjs",
+    "e2e:emulated": "firebase emulators:exec --only auth,database,storage --project triplepay-test \"node e2e/smoke.mjs\""
   },
   "dependencies": {
     "firebase": "^12.16.0",

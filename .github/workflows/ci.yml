@@ -19,3 +19,38 @@ jobs:
         run: npx tsc --noEmit
       - name: Firebase access boundary check
         run: npm run check:db-boundary
+
+  # The whole product, once, against the Firebase Emulator Suite — which loads the
+  # very rules files this repo deploys. Every bug that cost this project days (an
+  # invite code never published, a save Firebase rejected over one undefined field, a
+  # worker who could sign up but never sign in, an upload with no rule to allow it)
+  # was invisible to a type check and would have been caught right here.
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright's browser
+        run: npx playwright install --with-deps chromium
+      - name: Build against the emulators
+        run: VITE_USE_FIREBASE_EMULATOR=true npm run build
+      - name: Serve the build
+        run: npm run preview -- --port 4173 &
+      - name: Wait for the server
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:4173 >/dev/null && exit 0
+            sleep 1
+          done
+          echo "::error::the preview server never came up"
+          exit 1
+      - name: Run the smoke test
+        run: npx firebase-tools@13 emulators:exec --only auth,database,storage --project triplepay-test "node e2e/smoke.mjs"
