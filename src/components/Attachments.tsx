@@ -23,11 +23,15 @@ export function AttachButton({
   folder,
   label = "📎 צירוף תמונה או קובץ",
   onAttached,
+  camera,
 }: {
   /** Where in the bucket this file belongs, e.g. `tasks/{taskId}`. */
   folder: string;
   label?: string;
   onAttached: (draft: AttachmentDraft) => void;
+  /** Opens the camera instead of the file browser. Evidence is taken on site, with
+   * one hand — routing that through a file picker loses most of it. */
+  camera?: boolean;
 }) {
   const { uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +66,14 @@ export function AttachButton({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-      <input ref={inputRef} type="file" onChange={onPick} style={{ display: "none" }} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept={camera ? "image/*" : undefined}
+        {...(camera ? { capture: "environment" as const } : {})}
+        onChange={onPick}
+        style={{ display: "none" }}
+      />
       <button
         type="button"
         onClick={() => inputRef.current?.click()}

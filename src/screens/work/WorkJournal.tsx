@@ -20,6 +20,9 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   attached: "#2f7fd1",
   edited: work.idle,
   reassigned: work.waiting,
+  sent: "#25D366",
+  seen: work.idle,
+  acknowledged: work.done,
 };
 
 interface FeedRow {
@@ -140,6 +143,12 @@ export function WorkJournal() {
               style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800 }}
             >
               דוח PDF
+            </button>
+            <button
+              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}&mode=proof`)}
+              style={{ background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}
+            >
+              תיק ללקוח
             </button>
             {feed.length > 0 && (
               <button

@@ -6,7 +6,9 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
-import { isOverdue } from "../../utils/datetime";
+import { formatDate, isOverdue } from "../../utils/datetime";
+import { taskLink } from "../../data/routes";
+import { whatsAppLink } from "../../utils/share";
 
 /** The team roster: who's on staff, what's on their plate, and how to get a new
  * hire signed in — by code, with no work email required. */
@@ -16,6 +18,7 @@ export function WorkTeam() {
   const workers = childrenList(state.family);
   const [openInvite, setOpenInvite] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
+  const [phoneDraft, setPhoneDraft] = useState<Record<string, string>>({});
 
   function addWorker() {
     const name = newName.trim();
@@ -69,6 +72,40 @@ export function WorkTeam() {
                     {w.authUid ? "כניסה" : "הזמנה"}
                   </button>
                 )}
+              </div>
+              {/* The team screen is where a manager stands when they think about a
+                  person — so it is where sending that person their work belongs. */}
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <input
+                  dir="ltr"
+                  value={phoneDraft[w.id] ?? w.phone ?? ""}
+                  onChange={(e) => setPhoneDraft((d) => ({ ...d, [w.id]: e.target.value }))}
+                  onBlur={() => {
+                    const value = (phoneDraft[w.id] ?? "").trim();
+                    if (phoneDraft[w.id] === undefined || value === (w.phone ?? "")) return;
+                    dispatch({ type: "SET_WORKER_PHONE", childId: w.id, phone: value });
+                    showToast(value ? "המספר נשמר" : "המספר הוסר");
+                  }}
+                  placeholder="טלפון (05X…)"
+                  style={{ flex: 1, minWidth: 0, padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 12.5 }}
+                />
+                <a
+                  href={whatsAppLink(
+                    w.phone,
+                    open === 0
+                      ? `${w.name}, אין לך משימות פתוחות כרגע.`
+                      : `${w.name}, המשימות שלך:\n` +
+                        w.tasks
+                          .filter((t) => t.status === "available" || t.status === "in_progress")
+                          .map((t) => `• ${t.title}${t.dueAt ? ` (יעד: ${formatDate(t.dueAt)})` : ""}\n${taskLink(w.id, t.id)}`)
+                          .join("\n")
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ background: "#25D366", color: "#ffffff", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap", alignSelf: "stretch", display: "flex", alignItems: "center" }}
+                >
+                  שליחת המשימות
+                </a>
               </div>
               {!w.authUid && openInvite !== w.id && (
                 <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 9, background: "var(--paper)", borderRadius: 8, padding: "7px 10px" }}>

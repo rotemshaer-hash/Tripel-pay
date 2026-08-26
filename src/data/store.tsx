@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from "react";
 import { seedFamily, templateChild } from "./seed";
 import { childrenList, genInviteCode, normalizeFamily } from "./family";
 import { endOfDay, nextDueDate, toDate } from "../utils/datetime";
@@ -103,6 +103,10 @@ type Action =
   | { type: "REMOVE_DOCUMENT"; docId: string }
   | { type: "ADD_WORKER"; name: string }
   | { type: "RESET_WORKER_ACCESS"; childId: string }
+  | { type: "SET_WORKER_PHONE"; childId: string; phone: string }
+  | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
+  | { type: "ACKNOWLEDGE_TASK"; childId: string; taskId: string; by: string; at?: string }
+  | { type: "MARK_TASK_SENT"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ADD_HOUSE_RULE"; text: string }
   | { type: "REMOVE_HOUSE_RULE"; ruleId: string }
   | { type: "RESET_CHILD_PROGRESS"; childId: string }
@@ -818,6 +822,54 @@ function reducer(state: AppState, action: Action): AppState {
         },
       };
     }
+    case "SET_WORKER_PHONE": {
+      const phone = action.phone.trim();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => {
+          const next = { ...c };
+          if (phone) next.phone = phone;
+          else delete next.phone;
+          return next;
+        }),
+      };
+    }
+    case "MARK_TASK_SEEN": {
+      // Stamped once, by the app, the first time the assigned worker opens the task.
+      // Re-stamping on every visit would turn "when he first saw it" — the fact that
+      // settles an argument — into "when he last looked".
+      const at = action.at ?? new Date().toISOString();
+      const existing = state.family.children[action.childId]?.tasks.find((t) => t.id === action.taskId);
+      if (!existing || existing.seenAt) return state;
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => logActivity({ ...t, seenAt: at }, { by: action.by, action: "seen" }, at))
+        ),
+      };
+    }
+    case "ACKNOWLEDGE_TASK": {
+      const at = action.at ?? new Date().toISOString();
+      const existing = state.family.children[action.childId]?.tasks.find((t) => t.id === action.taskId);
+      if (!existing || existing.acknowledgedAt) return state;
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => logActivity({ ...t, acknowledgedAt: at, seenAt: t.seenAt ?? at }, { by: action.by, action: "acknowledged" }, at))
+        ),
+      };
+    }
+    case "MARK_TASK_SENT": {
+      // Sending happens outside the app, in WhatsApp. What the journal can honestly
+      // record is that the manager sent it, and when.
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => logActivity(t, { by: action.by, action: "sent" }, at))
+        ),
+      };
+    }
     case "RESET_WORKER_ACCESS": {
       // A worker locked out of their own login gets a new invite code and their link
       // cleared, so they can sign up again from a fresh link. The code index is kept in
@@ -957,8 +1009,13 @@ export interface ConnectionInfo {
   signedInAs: string | null;
   /** True once the family record has actually arrived from the server this session. */
   live: boolean;
-  /** Set when a read was refused or failed; the screen is then cache-only. */
+  /** Set when a read or a write was refused or failed; the screen is then cache-only. */
   error: string | null;
+  /** True while there are local changes the server has not accepted. Work done on a
+   * roof with no signal is the normal case here, not an edge case. */
+  unsaved: boolean;
+  /** When the last save attempt failed. */
+  failedAt: string | null;
 }
 
 
@@ -980,6 +1037,8 @@ interface StoreContextValue {
   login: (email: string, password: string) => Promise<void>;
   /** Finishes an account whose login exists but whose company record never saved. */
   completeMissingAccount: (name: string, companyName: string) => Promise<void>;
+  /** Pushes whatever is unsaved to the server again, on demand. */
+  retrySync: () => Promise<void>;
   registerChildSession: (code: string, username: string, password: string) => Promise<void>;
   loginChildSession: (username: string, password: string) => Promise<void>;
   registerSecondParentSession: (code: string, email: string, password: string, name: string) => Promise<void>;
@@ -995,8 +1054,34 @@ const StoreCtx = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitial);
-  const [connection, setConnection] = useState<ConnectionInfo>({ signedInAs: null, live: false, error: null });
+  const [connection, setConnection] = useState<ConnectionInfo>({ signedInAs: null, live: false, error: null, unsaved: false, failedAt: null });
   const skipNextRemoteSave = useRef(false);
+  const latestState = useRef(state);
+  latestState.current = state;
+
+  /**
+   * The one path from local state to the server.
+   *
+   * A rejected save used to end at console.error: the change stayed on screen, looked
+   * saved, and was gone on the next load with nothing having said so. Now a failure is
+   * recorded and shown, and it can be retried — by the app when the network returns,
+   * or by the person, from settings.
+   */
+  const pushToServer = useCallback(async (snapshot: AppState) => {
+    if (!snapshot.familyUid) return;
+    try {
+      if (snapshot.role === "child") {
+        const child = snapshot.family.children[snapshot.activeChildId];
+        if (child) await saveChildOnly(snapshot.familyUid, snapshot.activeChildId, child);
+      } else {
+        await saveFamily(snapshot.familyUid, snapshot.family);
+      }
+      setConnection((c) => (c.unsaved || c.error ? { ...c, unsaved: false, error: null, failedAt: null } : c));
+    } catch (err) {
+      console.error("Failed to save to Firebase:", err);
+      setConnection((c) => ({ ...c, live: false, unsaved: true, error: describeSyncError(err), failedAt: new Date().toISOString() }));
+    }
+  }, []);
 
   // Firebase auth is the real source of truth. On sign-in, figure out whether this
   // identity is a parent (family owner) or a linked child account, then subscribe to
@@ -1009,7 +1094,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         unsubFamily = null;
       }
       if (user) {
-        setConnection({ signedInAs: identityLabel(user.email), live: false, error: null });
+        setConnection((c) => ({ ...c, signedInAs: identityLabel(user.email), live: false, error: null }));
         fetchChildLink(user.uid)
           .then(async (childLink) => {
             const parentLink = childLink ? null : await fetchParentLink(user.uid);
@@ -1042,7 +1127,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             setConnection((c) => ({ ...c, live: false, error: describeSyncError(err) }));
           });
       } else {
-        setConnection({ signedInAs: null, live: false, error: null });
+        setConnection({ signedInAs: null, live: false, error: null, unsaved: false, failedAt: null });
         dispatch({ type: "SIGN_OUT" });
       }
     });
@@ -1064,19 +1149,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (!state.familyUid) return;
-    // A rejected save used to end in console.error alone: the change stayed on screen,
-    // looked saved, and was gone on the next load with nothing having said so.
-    const onSaveFailed = (err: unknown) => {
-      console.error("Failed to save to Firebase:", err);
-      setConnection((c) => ({ ...c, live: false, error: describeSyncError(err) }));
+    void pushToServer(state);
+  }, [state, pushToServer]);
+
+  // Losing signal mid-job is the normal condition on a site, not an edge case. The
+  // change is already safe in local storage; when the connection comes back the app
+  // pushes it rather than waiting for the next thing the person happens to change.
+  useEffect(() => {
+    const retry = () => {
+      if (latestState.current.familyUid) void pushToServer(latestState.current);
     };
-    if (state.role === "child") {
-      const child = state.family.children[state.activeChildId];
-      if (child) saveChildOnly(state.familyUid, state.activeChildId, child).catch(onSaveFailed);
-    } else {
-      saveFamily(state.familyUid, state.family).catch(onSaveFailed);
-    }
-  }, [state]);
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [pushToServer]);
 
   // An invite code only works if it exists at `inviteCodes/{code}`, which is where a
   // person who is not yet linked to anything is allowed to look it up. That index was
@@ -1187,6 +1272,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const retrySync = useCallback(async () => {
+    await pushToServer(latestState.current);
+  }, [pushToServer]);
+
   const completeMissingAccount = useMemo(
     () => async (name: string, companyName: string) => {
       const family = await createFamilyForCurrentUser(name, companyName);
@@ -1260,8 +1349,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, connection, dispatch, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
-    [state, connection, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
+    () => ({ state, connection, dispatch, retrySync, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, connection, retrySync, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

@@ -143,6 +143,9 @@ export const activityLabels: Record<string, string> = {
   attached: "צורף קובץ",
   edited: "עודכנה",
   reassigned: "הועברה",
+  sent: "נשלחה בוואטסאפ",
+  seen: "נצפתה",
+  acknowledged: "אושרה קבלה",
 };
 
 /** How a task's state reads and colours everywhere it's shown — the list, the detail

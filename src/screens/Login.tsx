@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../data/store";
 import { homePath } from "../data/routes";
 import { MODE, V, work } from "../data/vocabulary";
@@ -34,6 +34,9 @@ export function Login() {
   const [repairName, setRepairName] = useState("");
   const [repairLoading, setRepairLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Where this person was heading before they were asked to sign in.
+  const next = searchParams.get("next");
   const { login, loginChildSession, resetPassword, completeMissingAccount } = useStore();
 
   async function forgotPassword() {
@@ -72,10 +75,10 @@ export function Login() {
       if (role === "parent") {
         setNeedsAccountRepair(false);
         await login(email.trim(), password);
-        navigate(homePath("parent"));
+        navigate(next || homePath("parent"));
       } else {
         await loginChildSession(username, password);
-        navigate(homePath("child"));
+        navigate(next || homePath("child"));
       }
     } catch (err) {
       console.error("Login failed:", err);
@@ -220,7 +223,7 @@ export function Login() {
                 setError("");
                 try {
                   await completeMissingAccount(repairName.trim(), repairCompany.trim());
-                  navigate(homePath("parent"));
+                  navigate(next || homePath("parent"));
                 } catch (err) {
                   console.error("Completing the account failed:", err);
                   setError("השלמת החשבון נכשלה. בדקו את החיבור ונסו שוב.");

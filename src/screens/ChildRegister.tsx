@@ -26,7 +26,7 @@ export function ChildRegister() {
     setError("");
     try {
       await registerChildSession(code, username, password);
-      navigate(homePath("child"));
+      navigate(searchParams.get("next") || homePath("child"));
     } catch (err) {
       console.error("Child registration failed:", err);
       const message = err instanceof Error ? err.message : "";

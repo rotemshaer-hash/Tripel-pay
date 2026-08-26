@@ -5,12 +5,13 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, priorityColor, priorityLabels, work } from "../../data/vocabulary";
+import { V, priorityColor, priorityLabels, recurrenceLabels, work } from "../../data/vocabulary";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
 import { draftToAttachment } from "../../data/attachments";
-import type { Attachment, TaskPriority } from "../../data/types";
+import type { Attachment, RecurrenceRule, TaskPriority } from "../../data/types";
 
 const priorities: TaskPriority[] = ["low", "normal", "high", "urgent"];
+const recurrences: RecurrenceRule[] = ["none", "daily", "weekly", "monthly"];
 
 /**
  * The manager writes a new job: what, who, by when, how often, and for which site.
@@ -28,6 +29,7 @@ export function NewTask() {
   const [assignee, setAssignee] = useState(workers[0]?.id ?? "");
   const [due, setDue] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("normal");
+  const [recurrence, setRecurrence] = useState<RecurrenceRule>("none");
   const [site, setSite] = useState("");
   const [steps, setSteps] = useState<string[]>([]);
   const [stepDraft, setStepDraft] = useState("");
@@ -60,6 +62,7 @@ export function NewTask() {
       // already overdue at 00:01.
       dueAt: due ? new Date(`${due}T23:59:59`).toISOString() : undefined,
       priority,
+      recurrence,
       site: site.trim() || undefined,
       checklist: steps.map((text) => ({ id: `ck-${crypto.randomUUID()}`, text, done: false })),
       by: actor,
@@ -70,6 +73,7 @@ export function NewTask() {
       setBrief("");
       setSteps([]);
       setFiles([]);
+      setRecurrence("none");
       setTaskId(`t-${crypto.randomUUID()}`);
       return;
     }
@@ -165,6 +169,22 @@ export function NewTask() {
               <Chip key={p} label={priorityLabels[p]} active={priority === p} onClick={() => setPriority(p)} activeColor={priorityColor[p]} />
             ))}
           </div>
+        </Field>
+
+        {/* A maintenance business runs on "every Sunday", not on one-off jobs. The
+            engine that rolls the next occurrence has been here all along; this is the
+            field that feeds it. */}
+        <Field label="תדירות">
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {recurrences.map((r) => (
+              <Chip key={r} label={recurrenceLabels[r]} active={recurrence === r} onClick={() => setRecurrence(r)} activeColor="#2f7fd1" />
+            ))}
+          </div>
+          {recurrence !== "none" && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.5, marginTop: 8 }}>
+              המשימה הבאה בסדרה תיווצר אוטומטית אחרי שהנוכחית תאושר. אפשר לעצור את הסדרה בכל שלב מתוך המשימה.
+            </div>
+          )}
         </Field>
 
         <Field label={V.site}>

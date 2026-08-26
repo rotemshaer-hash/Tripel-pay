@@ -6,7 +6,8 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore, useWorkView } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
-import { entryPath } from "../../data/routes";
+import { formatDateTime } from "../../utils/datetime";
+import { adminInviteLink, entryPath } from "../../data/routes";
 
 /**
  * Account settings for the business build.
@@ -21,7 +22,7 @@ import { entryPath } from "../../data/routes";
  * privilege — without it a worker is locked into the app on a shared phone.
  */
 export function WorkSettings() {
-  const { state, connection, dispatch, logout, deleteAccount } = useStore();
+  const { state, connection, dispatch, retrySync, logout, deleteAccount } = useStore();
   const { isManager } = useWorkView();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
@@ -31,6 +32,8 @@ export function WorkSettings() {
   const [confirmText, setConfirmText] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [adminInviteOpen, setAdminInviteOpen] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const workers = childrenList(state.family);
   const me = workers.find((c) => c.id === state.activeChildId);
 
@@ -87,14 +90,35 @@ export function WorkSettings() {
           )}
           <Row label="סוג חשבון" value={state.role === "child" ? V.worker : V.admin} />
           <Row label="מחובר כ" value={connection.signedInAs ?? "לא מחובר"} ltr />
-          <Row label="מקור הנתונים" value={connection.live ? "השרת (מעודכן)" : connection.signedInAs ? "המכשיר בלבד" : "המכשיר בלבד"} />
+          <Row label="מקור הנתונים" value={connection.unsaved ? "המכשיר — יש שינויים שלא נשמרו" : connection.live ? "השרת (מעודכן)" : "המכשיר בלבד"} />
           <Row label="גרסה" value={__BUILD_ID__} ltr />
-          {connection.error && (
-            <div style={{ fontSize: 12, color: work.alert, lineHeight: 1.55, paddingTop: 9 }}>
-              {connection.error} — מה שמוצג הוא העותק השמור במכשיר, ושינויים לא יישמרו לשרת.
-            </div>
-          )}
         </section>
+
+        {/* Sync is either working or it is not, and the person holding the phone is the
+            one who needs to know which. Silent failure is what cost this product days. */}
+        {(connection.error || connection.unsaved) && (
+          <section style={{ ...card, borderColor: "#f3c0c9" }}>
+            <div style={{ ...cardTitle, color: work.alert }}>יש שינויים שלא נשמרו לשרת</div>
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 10 }}>
+              {connection.error ?? "השמירה האחרונה לא הושלמה."}
+              {connection.failedAt ? ` (${formatDateTime(connection.failedAt)})` : ""}
+              {" "}
+              הכל שמור במכשיר ולא הלך לאיבוד — כשהחיבור יחזור זה יישלח לבד, ואפשר גם לנסות עכשיו.
+            </div>
+            <button
+              onClick={async () => {
+                setRetrying(true);
+                await retrySync();
+                setRetrying(false);
+                showToast("ניסיון סנכרון בוצע");
+              }}
+              disabled={retrying}
+              style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800, opacity: retrying ? 0.5 : 1 }}
+            >
+              {retrying ? "מסנכרן…" : "ניסיון סנכרון עכשיו"}
+            </button>
+          </section>
+        )}
 
         {isManager && (
         <section style={card}>
@@ -119,6 +143,45 @@ export function WorkSettings() {
             </button>
           </div>
         </section>
+        )}
+
+        {/* One phone holding the entire company record is a single point of failure —
+            for the business, not just for the app. A second admin is the backup. */}
+        {isManager && isOwner && (
+          <section style={card}>
+            <div style={cardTitle}>{`${V.admin} נוסף`}</div>
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
+              {`שותף, מזכיר/ה או מנהל/ת עבודה — עם גישה מלאה לאותו חשבון. אם הטלפון שלך הולך לאיבוד, העסק לא נעצר.`}
+            </div>
+            {!adminInviteOpen ? (
+              <button
+                onClick={() => setAdminInviteOpen(true)}
+                style={{ width: "100%", background: "#ffffff", border: "1px solid var(--line)", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800 }}
+              >
+                {`הזמנת ${V.admin} נוסף`}
+              </button>
+            ) : (
+              <>
+                <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
+                  {`קוד ההזמנה: ${state.family.parentInviteCode}`}
+                </div>
+                <button
+                  onClick={async () => {
+                    const link = adminInviteLink(state.family.parentInviteCode);
+                    try {
+                      await navigator.clipboard.writeText(link);
+                      showToast("הקישור הועתק");
+                    } catch {
+                      showToast("לא ניתן להעתיק — יש להעתיק ידנית");
+                    }
+                  }}
+                  style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800 }}
+                >
+                  העתקת קישור ההזמנה
+                </button>
+              </>
+            )}
+          </section>
         )}
 
         <button

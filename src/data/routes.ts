@@ -42,6 +42,24 @@ function appBase(): string {
   return `${window.location.origin}${base.endsWith("/") ? base.slice(0, -1) : base}`;
 }
 
+/** A direct link to one task, for sending outside the app. Whoever opens it signs in
+ * first if they have to, and lands here rather than on their home screen. */
+export function taskLink(workerId: string, taskId: string): string {
+  return `${appBase()}${taskPath(workerId, taskId)}`;
+}
+
+/** The in-app path of a task — one definition, used by the router, the lists and the
+ * shared link, so a link built for WhatsApp can never point somewhere the app does
+ * not serve. */
+export function taskPath(workerId: string, taskId: string): string {
+  return `/work/task/${workerId}/${taskId}`;
+}
+
+/** Where to send someone who has to sign in before they can see `intended`. */
+export function loginPathFor(intended: string): string {
+  return `${entryPath()}?next=${encodeURIComponent(intended)}`;
+}
+
 /** Invite for someone who will do the work (a worker / a child). */
 export function workerInviteLink(code: string): string {
   return `${appBase()}/join?code=${encodeURIComponent(code)}`;

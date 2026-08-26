@@ -1,7 +1,7 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useStore } from "./data/store";
 import { MODE } from "./data/vocabulary";
-import { entryPath, homePath } from "./data/routes";
+import { entryPath, homePath, loginPathFor } from "./data/routes";
 
 import { Splash } from "./screens/onboarding/Splash";
 import { Welcome } from "./screens/onboarding/Welcome";
@@ -44,7 +44,11 @@ import { WorkReport } from "./screens/work/WorkReport";
 
 function RequireOnboarded({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
-  if (!state.onboarded) return <Navigate to={entryPath()} replace />;
+  const location = useLocation();
+  // A task link sent over WhatsApp is opened by someone who is usually signed out.
+  // Dropping them on their home screen after signing in loses the thing they were
+  // sent, so the destination travels with them.
+  if (!state.onboarded) return <Navigate to={loginPathFor(location.pathname + location.search)} replace />;
   return <>{children}</>;
 }
 
@@ -53,7 +57,8 @@ function RequireOnboarded({ children }: { children: React.ReactNode }) {
 // must never be reachable by typing the URL.
 function RequireParent({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
-  if (!state.onboarded) return <Navigate to={entryPath()} replace />;
+  const location = useLocation();
+  if (!state.onboarded) return <Navigate to={loginPathFor(location.pathname + location.search)} replace />;
   if (state.role === "child") return <Navigate to={homePath("child")} replace />;
   return <>{children}</>;
 }

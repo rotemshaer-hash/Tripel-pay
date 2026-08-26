@@ -22,9 +22,14 @@ import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 export function WorkReport() {
   const { state } = useStore();
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const range = (params.get("range") as JournalRange) || "month";
   const workerId = params.get("worker") || "all";
+  // A proof pack answers a different question from a management report: not "is my
+  // team doing what I asked" but "here is what was done at your site, with photos and
+  // times" — the document that gets an invoice paid.
+  const isProof = params.get("mode") === "proof";
+  const site = params.get("site") || "all";
 
   const workers = childrenList(state.family);
   const company = state.family.companyName || state.family.parentName;
@@ -55,6 +60,27 @@ export function WorkReport() {
     };
   }, [workers, workerId, range]);
 
+  const sites = useMemo(() => {
+    const set = new Set<string>();
+    for (const worker of workers) for (const task of worker.tasks) if (task.site) set.add(task.site);
+    return [...set].sort((a, b) => a.localeCompare(b, "he"));
+  }, [workers]);
+
+  const proofTasks = useMemo(() => {
+    const scope = workerId === "all" ? workers : workers.filter((w) => w.id === workerId);
+    const out: { task: TaskItem; worker: Child }[] = [];
+    for (const worker of scope) {
+      for (const task of worker.tasks) {
+        if (task.status !== "completed") continue;
+        if (site !== "all" && (task.site ?? "") !== site) continue;
+        if (!withinRange(task.approvedAt ?? task.submittedAt, range)) continue;
+        out.push({ task, worker });
+      }
+    }
+    out.sort((a, b) => Date.parse(a.task.approvedAt ?? "") - Date.parse(b.task.approvedAt ?? ""));
+    return out;
+  }, [workers, workerId, site, range]);
+
   const from = formatDateExact(rangeStart(range).toISOString());
   const to = formatDateExact(new Date().toISOString());
 
@@ -71,11 +97,57 @@ export function WorkReport() {
         </button>
       </div>
 
+      {/* Choosing what the document covers belongs on the document, not on the screen
+          you came from — a proof pack is usually built for one customer at a time. */}
+      <div className="report-bar report-bar-controls no-print">
+        <button
+          onClick={() => {
+            const next = new URLSearchParams(params);
+            next.delete("mode");
+            setParams(next, { replace: true });
+          }}
+          className={`report-bar-btn${isProof ? "" : " report-bar-primary"}`}
+        >
+          {`דוח ${V.journal}`}
+        </button>
+        <button
+          onClick={() => {
+            const next = new URLSearchParams(params);
+            next.set("mode", "proof");
+            setParams(next, { replace: true });
+          }}
+          className={`report-bar-btn${isProof ? " report-bar-primary" : ""}`}
+        >
+          תיק הוכחות ללקוח
+        </button>
+        {isProof && (
+          <select
+            value={site}
+            onChange={(e) => {
+              const next = new URLSearchParams(params);
+              if (e.target.value === "all") next.delete("site");
+              else next.set("site", e.target.value);
+              setParams(next, { replace: true });
+            }}
+            className="report-bar-select"
+          >
+            <option value="all">כל האתרים</option>
+            {sites.map((siteName) => (
+              <option key={siteName} value={siteName}>
+                {siteName}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
       <div className="report-sheet">
         <header className="report-head">
           <div>
             <div className="report-company">{company}</div>
-            <div className="report-title">{`דוח ${V.journal} — ${rangeLabels[range]}`}</div>
+            <div className="report-title">
+              {isProof ? `תיק הוכחות${site !== "all" ? ` — ${site}` : ""} · ${rangeLabels[range]}` : `דוח ${V.journal} — ${rangeLabels[range]}`}
+            </div>
           </div>
           <div className="report-meta">
             <div>{`תקופה: ${from} – ${to}`}</div>
@@ -84,6 +156,51 @@ export function WorkReport() {
           </div>
         </header>
 
+        {isProof ? (
+          <section className="report-proof">
+            <div className="report-section-title">{`עבודות שהושלמו ואושרו — ${proofTasks.length}`}</div>
+            {proofTasks.map(({ task, worker }) => (
+              <article key={task.id} className="report-proof-item">
+                <div className="report-proof-head">
+                  <span className="report-proof-title">{task.title}</span>
+                  <span className="report-proof-meta">
+                    {`${worker.name} · ${formatDateExact(task.approvedAt ?? "")} ${formatTime(task.approvedAt ?? "")}`}
+                    {task.site ? ` · ${task.site}` : ""}
+                  </span>
+                </div>
+                {task.brief && <div className="report-proof-brief">{task.brief}</div>}
+                {(task.checklist ?? []).length > 0 && (
+                  <ul className="report-proof-steps">
+                    {(task.checklist ?? []).map((step) => (
+                      <li key={step.id}>{`${step.done ? "✓" : "—"} ${step.text}`}</li>
+                    ))}
+                  </ul>
+                )}
+                <div className="report-proof-shots">
+                  {(task.proofs ?? [])
+                    .filter((a) => a.kind === "image")
+                    .map((a) => (
+                      <figure key={a.id}>
+                        <img src={a.content} alt={a.name} />
+                        <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
+                      </figure>
+                    ))}
+                </div>
+                {(task.proofs ?? []).filter((a) => a.kind !== "image").length > 0 && (
+                  <div className="report-proof-notes">
+                    {(task.proofs ?? [])
+                      .filter((a) => a.kind !== "image")
+                      .map((a) => (
+                        <div key={a.id}>{`• ${a.kind === "note" ? a.content : a.name} (${a.addedBy})`}</div>
+                      ))}
+                  </div>
+                )}
+              </article>
+            ))}
+            {proofTasks.length === 0 && <div className="report-empty">אין עבודות מאושרות בתקופה ובאתר שנבחרו.</div>}
+          </section>
+        ) : (
+        <>
         <section className="report-stats">
           <div className="report-stat">
             <div className="report-stat-value">{done}</div>
@@ -171,6 +288,9 @@ export function WorkReport() {
           </table>
         </section>
 
+        </>
+        )}
+
         <footer className="report-foot">
           <div className="report-sign">
             <div className="report-sign-line" />
@@ -192,6 +312,10 @@ const printCss = `
 .report-bar-btn { flex: 1; padding: 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.25);
   background: transparent; color: #fff; font-size: 13.5px; font-weight: 700; }
 .report-bar-primary { background: #fff; color: #232a3b; border: none; font-weight: 800; }
+.report-bar-controls { top: 62px; border-top: 1px solid rgba(255,255,255,0.12); }
+.report-bar-select { flex: 1; padding: 11px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.25);
+  background: transparent; color: #fff; font-size: 13px; font-weight: 700; }
+.report-bar-select option { color: #1a1d26; }
 .report-sheet { background: #fff; margin: 16px auto; padding: 26px 24px; max-width: 820px;
   box-shadow: 0 1px 4px rgba(16,24,40,0.10); color: #1a1d26; }
 .report-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;
@@ -203,6 +327,17 @@ const printCss = `
 .report-stat { flex: 1; border: 1px solid #e3e5ea; border-radius: 8px; padding: 10px 8px; text-align: center; }
 .report-stat-value { font-size: 20px; font-weight: 800; }
 .report-stat-label { font-size: 10.5px; color: #5c5f6b; margin-top: 2px; }
+.report-proof-item { border: 1px solid #e3e5ea; border-radius: 8px; padding: 12px 13px; margin-bottom: 12px; break-inside: avoid; }
+.report-proof-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+.report-proof-title { font-size: 13.5px; font-weight: 800; }
+.report-proof-meta { font-size: 10.5px; color: #5c5f6b; }
+.report-proof-brief { font-size: 11.5px; color: #3a3d47; margin-top: 6px; line-height: 1.5; }
+.report-proof-steps { margin: 7px 0 0; padding-inline-start: 16px; font-size: 11px; color: #3a3d47; line-height: 1.7; }
+.report-proof-notes { font-size: 11px; color: #3a3d47; margin-top: 7px; line-height: 1.6; }
+.report-proof-shots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.report-proof-shots figure { margin: 0; width: 30%; min-width: 150px; }
+.report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
+.report-proof-shots figcaption { font-size: 9.5px; color: #5c5f6b; margin-top: 3px; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .report-table th { text-align: start; font-weight: 800; padding: 7px 6px; border-bottom: 1.5px solid #232a3b; font-size: 11px; }
 .report-table td { padding: 6px; border-bottom: 1px solid #eceef2; vertical-align: top; line-height: 1.45; }
