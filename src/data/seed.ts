@@ -89,7 +89,16 @@ export function templateChild(index: number, name: string): Child {
 
 export function seedFamily(parentName: string, parentEmail: string, childNames?: string[], companyName?: string): Family {
   const fallback = MODE === "work" ? "עובד/ת" : "ילד/ה";
-  const names = childNames && childNames.length > 0 ? childNames.map((n, i) => (n.trim() ? n : `${fallback} ${i + 1}`)) : [`${fallback} 1`];
+  // A family without a named child still gets a placeholder to play with. A BUSINESS
+  // must not: an invented employee called "עובד/ת 1" sits in the roster looking real,
+  // gets counted, gets offered work, and the manager's first act is deleting a person
+  // who never existed. Empty is the honest state, and the first-run card fills it.
+  const names =
+    childNames && childNames.length > 0
+      ? childNames.map((n, i) => (n.trim() ? n : `${fallback} ${i + 1}`))
+      : MODE === "work"
+        ? []
+        : [`${fallback} 1`];
   const kids = names.map((n, i) => templateChild(i, n));
   return {
     // Firebase's set() rejects undefined, so an absent company name is an absent key.

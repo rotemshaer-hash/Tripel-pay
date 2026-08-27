@@ -160,9 +160,21 @@ export function WorkJournal() {
             )}
           </div>
         </div>
+        {/* An empty log is the one screen where a person decides whether this is worth
+            the trouble, so it says what will land here and why that is the product. */}
         {feed.length === 0 && (
-          <div style={{ fontSize: 13, color: "var(--ink-faint)", background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 14px", textAlign: "center" }}>
-            אין פעילות מתועדת בטווח הזה
+          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "20px 16px" }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 7 }}>כאן נרשם הכל, לבד</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.7 }}>
+              כל משימה שתשלח, כל אישור קבלה, כל התחלה וסיום, וכל תמונה שעובד יצרף — נכנסים לכאן עם שם ושעה,
+              ואי אפשר לשנות אותם אחר כך. זה מה שמחליף את "אמרתי לך בוואטסאפ", וזה מה שהופך לתיק שאפשר לשלוח ללקוח.
+            </div>
+            <button
+              onClick={() => navigate("/work/today")}
+              style={{ width: "100%", marginTop: 12, background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13.5, fontWeight: 800 }}
+            >
+              למסך היום — לחלק עבודה
+            </button>
           </div>
         )}
         {feed.map(({ entry, task, worker }) => (

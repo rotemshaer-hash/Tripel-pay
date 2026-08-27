@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
+import { FirstSteps } from "../../components/FirstSteps";
+import { professionById, professions } from "../../data/professions";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
@@ -59,6 +61,10 @@ export function WorkToday() {
   const workers = childrenList(state.family);
   const company = state.family.companyName || state.family.parentName;
   const [sentToday, setSentToday] = useState<string[]>(() => readSent());
+  const trade = professionById(state.family.professionId) ?? professions[professions.length - 1];
+  // While the first-run card is still teaching, its own send button is the one to
+  // press — two green "send" buttons on one screen is a choice nobody asked for.
+  const showFirstRun = !(workers.length > 0 && workers.some((w) => w.tasks.length > 0) && sentToday.length > 0);
 
   function markSent(workerId: string) {
     const next = sentToday.includes(workerId) ? sentToday : [...sentToday, workerId];
@@ -110,7 +116,7 @@ export function WorkToday() {
 
         {/* The morning round, kept for you. WhatsApp opens one chat at a time, so this
             says who is next rather than pretending it can send to everyone at once. */}
-        {toSend.length > 0 && (
+        {toSend.length > 0 && !(workers.length > 0 && totalOpen > 0 && sentToday.length === 0 && showFirstRun) && (
           <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "13px 15px" }}>
             <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
               {sentToday.length === 0 ? "עוד לא שלחת היום לצוות" : `נשלחו ${sentToday.length} מתוך ${workers.length}`}
@@ -129,7 +135,7 @@ export function WorkToday() {
             </a>
           </section>
         )}
-        {toSend.length === 0 && workers.length > 0 && (
+        {toSend.length === 0 && workers.length > 0 && totalOpen > 0 && (
           <div style={{ background: "#eaf7f2", border: "1px solid #bfe4d8", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "#2b6d5e", lineHeight: 1.6 }}>
             {`נשלח היום לכל ה${V.workerPlural} ✓ מכאן זה עניין של מי מאשר ומי מדווח — התגיות ליד כל משימה מתעדכנות לבד.`}
           </div>
@@ -180,11 +186,7 @@ export function WorkToday() {
           </section>
         )}
 
-        {workers.length === 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "20px 15px", textAlign: "center", fontSize: 13.5, color: "var(--ink-soft)" }}>
-            {`עוד אין ${V.workerPlural} — אפשר להוסיף במסך הצוות.`}
-          </div>
-        )}
+        <FirstSteps sentToday={sentToday.length > 0} />
 
         {workers.map((worker) => {
           const list = open(worker);
@@ -219,7 +221,35 @@ export function WorkToday() {
               </div>
 
               <div style={{ padding: "0 15px 13px", display: "flex", flexDirection: "column", gap: 6 }}>
-                {list.length === 0 && <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>אין משימות פתוחות.</div>}
+                {list.length === 0 && (
+                  <div>
+                    <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 7 }}>
+                      {`אין משימות פתוחות. לחיצה יוצרת משימה ל${worker.name}:`}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {trade.tasks.slice(0, 3).map((template) => (
+                        <button
+                          key={template.title}
+                          onClick={() => {
+                            dispatch({
+                              type: "CREATE_TASK",
+                              childId: worker.id,
+                              title: template.title,
+                              brief: template.brief,
+                              checklist: (template.steps ?? []).map((text) => ({ id: `ck-${crypto.randomUUID()}`, text, done: false })),
+                              recurrence: template.recurrence,
+                              by: state.family.parentName || V.admin,
+                            });
+                            showToast(`${template.title} הוקצתה ל${worker.name}`);
+                          }}
+                          style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 999, padding: "7px 11px", fontSize: 12, fontWeight: 700 }}
+                        >
+                          {template.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {list.map((task) => (
                   <button
                     key={task.id}

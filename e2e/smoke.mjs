@@ -56,6 +56,7 @@ await m.getByRole("button", { name: "המשך" }).click();
 await m.waitForURL("**/onboarding/children", { timeout: 15000 });
 await m.getByPlaceholder("שם העובד").fill(worker.name);
 await m.getByRole("button", { name: "הוספה" }).click();
+await m.waitForTimeout(400);
 await m.getByRole("button", { name: /יצירת החשבון/ }).click();
 await m.waitForURL("**/onboarding/success", { timeout: 15000 });
 await m.getByRole("button", { name: "יצירת החשבון" }).click();

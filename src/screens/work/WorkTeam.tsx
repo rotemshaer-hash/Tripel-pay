@@ -128,8 +128,11 @@ export function WorkTeam() {
           );
         })}
         {workers.length === 0 && (
-          <div style={{ fontSize: 13, color: "var(--ink-faint)", background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 14px", textAlign: "center" }}>
-            {`אין ${V.workerPlural} עדיין — אפשר להוסיף כאן.`}
+          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "20px 16px" }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 7 }}>{`מוסיפים ${V.worker} — והוא לא מתקין כלום`}</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.7 }}>
+              {`מספיק שם ומספר טלפון. מכאן שולחים לו בוואטסאפ קישור אישי שנשאר נכון כל יום: הוא לוחץ, רואה את המשימות שלו, ומדווח קבלה, התחלה, סיום, תמונה או הערה — בלי התקנה ובלי סיסמה.`}
+            </div>
           </div>
         )}
 
