@@ -64,6 +64,23 @@ export function WorkerDay() {
   const [local, setLocal] = useState<LocalState>({});
   const [pending, setPending] = useState<PendingReport[]>(() => readQueue().filter((p) => p.token === token));
 
+  // The manager can change a job after sending it, and the link is the only copy the
+  // worker has. Coming back to the page — from WhatsApp, from a locked screen — is
+  // exactly when it must be re-read, or a person works from instructions that changed
+  // an hour ago.
+  const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setRefreshKey((k) => k + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
+
   useEffect(() => {
     let alive = true;
     loadWorkerDay(token)
@@ -73,9 +90,27 @@ export function WorkerDay() {
         setLoading(false);
         if (!result) setError("הקישור לא נמצא או שפג תוקפו. אפשר לבקש מהמנהל לשלוח שוב.");
         if (result) {
-          setLocal(Object.fromEntries(result.tasks.map((t) => [t.taskId, { proofs: t.proofCount ?? 0, ack: t.acknowledged }])));
-          const next = result.tasks.find((t) => t.status !== "pending_approval");
-          if (next) setOpenTask(next.taskId);
+          // A refresh must not erase what was reported since it loaded, so what is
+          // already known locally wins over the older copy from the server.
+          setLocal((current) =>
+            Object.fromEntries(
+              result.tasks.map((t) => {
+                const known = current[t.taskId];
+                return [
+                  t.taskId,
+                  {
+                    ...known,
+                    proofs: Math.max(known?.proofs ?? 0, t.proofCount ?? 0),
+                    ack: known?.ack || t.acknowledged,
+                  },
+                ];
+              })
+            )
+          );
+          setOpenTask((open) => {
+            if (open && result.tasks.some((t) => t.taskId === open)) return open;
+            return result.tasks.find((t) => t.status !== "pending_approval")?.taskId ?? null;
+          });
         }
       })
       .catch((err) => {
@@ -87,7 +122,7 @@ export function WorkerDay() {
     return () => {
       alive = false;
     };
-  }, [token, loadWorkerDay]);
+  }, [token, loadWorkerDay, refreshKey]);
 
   const flushQueue = useCallback(
     async (snapshot: WorkerDaySnapshot) => {
@@ -211,6 +246,23 @@ export function WorkerDay() {
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontSize: 16.5, fontWeight: 800, lineHeight: 1.35, textDecoration: finished ? "line-through" : "none" }}>{task.title}</span>
+                  {(task.messages ?? []).length > 0 && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        marginTop: 6,
+                        background: "#eef2ff",
+                        color: work.waiting,
+                        border: "1px solid #d5dcfb",
+                        borderRadius: 999,
+                        padding: "3px 9px",
+                        fontSize: 11,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {`💬 הודעה מהמנהל: ${(task.messages ?? [])[(task.messages ?? []).length - 1].text.slice(0, 40)}`}
+                    </span>
+                  )}
                   <span style={{ display: "block", fontSize: 12, color: late && !finished ? work.alert : "var(--ink-soft)", marginTop: 4 }}>
                     {[
                       finished ? "נשלח למנהל ✓" : started ? "בביצוע" : acknowledged ? "אישרת קבלה" : "חדש",
@@ -228,6 +280,18 @@ export function WorkerDay() {
               {isOpen && (
                 <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
                   {task.brief && <div style={{ fontSize: 14, lineHeight: 1.6 }}>{task.brief}</div>}
+
+                  {(task.messages ?? []).length > 0 && (
+                    <div style={{ background: "#eef2ff", border: "1px solid #d5dcfb", borderRadius: 11, padding: "11px 13px" }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: work.waiting, marginBottom: 6 }}>הודעות מהמנהל</div>
+                      {(task.messages ?? []).map((message) => (
+                        <div key={message.at} style={{ fontSize: 13, lineHeight: 1.55, marginBottom: 5 }}>
+                          <span style={{ fontWeight: 700 }}>{message.by}: </span>
+                          {message.text}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {(task.steps ?? []).length > 0 && (
                     <div style={{ background: "var(--paper)", borderRadius: 10, padding: "11px 13px" }}>

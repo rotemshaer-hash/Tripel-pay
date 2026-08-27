@@ -203,7 +203,37 @@ await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(4000);
 check("it reaches the manager's journal", (await m.locator("body").innerText()).includes("ניקיון מחסן"));
 
-console.log("8. the manager signs out and back in");
+console.log("8. the manager changes the job after sending it");
+await m.goto(`${BASE}/work/journal`);
+await m.waitForTimeout(1500);
+await m.getByText("ניקיון מחסן").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1500);
+await m.getByText("עריכה", { exact: true }).click();
+await m.waitForTimeout(600);
+await m.getByPlaceholder("פירוט").fill("לרוקן את המדף העליון ולצלם אחרי");
+await m.getByRole("button", { name: "שמירת השינויים" }).click();
+await m.waitForTimeout(1500);
+check("the manager is offered to tell the worker what changed", (await m.getByText("שליחת עדכון בוואטסאפ").count()) > 0);
+await m.getByText("לא צריך").click();
+await m.getByPlaceholder("הערה — תופיע לעובד בקישור שלו…").fill("תתחיל מהמדף העליון");
+await m.getByRole("button", { name: "שליחה" }).first().click();
+await m.waitForTimeout(2500);
+
+const { ctx: reopenCtx, page: r } = await openPage();
+await r.goto(dayLink.replace(/^https?:\/\/[^/]+/, BASE));
+await r.waitForTimeout(3000);
+// A finished job is collapsed, so the message shows as a badge on the card; open it
+// to read the rest.
+check("a new message from the manager is visible without opening the job", (await r.getByText("💬 הודעה מהמנהל", { exact: false }).count()) > 0);
+await r.getByText("ניקיון מחסן").first().click();
+await r.waitForTimeout(800);
+const reopened = await r.locator("body").innerText();
+check("the worker's link shows the edited brief", reopened.includes("לרוקן את המדף העליון"));
+check("and shows what the manager wrote", reopened.includes("תתחיל מהמדף העליון"));
+await reopenCtx.close();
+
+console.log("9. the manager signs out and back in");
 await m.goto(`${BASE}/work/settings`);
 await m.waitForTimeout(800);
 await m.getByRole("button", { name: "התנתקות" }).click();

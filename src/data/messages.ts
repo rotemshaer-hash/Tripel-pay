@@ -38,3 +38,20 @@ export function nudgeMessage(company: string, worker: Child, task: TaskItem): st
     .filter(Boolean)
     .join("\n");
 }
+
+
+/** Telling someone a job changed after they were already sent it. Names what moved,
+ * because "עודכנה המשימה" makes a person open the link to look for a difference. */
+export function updateMessage(company: string, worker: Child, task: TaskItem, changed: string[]): string {
+  return [
+    `${worker.name}, עדכון ב${company}:`,
+    `• ${task.title}`,
+    changed.length > 0 ? `מה השתנה: ${changed.join(", ")}` : "",
+    task.dueAt ? `יעד: ${formatDate(task.dueAt)}` : "",
+    "",
+    "הפרטים המעודכנים בקישור שלך:",
+    worker.dayToken ? workerDayLink(worker.dayToken) : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

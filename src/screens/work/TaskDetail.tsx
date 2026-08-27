@@ -7,6 +7,7 @@ import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, tas
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
 import { taskLink, taskShareLink } from "../../data/routes";
+import { updateMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
 import type { Child, TaskItem, TaskPriority } from "../../data/types";
 
@@ -23,6 +24,8 @@ export function TaskDetail() {
   const [comment, setComment] = useState("");
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
+  // What the last edit changed, so the offer to tell the worker can say what moved.
+  const [justChanged, setJustChanged] = useState<string[] | null>(null);
 
   const worker = state.family.children[workerId];
   const task = worker?.tasks.find((t) => t.id === taskId);
@@ -142,12 +145,45 @@ export function TaskDetail() {
               worker={activeWorker}
               workers={childrenList(state.family)}
               actor={actor}
-              onDone={() => setEditing(false)}
+              onDone={(changed) => {
+                setEditing(false);
+                if (changed && changed.length > 0) setJustChanged(changed);
+              }}
             />
           ) : (
           <>
           <div style={{ fontSize: 13.5, lineHeight: 1.6, color: task.brief ? "var(--ink)" : "var(--ink-faint)" }}>{task.brief || "לא נכתב פירוט."}</div>
           <AttachmentList items={task.briefAttachments ?? []} empty="אין קבצים מצורפים לפירוט." />
+          {/* A job changed after it was handed out is the classic way a person ends up
+              doing yesterday's version of the work. The link already shows the new
+              text; this is what tells them to look. */}
+          {isManager && justChanged && (
+            <div style={{ background: "#fff6e5", border: "1px solid #f0d9a8", borderRadius: 11, padding: "12px 13px", marginTop: 10 }}>
+              <div style={{ fontSize: 12.5, color: "#7a5a12", lineHeight: 1.55, marginBottom: 9 }}>
+                {`המשימה עודכנה (${justChanged.join(", ")}). ${activeWorker.name} רואה את הגרסה החדשה בקישור שלו — כדאי להודיע.`}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <a
+                  href={whatsAppLink(activeWorker.phone, updateMessage(state.family.companyName || state.family.parentName, activeWorker, activeTask, justChanged))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    dispatch({ type: "MARK_TASK_SENT", childId: activeWorker.id, taskId: activeTask.id, by: actor });
+                    setJustChanged(null);
+                  }}
+                  style={{ flex: 1, textAlign: "center", background: "#25D366", color: "#ffffff", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}
+                >
+                  שליחת עדכון בוואטסאפ
+                </a>
+                <button
+                  onClick={() => setJustChanged(null)}
+                  style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 9, padding: "11px 14px", fontSize: 12.5, fontWeight: 700 }}
+                >
+                  לא צריך
+                </button>
+              </div>
+            </div>
+          )}
           {isManager && task.status !== "completed" && (
             <AttachButton folder={`tasks/${activeTask.id}`} label="📎 צירוף תמונה או קובץ להנחיות" onAttached={attach("brief")} />
           )}
@@ -375,7 +411,7 @@ export function TaskDetail() {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addComment()}
-              placeholder="כתיבת הערה…"
+              placeholder={isManager ? "הערה — תופיע לעובד בקישור שלו…" : "כתיבת הערה…"}
               style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13 }}
             />
             <button onClick={addComment} disabled={!comment.trim()} style={btnStyle(!comment.trim())}>
@@ -442,7 +478,9 @@ function TaskEditor({
   worker: Child;
   workers: Child[];
   actor: string;
-  onDone: () => void;
+  /** Reports which fields moved, so the caller can offer to tell the worker. Empty
+   * when nothing changed and on cancel. */
+  onDone: (changed?: string[]) => void;
 }) {
   const { dispatch } = useStore();
   const navigate = useNavigate();
@@ -455,6 +493,15 @@ function TaskEditor({
 
   function save() {
     if (!title.trim()) return;
+    // The same comparison the reducer makes for the audit trail — named here too so
+    // the message to the worker can say what actually changed.
+    const dueAt = due ? new Date(`${due}T23:59:59`).toISOString() : undefined;
+    const changed: string[] = [];
+    if (title.trim() !== task.title) changed.push("כותרת");
+    if ((brief ?? "") !== (task.brief ?? "")) changed.push("פירוט");
+    if ((dueAt ?? "") !== (task.dueAt ?? "")) changed.push("תאריך יעד");
+    if ((priority ?? "normal") !== (task.priority ?? "normal")) changed.push("עדיפות");
+    if ((site ?? "") !== (task.site ?? "")) changed.push("לקוח / אתר");
     dispatch({
       type: "UPDATE_TASK",
       childId: worker.id,
@@ -463,12 +510,12 @@ function TaskEditor({
       brief,
       // A date input gives a bare day; anchor it to end of day so "due today" is not
       // already overdue at one minute past midnight.
-      dueAt: due ? new Date(`${due}T23:59:59`).toISOString() : undefined,
+      dueAt,
       priority,
       site,
       by: actor,
     });
-    onDone();
+    onDone(changed);
   }
 
   return (
@@ -571,7 +618,7 @@ function TaskEditor({
         <button onClick={save} disabled={!title.trim()} style={{ ...btnStyle(!title.trim()), flex: 1 }}>
           שמירת השינויים
         </button>
-        <button onClick={onDone} style={{ ...btnStyle(false), flex: 1, background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
+        <button onClick={() => onDone()} style={{ ...btnStyle(false), flex: 1, background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)" }}>
           ביטול
         </button>
       </div>

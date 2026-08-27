@@ -1283,7 +1283,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     for (const worker of childrenList(state.family)) {
       for (const task of worker.tasks) {
         if (!task.linkToken || task.status === "completed") continue;
-        const signature = [task.title, task.brief ?? "", task.dueAt ?? "", task.site ?? "", task.status, (task.checklist ?? []).map((c) => `${c.text}:${c.done}`).join("|")].join("~");
+        const signature = [
+          task.title,
+          task.brief ?? "",
+          task.dueAt ?? "",
+          task.site ?? "",
+          task.status,
+          (task.checklist ?? []).map((c) => `${c.text}:${c.done}`).join("|"),
+          String((task.comments ?? []).length),
+        ].join("~");
         if (publishedLinks.current.get(task.linkToken) === signature) continue;
         publishedLinks.current.set(task.linkToken, signature);
         const snapshot: TaskLinkSnapshot = {
@@ -1298,6 +1306,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...(task.dueAt ? { dueAt: task.dueAt } : {}),
           ...(task.site ? { site: task.site } : {}),
           ...((task.checklist ?? []).length > 0 ? { steps: (task.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),
+          ...((task.comments ?? []).length > 0
+            ? { messages: (task.comments ?? []).slice(-3).map((c) => ({ at: c.at, by: c.by, text: c.text })) }
+            : {}),
         };
         publishTaskLink(task.linkToken, snapshot).catch((err) => {
           publishedLinks.current.delete(task.linkToken!);
@@ -1321,7 +1332,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     for (const worker of childrenList(state.family)) {
       const open = worker.tasks.filter((t) => t.status !== "completed");
       const signature =
-        open.map((t) => `${t.id}:${t.title}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}:${(t.proofs ?? []).length}`).join("|") +
+        open
+          .map(
+            (t) =>
+              `${t.id}:${t.title}:${t.brief ?? ""}:${t.site ?? ""}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}:${(t.proofs ?? []).length}:${(t.comments ?? []).length}`
+          )
+          .join("|") +
         `~${state.family.requireProof !== false}`;
       if (!worker.dayToken || publishedDays.current.get(worker.dayToken) === signature) continue;
       publishedDays.current.set(worker.dayToken, signature);
@@ -1340,6 +1356,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...((t.checklist ?? []).length > 0 ? { steps: (t.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),
           ...(t.acknowledgedAt ? { acknowledged: true } : {}),
           proofCount: (t.proofs ?? []).length,
+          ...((t.comments ?? []).length > 0
+            ? { messages: (t.comments ?? []).slice(-3).map((c) => ({ at: c.at, by: c.by, text: c.text })) }
+            : {}),
         })),
         requireProof: state.family.requireProof !== false,
       };

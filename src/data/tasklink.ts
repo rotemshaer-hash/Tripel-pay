@@ -18,6 +18,10 @@ export interface TaskLinkSnapshot {
   site?: string;
   steps?: { id: string; text: string; done: boolean }[];
   status: string;
+  /** What the manager has written on this task since. Without it the link is a
+   * one-way form: the worker can report, and anything said back to them dies in an
+   * app they do not have. */
+  messages?: { at: string; by: string; text: string }[];
 }
 
 export interface LinkUpdate {
@@ -48,6 +52,7 @@ export interface WorkerDaySnapshot {
     /** How much evidence is already on the task — so the page can insist on some
      * before it lets the job be closed. */
     proofCount?: number;
+    messages?: { at: string; by: string; text: string }[];
   }[];
   /** When true, "finished" is refused until at least one photo or note is attached.
    * Evidence is the only thing a business is paying for here; a job closed without it

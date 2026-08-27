@@ -27,6 +27,21 @@ export function WorkerLink() {
   const [note, setNote] = useState("");
   const [sent, setSent] = useState<string[]>([]);
 
+  // Re-read whenever the person comes back to the page: a manager can change the job
+  // after sending it, and this link is the only copy the worker has.
+  const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setRefreshKey((k) => k + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
+
   useEffect(() => {
     let alive = true;
     loadTaskLink(token)
@@ -45,7 +60,7 @@ export function WorkerLink() {
     return () => {
       alive = false;
     };
-  }, [token, loadTaskLink]);
+  }, [token, loadTaskLink, refreshKey]);
 
   async function report(update: LinkUpdate, label: string) {
     if (!link) return;
@@ -90,6 +105,18 @@ export function WorkerLink() {
         {link.brief && (
           <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 14px", fontSize: 13.5, lineHeight: 1.6 }}>
             {link.brief}
+          </div>
+        )}
+
+        {(link.messages ?? []).length > 0 && (
+          <div style={{ background: "#eef2ff", border: "1px solid #d5dcfb", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: work.waiting, marginBottom: 6 }}>הודעות מהמנהל</div>
+            {(link.messages ?? []).map((message) => (
+              <div key={message.at} style={{ fontSize: 13.5, lineHeight: 1.55, marginBottom: 5 }}>
+                <span style={{ fontWeight: 700 }}>{message.by}: </span>
+                {message.text}
+              </div>
+            ))}
           </div>
         )}
 
