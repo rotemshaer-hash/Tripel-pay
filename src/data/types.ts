@@ -267,6 +267,9 @@ export interface Family {
   taskBank: TaskTemplate[];
   giftBank: GiftBankItem[];
   houseRules: HouseRule[];
+  /** Refuse to let a worker close a job with no evidence on it. Default on; a business
+   * that does not need photos can turn it off in settings. */
+  requireProof?: boolean;
   /** Optional so records written before these existed stay valid. */
   suppliers?: Supplier[];
   documents?: CompanyDoc[];

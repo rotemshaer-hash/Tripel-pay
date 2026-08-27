@@ -7,6 +7,13 @@
     <link rel="apple-touch-icon" href="/icon-512.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#232a3b" />
+    <!-- Rubik carries Hebrew properly at every weight, which the system stacks do not:
+         800 in Arial Hebrew falls back to a synthesised bold that smears at small
+         sizes, and this app leans on weight for hierarchy everywhere. Preconnected so
+         the first paint is not held up, and the system stack stays as the fallback. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
     <meta name="description" content="יומן עבודה לצוותים קטנים: הקצאת משימות עם תאריך יעד, אסמכתאות ביצוע ותיעוד מלא של מי עשה מה ומתי." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Work It — יומן עבודה</title>

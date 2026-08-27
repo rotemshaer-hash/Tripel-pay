@@ -9,6 +9,7 @@ import { V, work } from "../../data/vocabulary";
 import { formatDateTime } from "../../utils/datetime";
 import { adminInviteLink, entryPath } from "../../data/routes";
 import { ProfessionPicker } from "../../components/ProfessionPicker";
+import { InstallButton } from "../../components/InstallButton";
 import { professionById } from "../../data/professions";
 
 /**
@@ -119,6 +120,42 @@ export function WorkSettings() {
               style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800, opacity: retrying ? 0.5 : 1 }}
             >
               {retrying ? "מסנכרן…" : "ניסיון סנכרון עכשיו"}
+            </button>
+          </section>
+        )}
+
+        <section style={card}>
+          <div style={cardTitle}>האפליקציה על המסך</div>
+          <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
+            {`ה${V.workerPlural} לא מתקינים כלום — הם עובדים מהקישור. למנהל דווקא כדאי אייקון במסך הבית.`}
+          </div>
+          <InstallButton />
+        </section>
+
+        {isManager && (
+          <section style={card}>
+            <div style={cardTitle}>אסמכתאות</div>
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
+              {`כשזה דלוק, ${V.worker} לא יכול לסמן "סיימתי" בלי לצרף תמונה או הערה. זה מה ששומר על התיעוד שווה משהו.`}
+            </div>
+            <button
+              onClick={() => {
+                const value = state.family.requireProof === false;
+                dispatch({ type: "SET_REQUIRE_PROOF", value });
+                showToast(value ? "נדרשת אסמכתא לסגירת משימה" : "אפשר לסגור משימה בלי אסמכתא");
+              }}
+              style={{
+                width: "100%",
+                background: state.family.requireProof === false ? "#ffffff" : work.ink,
+                color: state.family.requireProof === false ? "var(--ink)" : "#ffffff",
+                border: "1px solid var(--line)",
+                borderRadius: 10,
+                padding: "12px",
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              {state.family.requireProof === false ? "כבוי — אפשר לסגור בלי אסמכתא" : "דלוק — חובה אסמכתא לפני סגירה"}
             </button>
           </section>
         )}

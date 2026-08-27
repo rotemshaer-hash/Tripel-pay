@@ -1,4 +1,4 @@
-import type { Child } from "./types";
+import type { Child, TaskItem } from "./types";
 import { workerDayLink } from "./routes";
 import { formatDate } from "../utils/datetime";
 
@@ -18,6 +18,21 @@ export function dayMessage(company: string, worker: Child): string {
     ...lines,
     "",
     "אישור קבלה, התחלה, סיום, תמונה או הערה — הכל בקישור הזה, בלי להתקין כלום:",
+    worker.dayToken ? workerDayLink(worker.dayToken) : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+
+/** A reminder about one job, when it has gone quiet. Deliberately short and specific:
+ * a nudge that repeats the whole day's list reads as nagging, and gets ignored. */
+export function nudgeMessage(company: string, worker: Child, task: TaskItem): string {
+  return [
+    `${worker.name}, תזכורת מ${company}:`,
+    `• ${task.title}${task.dueAt ? ` (יעד: ${formatDate(task.dueAt)})` : ""}${task.site ? ` — ${task.site}` : ""}`,
+    "",
+    "אפשר לאשר קבלה ולעדכן כאן:",
     worker.dayToken ? workerDayLink(worker.dayToken) : "",
   ]
     .filter(Boolean)

@@ -5,9 +5,9 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
-import { dayMessage } from "../../data/messages";
+import { dayMessage, nudgeMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
-import { formatDate, isOverdue } from "../../utils/datetime";
+import { formatDate, formatTime, isOverdue } from "../../utils/datetime";
 import { useNavigate } from "react-router-dom";
 import type { Child, TaskItem } from "../../data/types";
 
@@ -53,7 +53,7 @@ function writeSent(ids: string[]) {
 }
 
 export function WorkToday() {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const workers = childrenList(state.family);
@@ -69,6 +69,27 @@ export function WorkToday() {
   const open = (w: Child) => w.tasks.filter((t) => t.status !== "completed");
   const unacknowledged = (w: Child) => open(w).filter((t) => !t.acknowledgedAt).length;
   const late = (w: Child) => open(w).filter((t) => isOverdue(t.dueAt, t.status)).length;
+
+  // Two hours is the line between "he hasn't looked at his phone yet" and "he never
+  // got it" — before that a nudge is nagging, after it it is the job.
+  const SILENT_AFTER_MS = 2 * 60 * 60 * 1000;
+  const stuck: { worker: Child; task: TaskItem; reason: "overdue" | "unanswered" | "awaiting_approval" }[] = [];
+  for (const worker of workers) {
+    for (const task of worker.tasks) {
+      if (task.status === "completed") continue;
+      if (task.status === "pending_approval") {
+        stuck.push({ worker, task, reason: "awaiting_approval" });
+        continue;
+      }
+      if (isOverdue(task.dueAt, task.status)) {
+        stuck.push({ worker, task, reason: "overdue" });
+        continue;
+      }
+      const age = Date.now() - Date.parse(task.createdAt ?? "");
+      if (!task.acknowledgedAt && age > SILENT_AFTER_MS) stuck.push({ worker, task, reason: "unanswered" });
+    }
+  }
+  stuck.sort((a, b) => order(a.reason) - order(b.reason));
 
   // Nobody needs a message about an empty plate, and nobody needs the same message twice.
   const toSend = workers.filter((w) => open(w).length > 0 && !sentToday.includes(w.id));
@@ -112,6 +133,51 @@ export function WorkToday() {
           <div style={{ background: "#eaf7f2", border: "1px solid #bfe4d8", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "#2b6d5e", lineHeight: 1.6 }}>
             {`נשלח היום לכל ה${V.workerPlural} ✓ מכאן זה עניין של מי מאשר ומי מדווח — התגיות ליד כל משימה מתעדכנות לבד.`}
           </div>
+        )}
+
+        {/* A manager scans for exceptions, not for lists. This is everything that needs
+            them right now, and nothing that does not. */}
+        {stuck.length > 0 && (
+          <section style={{ background: "#ffffff", border: "1px solid #f3c0c9", borderRadius: 13, overflow: "hidden" }}>
+            <div style={{ background: "#fdf0f3", padding: "11px 15px", fontSize: 13, fontWeight: 900, color: work.alert }}>
+              {`מה תקוע · ${stuck.length}`}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {stuck.map(({ worker, task, reason }) => (
+                <div key={`${worker.id}-${task.id}-${reason}`} style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 15px", borderTop: "1px solid var(--line-soft)" }}>
+                  <button
+                    onClick={() => navigate(`/work/task/${worker.id}/${task.id}`)}
+                    style={{ flex: 1, minWidth: 0, background: "none", border: "none", textAlign: "start", padding: 0 }}
+                  >
+                    <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
+                    <span style={{ display: "block", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
+                      {`${worker.name} · ${reasonLabel(reason, task)}`}
+                    </span>
+                  </button>
+                  {reason === "awaiting_approval" ? (
+                    <button
+                      onClick={() => {
+                        dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: state.family.parentName || V.admin });
+                        showToast("אושר ונסגר");
+                      }}
+                      style={{ background: work.done, color: "#ffffff", border: "none", borderRadius: 8, padding: "9px 13px", fontSize: 12, fontWeight: 800, flexShrink: 0 }}
+                    >
+                      אישור
+                    </button>
+                  ) : (
+                    <a
+                      href={whatsAppLink(worker.phone, nudgeMessage(company, worker, task))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ background: "#25D366", color: "#ffffff", borderRadius: 8, padding: "9px 13px", fontSize: 12, fontWeight: 800, textDecoration: "none", flexShrink: 0 }}
+                    >
+                      תזכורת
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {workers.length === 0 && (
@@ -193,6 +259,17 @@ export function WorkToday() {
       <WorkBottomNav />
     </div>
   );
+}
+
+/** Work waiting on the manager comes first: it is the only kind they can clear alone. */
+function order(reason: "overdue" | "unanswered" | "awaiting_approval"): number {
+  return reason === "awaiting_approval" ? 0 : reason === "overdue" ? 1 : 2;
+}
+
+function reasonLabel(reason: "overdue" | "unanswered" | "awaiting_approval", task: TaskItem): string {
+  if (reason === "awaiting_approval") return `ממתין לאישור שלך${task.submittedAt ? ` · ${formatTime(task.submittedAt)}` : ""}`;
+  if (reason === "overdue") return `באיחור${task.dueAt ? ` · יעד ${formatDate(task.dueAt)}` : ""}`;
+  return "טרם אישר קבלה";
 }
 
 /** Did it reach them — the one question a chat cannot answer. */

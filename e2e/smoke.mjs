@@ -157,6 +157,13 @@ check("the journal records it as normal activity", (await m.locator("body").inne
 await linkCtx.close();
 
 console.log("7. the whole day on one link, for a worker with no account");
+// A job already submitted has nothing left to report, and the page says so by hiding
+// the buttons — so this step needs work that is actually still open.
+await m.goto(`${BASE}/work/new`);
+await m.waitForTimeout(1200);
+await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill("ניקיון מחסן");
+await m.getByRole("button", { name: "הקצאה", exact: true }).click();
+await m.waitForTimeout(1800);
 await m.goto(`${BASE}/work/today`);
 await m.waitForTimeout(2500);
 check("the manager's day screen lists the crew", (await m.getByText(worker.name).count()) > 0);
@@ -167,21 +174,34 @@ check("the day message carries the worker's personal link", dayLink.length > 0);
 const { ctx: dayCtx, page: d } = await openPage();
 await d.goto(dayLink.replace(/^https?:\/\/[^/]+/, BASE));
 await d.waitForTimeout(2500);
-check("the daily link opens without signing in", (await d.getByText("בדיקת מזגנים").count()) > 0);
-// A single open task is expanded already — clicking the title would close it.
+check("the daily link opens without signing in", (await d.getByText("ניקיון מחסן").count()) > 0);
 if ((await d.getByPlaceholder("הערה למנהל…").count()) === 0) {
-  await d.getByText("בדיקת מזגנים").first().click();
+  await d.getByText("ניקיון מחסן").first().click();
   await d.waitForTimeout(600);
 }
-await d.getByPlaceholder("הערה למנהל…").fill("הגעתי לאתר");
+
+// One job, one obvious next move: got it, then started, then finished.
+await d.getByText("✅ קיבלתי").click();
+await d.waitForTimeout(1500);
+await d.getByText("▶️ התחלתי לעבוד").click();
+await d.waitForTimeout(1500);
+
+// The evidence gate: a job with nothing attached cannot be closed.
+check("finishing is refused while there is no evidence", (await d.getByText("לפני סגירה צריך לצרף").count()) > 0);
+await d.getByPlaceholder("הערה למנהל…").fill("הגעתי לאתר, הכל תקין");
 await d.getByRole("button", { name: "שליחה" }).click();
 await d.waitForTimeout(2000);
-check("a report from the daily link is accepted", (await d.getByText("נשלח למנהל").count()) > 0);
+check("a report from the daily link is accepted", (await d.getByText("צורפו").count()) > 0);
+check("and then finishing is allowed", (await d.getByText("לפני סגירה צריך לצרף").count()) === 0);
+await d.getByText("🏁 סיימתי").click();
+await d.waitForTimeout(2000);
+check("the day shows its own progress", (await d.getByText("מתוך").count()) > 0);
+
 await dayCtx.close();
 
 await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(4000);
-check("it reaches the manager's journal", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
+check("it reaches the manager's journal", (await m.locator("body").innerText()).includes("ניקיון מחסן"));
 
 console.log("8. the manager signs out and back in");
 await m.goto(`${BASE}/work/settings`);

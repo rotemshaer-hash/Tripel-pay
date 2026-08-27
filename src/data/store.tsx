@@ -120,6 +120,7 @@ type Action =
   | { type: "RESET_WORKER_ACCESS"; childId: string }
   | { type: "SET_WORKER_PHONE"; childId: string; phone: string }
   | { type: "SET_PROFESSION"; professionId: string }
+  | { type: "SET_REQUIRE_PROOF"; value: boolean }
   | { type: "ENSURE_DAY_TOKENS" }
   | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string }
   | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
@@ -891,6 +892,8 @@ function reducer(state: AppState, action: Action): AppState {
       }
       return { ...state, family };
     }
+    case "SET_REQUIRE_PROOF":
+      return { ...state, family: { ...state.family, requireProof: action.value } };
     case "SET_PROFESSION": {
       const next = { ...state.family };
       if (action.professionId) next.professionId = action.professionId;
@@ -1317,7 +1320,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const company = state.family.companyName || state.family.parentName;
     for (const worker of childrenList(state.family)) {
       const open = worker.tasks.filter((t) => t.status !== "completed");
-      const signature = open.map((t) => `${t.id}:${t.title}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}`).join("|");
+      const signature =
+        open.map((t) => `${t.id}:${t.title}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}:${(t.proofs ?? []).length}`).join("|") +
+        `~${state.family.requireProof !== false}`;
       if (!worker.dayToken || publishedDays.current.get(worker.dayToken) === signature) continue;
       publishedDays.current.set(worker.dayToken, signature);
       const snapshot: WorkerDaySnapshot = {
@@ -1334,7 +1339,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...(t.site ? { site: t.site } : {}),
           ...((t.checklist ?? []).length > 0 ? { steps: (t.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),
           ...(t.acknowledgedAt ? { acknowledged: true } : {}),
+          proofCount: (t.proofs ?? []).length,
         })),
+        requireProof: state.family.requireProof !== false,
       };
       publishWorkerDay(worker.dayToken, snapshot).catch((err) => {
         publishedDays.current.delete(worker.dayToken!);

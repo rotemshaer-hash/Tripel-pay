@@ -45,5 +45,12 @@ export interface WorkerDaySnapshot {
     status: string;
     steps?: { id: string; text: string; done: boolean }[];
     acknowledged?: boolean;
+    /** How much evidence is already on the task — so the page can insist on some
+     * before it lets the job be closed. */
+    proofCount?: number;
   }[];
+  /** When true, "finished" is refused until at least one photo or note is attached.
+   * Evidence is the only thing a business is paying for here; a job closed without it
+   * leaves the record exactly as thin as the WhatsApp chat it replaced. */
+  requireProof?: boolean;
 }
