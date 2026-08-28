@@ -69,8 +69,8 @@ await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill(
 // Deliberately leaving the brief empty: an optional field left blank is what used to
 // make Firebase reject the whole record.
 await m.getByRole("button", { name: "הקצאה", exact: true }).click();
-await m.waitForURL("**/work/**", { timeout: 15000 });
 await m.waitForTimeout(1500);
+check("assigning offers the send on the same screen", (await m.getByText("בוואטסאפ", { exact: false }).count()) > 0);
 await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(1500);
 check("the task shows up in the journal", (await m.getByText("בדיקת מזגנים").count()) > 0);

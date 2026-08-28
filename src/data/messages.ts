@@ -55,3 +55,21 @@ export function updateMessage(company: string, worker: Child, task: TaskItem, ch
     .filter(Boolean)
     .join("\n");
 }
+
+
+/** A job just written, sent the moment it exists. Leads with the new task, and carries
+ * the person's one link — the same link they already know, not a second one. */
+export function newTaskMessage(company: string, worker: Child, task: TaskItem): string {
+  const others = worker.tasks.filter((t) => t.id !== task.id && t.status !== "completed");
+  return [
+    `${worker.name}, משימה חדשה מ${company}:`,
+    `• ${task.title}${task.dueAt ? ` (יעד: ${formatDate(task.dueAt)})` : ""}${task.site ? ` — ${task.site}` : ""}`,
+    task.brief ? task.brief : "",
+    others.length > 0 ? `\nיש לך עוד ${others.length} משימות פתוחות ברשימה.` : "",
+    "",
+    "אישור קבלה, התחלה, סיום, תמונה או הערה — הכל בקישור שלך, בלי להתקין כלום:",
+    worker.dayToken ? workerDayLink(worker.dayToken) : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

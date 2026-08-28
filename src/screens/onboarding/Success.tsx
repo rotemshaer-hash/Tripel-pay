@@ -18,7 +18,7 @@ import { MODE, V, work } from "../../data/vocabulary";
  */
 export function Success() {
   const navigate = useNavigate();
-  const { state, dispatch, completeOnboarding } = useStore();
+  const { state, completeOnboarding } = useStore();
   const { toastMessage, showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState(false);
@@ -48,8 +48,6 @@ export function Success() {
     setError("");
     try {
       await completeOnboarding(parentEmail, password, parentName, childNames, companyName);
-      const profession = sessionStorage.getItem("tp-onboarding-profession") || "";
-      if (profession) dispatch({ type: "SET_PROFESSION", professionId: profession });
       // The password is the one thing here that must not outlive the flow.
       for (const key of ["tp-onboarding-name", "tp-onboarding-email", "tp-onboarding-password", "tp-onboarding-company", "tp-onboarding-profession", "tp-onboarding-kids", "tp-onboarding-child-names"]) {
         sessionStorage.removeItem(key);

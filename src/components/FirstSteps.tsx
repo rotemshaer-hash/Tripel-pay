@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useStore } from "../data/store";
 import { childrenList } from "../data/family";
 import { V, work } from "../data/vocabulary";
-import { professionById, professions } from "../data/professions";
 import { dayMessage } from "../data/messages";
 import { whatsAppLink } from "../utils/share";
 
@@ -28,7 +27,6 @@ export function FirstSteps({ sentToday }: { sentToday: boolean }) {
   const workers = childrenList(state.family);
   const anyTask = workers.some((w) => w.tasks.length > 0);
   const anyPhone = workers.some((w) => !!w.phone);
-  const profession = professionById(state.family.professionId) ?? professions[professions.length - 1];
 
   // Nothing left to teach once there is a crew, work on it, and it has gone out — a
   // card that promises three steps and disappears at the second one taught two.
@@ -91,36 +89,15 @@ export function FirstSteps({ sentToday }: { sentToday: boolean }) {
           <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>קודם מוסיפים מישהו לצוות.</div>
         ) : (
           <>
-            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.5, marginBottom: 8 }}>
-              {`מוכן מראש ל${profession.name} ${profession.emoji} — לחיצה יוצרת את המשימה ל${first.name}.`}
+            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 8 }}>
+              {`חמישה שדות: מה צריך לעשות, פירוט, ${V.worker}, תאריך יעד ולקוח. זהו.`}
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {profession.tasks.slice(0, 4).map((template) => (
-                <button
-                  key={template.title}
-                  onClick={() =>
-                    dispatch({
-                      type: "CREATE_TASK",
-                      childId: first.id,
-                      title: template.title,
-                      brief: template.brief,
-                      checklist: (template.steps ?? []).map((text) => ({ id: `ck-${crypto.randomUUID()}`, text, done: false })),
-                      recurrence: template.recurrence,
-                      by: state.family.parentName || V.admin,
-                    })
-                  }
-                  style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 999, padding: "8px 12px", fontSize: 12.5, fontWeight: 700 }}
-                >
-                  {template.title}
-                </button>
-              ))}
-              <button
-                onClick={() => navigate("/work/new")}
-                style={{ background: "var(--paper)", border: "1px dashed var(--line)", borderRadius: 999, padding: "8px 12px", fontSize: 12.5, fontWeight: 700, color: "var(--ink-soft)" }}
-              >
-                משהו אחר…
-              </button>
-            </div>
+            <button
+              onClick={() => navigate("/work/new")}
+              style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13.5, fontWeight: 800 }}
+            >
+              {`כתיבת משימה ל${first.name}`}
+            </button>
           </>
         )}
       </Step>
