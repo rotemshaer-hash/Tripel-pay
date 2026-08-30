@@ -170,10 +170,10 @@ export function WorkJournal() {
               ואי אפשר לשנות אותם אחר כך. זה מה שמחליף את "אמרתי לך בוואטסאפ", וזה מה שהופך לתיק שאפשר לשלוח ללקוח.
             </div>
             <button
-              onClick={() => navigate("/work/today")}
+              onClick={() => navigate("/work/board")}
               style={{ width: "100%", marginTop: 12, background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13.5, fontWeight: 800 }}
             >
-              למסך היום — לחלק עבודה
+              למסך המשימות
             </button>
           </div>
         )}

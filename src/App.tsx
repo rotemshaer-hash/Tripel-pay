@@ -36,7 +36,7 @@ import { ChildMyCards } from "./screens/child/MyCards";
 import { ChildAllTasks } from "./screens/child/AllTasks";
 
 import { WorkJournal } from "./screens/work/WorkJournal";
-import { WorkToday } from "./screens/work/WorkToday";
+import { WorkBoard } from "./screens/work/WorkBoard";
 import { TaskDetail } from "./screens/work/TaskDetail";
 import { NewTask } from "./screens/work/NewTask";
 import { WorkTasks } from "./screens/work/WorkTasks";
@@ -128,7 +128,7 @@ export default function App() {
           )}
 
           {/* work-journal (business mode) */}
-          <Route path="/work/today" element={<RequireParent><WorkToday /></RequireParent>} />
+          <Route path="/work/board" element={<RequireParent><WorkBoard /></RequireParent>} />
           <Route path="/work/journal" element={<RequireParent><WorkJournal /></RequireParent>} />
           <Route path="/work/tasks" element={<RequireOnboarded><WorkTasks /></RequireOnboarded>} />
           <Route path="/work/new" element={<RequireParent><NewTask /></RequireParent>} />

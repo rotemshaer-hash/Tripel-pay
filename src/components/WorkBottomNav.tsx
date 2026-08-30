@@ -38,7 +38,7 @@ export function WorkBottomNav() {
 
   const items: NavItem[] = isManager
     ? [
-        { to: "/work/today", label: "היום", icon: <IconMountain size={21} />, match: (p) => p === "/work/today", badge: awaiting },
+        { to: "/work/board", label: "משימות", icon: <IconMountain size={21} />, match: (p) => p === "/work/board", badge: awaiting },
         { to: "/work/journal", label: "יומן", icon: <IconReceipt size={21} />, match: (p) => p === "/work/journal" },
         { to: "/work/directory", label: "ספקים", icon: <IconCardCheck size={21} />, match: (p) => p === "/work/directory" },
         { to: "/work/team", label: "צוות", icon: <IconPeopleCoin size={21} />, match: (p) => p === "/work/team" },

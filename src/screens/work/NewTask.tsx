@@ -120,7 +120,7 @@ export function NewTask() {
 
         <Field label={`${V.worker} אחראי`} required>
           {workers.length === 0 ? (
-            <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>{`עוד אין ${V.workerPlural} — אפשר להוסיף במסך היום.`}</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>{`עוד אין ${V.workerPlural} — אפשר להוסיף במסך הצוות.`}</div>
           ) : (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {workers.map((w) => (
@@ -159,8 +159,8 @@ export function NewTask() {
               <button onClick={resetForm} style={{ ...secondaryBtn, flex: 1 }}>
                 משימה נוספת
               </button>
-              <button onClick={() => navigate("/work/today")} style={{ ...secondaryBtn, flex: 1 }}>
-                למסך היום
+              <button onClick={() => navigate("/work/board")} style={{ ...secondaryBtn, flex: 1 }}>
+                למסך המשימות
               </button>
             </div>
           </section>
