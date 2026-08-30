@@ -73,3 +73,20 @@ export function newTaskMessage(company: string, worker: Child, task: TaskItem): 
     .filter(Boolean)
     .join("\n");
 }
+
+
+/** The message that goes to a work group. No personal link in it: a group message is
+ * read by everybody, and the reporting link is one person's identity. */
+export function crewMessage(company: string, workers: Child[], task: TaskItem | undefined): string {
+  if (!task) return "";
+  return [
+    `${company} — משימה חדשה:`,
+    `• ${task.title}${task.dueAt ? ` (יעד: ${formatDate(task.dueAt)})` : ""}${task.site ? ` — ${task.site}` : ""}`,
+    task.brief ? task.brief : "",
+    "",
+    `אחראים: ${workers.map((w) => w.name).join(", ")}`,
+    "כל אחד קיבל בפרטי קישור אישי לדיווח — קבלה, התחלה, סיום, תמונה או הערה.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

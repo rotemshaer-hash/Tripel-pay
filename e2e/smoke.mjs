@@ -70,7 +70,8 @@ await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill(
 // make Firebase reject the whole record.
 await m.getByRole("button", { name: "הקצאה", exact: true }).click();
 await m.waitForTimeout(1500);
-check("assigning offers the send on the same screen", (await m.getByText("בוואטסאפ", { exact: false }).count()) > 0);
+check("assigning offers the send on the same screen", (await m.getByText(`שליחה ל${worker.name}`, { exact: false }).count()) > 0);
+check("and a way to reach a work group, which wa.me cannot address", (await m.getByText("לקבוצת עבודה", { exact: false }).count() + await m.getByText("להעתקת ההודעה לקבוצה", { exact: false }).count() + await m.getByText("העתקת ההודעה לקבוצה", { exact: false }).count()) > 0);
 await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(1500);
 check("the task shows up in the journal", (await m.getByText("בדיקת מזגנים").count()) > 0);

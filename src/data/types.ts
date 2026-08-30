@@ -89,6 +89,10 @@ export interface TaskItem {
   /** Unguessable id that lets the assigned worker open and report on this one task from
    * a WhatsApp message, with no account. Absent on tasks written before it existed. */
   linkToken?: string;
+  /** Shared by the copies of one job handed to several people at once. Each person
+   * keeps their own record — who saw it, who did what — because "who did what" is the
+   * entire product; the id is what ties the copies back together. */
+  crewId?: string;
   /** Instructions and reference files attached by the manager. */
   briefAttachments?: Attachment[];
   /** Evidence attached by the worker after doing the job. */

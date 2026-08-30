@@ -76,6 +76,7 @@ type Action =
        * own folder before the task itself exists. */
       id?: string;
       linkToken?: string;
+      crewId?: string;
       title: string;
       brief?: string;
       briefAttachments?: Attachment[];
@@ -327,6 +328,7 @@ function reducer(state: AppState, action: Action): AppState {
           ...(repeats ? { seriesId: id } : {}),
           checklist: action.checklist ?? [],
           linkToken,
+          ...(action.crewId ? { crewId: action.crewId } : {}),
           briefAttachments: action.briefAttachments ?? [],
           activity: [],
         },
