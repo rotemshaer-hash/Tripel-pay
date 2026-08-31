@@ -4,7 +4,7 @@ import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, activityLabels, work } from "../../data/vocabulary";
+import { V, activityLabels, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
@@ -24,6 +24,14 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   acknowledged: work.done,
 };
 
+function statusTone(status: TaskItem["status"], late: boolean): string {
+  if (status === "completed") return work.done;
+  if (late) return work.alert;
+  if (status === "pending_approval") return work.waiting;
+  if (status === "in_progress") return work.active;
+  return work.idle;
+}
+
 interface FeedRow {
   entry: ActivityEntry;
   task: TaskItem;
@@ -36,44 +44,53 @@ interface GroupedRow extends FeedRow {
   count: number;
 }
 
-interface DayGroup {
-  label: string;
+interface JobGroup {
+  key: string;
+  task: TaskItem;
+  worker: Child;
   rows: GroupedRow[];
+  /** Every event in the group, before collapsing — what the header counts. */
+  total: number;
+  lastAt: string;
 }
 
 /**
- * The feed, as something a person can actually read.
+ * The feed, arranged the way the work is.
  *
- * A journal is scanned for what happened, so the event is the headline and the job is
- * the context under it — the other way round gave a column of cards all shouting the
- * same task name, with the one word that differed set in the small grey type. Runs of
- * the same action on the same job by the same person collapse into one row, and the
- * whole thing is grouped under the day it belongs to, so a day reads as a day instead
- * of as fourteen floating cards.
+ * A manager thinks in jobs, not in events. A flat stream ordered by clock forced them
+ * to follow one job by eye through everybody else's — two jobs interleaved is already
+ * hard, and a real week is unreadable. So each job is one closed row carrying its
+ * name, its state and when it last moved, and its own history opens underneath only
+ * when asked for. The screen answers "what is going on" before it offers to answer
+ * "what happened at 22:45", which is the rarer question.
+ *
+ * Inside a job, runs of the same action by the same person still collapse to a count:
+ * four "attached a file" rows say nothing four times.
  */
-function groupFeed(rows: FeedRow[]): DayGroup[] {
-  const days: DayGroup[] = [];
+function groupByJob(rows: FeedRow[]): JobGroup[] {
+  const byJob = new Map<string, JobGroup>();
   for (const row of rows) {
-    const label = formatDate(row.entry.at);
-    let day = days[days.length - 1];
-    if (!day || day.label !== label) {
-      day = { label, rows: [] };
-      days.push(day);
+    const key = `${row.worker.id}/${row.task.id}`;
+    let job = byJob.get(key);
+    if (!job) {
+      job = { key, task: row.task, worker: row.worker, rows: [], total: 0, lastAt: row.entry.at };
+      byJob.set(key, job);
     }
-    const previous = day.rows[day.rows.length - 1];
+    job.total++;
+    if (Date.parse(row.entry.at) > Date.parse(job.lastAt)) job.lastAt = row.entry.at;
+    const previous = job.rows[job.rows.length - 1];
     const sameThing =
       previous &&
-      previous.task.id === row.task.id &&
-      previous.worker.id === row.worker.id &&
       previous.entry.action === row.entry.action &&
-      (previous.entry.detail ?? "") === (row.entry.detail ?? "");
+      (previous.entry.detail ?? "") === (row.entry.detail ?? "") &&
+      previous.entry.by === row.entry.by;
     if (sameThing) {
       previous.count++;
       continue;
     }
-    day.rows.push({ ...row, count: 1 });
+    job.rows.push({ ...row, count: 1 });
   }
-  return days;
+  return [...byJob.values()].sort((a, b) => Date.parse(b.lastAt) - Date.parse(a.lastAt));
 }
 
 /**
@@ -86,10 +103,13 @@ export function WorkJournal() {
   const navigate = useNavigate();
   const [range, setRange] = useState<JournalRange>("day");
   const [workerId, setWorkerId] = useState<string | "all">("all");
+  /** One job open at a time. Letting several stand open rebuilds the wall of detail
+   * this screen exists to put away. */
+  const [openJob, setOpenJob] = useState<string | null>(null);
 
   const workers = childrenList(state.family);
 
-  const { feed, days, done, awaiting, overdue } = useMemo(() => {
+  const { feed, jobs, done, awaiting, overdue } = useMemo(() => {
     const scoped = workerId === "all" ? workers : workers.filter((w) => w.id === workerId);
     const rows: FeedRow[] = [];
     let done = 0;
@@ -106,7 +126,7 @@ export function WorkJournal() {
       }
     }
     rows.sort((a, b) => Date.parse(b.entry.at) - Date.parse(a.entry.at));
-    return { feed: rows, days: groupFeed(rows), done, awaiting, overdue };
+    return { feed: rows, jobs: groupByJob(rows), done, awaiting, overdue };
   }, [workers, workerId, range]);
 
   return (
@@ -194,24 +214,16 @@ export function WorkJournal() {
             </button>
           </div>
         )}
-        {days.map((day) => (
-          <section key={day.label} className="pane" style={{ padding: 0, overflow: "hidden" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                padding: "11px 14px",
-                borderBottom: "1px solid var(--line)",
-              }}
-            >
-              <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink)" }}>{day.label}</span>
-              <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>{`${day.rows.length} רשומות`}</span>
-            </div>
-            {day.rows.map((row, i) => (
+        {jobs.map((job) => {
+          const isOpen = openJob === job.key;
+          const late = isOverdue(job.task.dueAt, job.task.status);
+          return (
+            <section key={job.key} className="pane" style={{ padding: 0, overflow: "hidden" }}>
+              {/* Closed, a job says the three things worth scanning: what it is, where
+                  it stands, and when it last moved. Its history is a tap away and
+                  costs nothing until it is asked for. */}
               <button
-                key={row.entry.id}
-                onClick={() => navigate(`/work/task/${row.worker.id}/${row.task.id}`)}
+                onClick={() => setOpenJob(isOpen ? null : job.key)}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
@@ -219,51 +231,116 @@ export function WorkJournal() {
                   width: "100%",
                   background: "none",
                   border: "none",
-                  borderTop: i === 0 ? "none" : "1px solid var(--line)",
-                  padding: "11px 14px",
+                  padding: "13px 14px",
                   textAlign: "start",
                 }}
               >
-                {/* A fixed time column is what turns a list into a timeline: the eye
-                    runs down one edge instead of hunting for the hour inside each row. */}
-                <span
-                  style={{
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    color: "var(--ink-faint)",
-                    fontVariantNumeric: "tabular-nums",
-                    width: 38,
-                    flexShrink: 0,
-                    paddingTop: 1,
-                  }}
-                >
-                  {formatTime(row.entry.at)}
-                </span>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: actionColor[row.entry.action], marginTop: 5, flexShrink: 0 }} />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
-                    {activityLabels[row.entry.action] ?? row.entry.action}
-                    {row.count > 1 ? ` ×${row.count}` : ""}
+                  <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span
+                      style={{
+                        fontSize: 14.5,
+                        fontWeight: 800,
+                        color: "var(--ink)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {job.task.title}
+                    </span>
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        fontSize: 10.5,
+                        fontWeight: 800,
+                        borderRadius: 999,
+                        padding: "2px 8px",
+                        color: statusTone(job.task.status, late),
+                        background: `${statusTone(job.task.status, late)}1a`,
+                      }}
+                    >
+                      {late && job.task.status !== "completed" ? "באיחור" : taskStatusLabels[job.task.status]}
+                    </span>
                   </span>
-                  <span
+                  <span style={{ display: "block", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 3 }}>
+                    {`${job.worker.name} · ${job.total} פעולות · ${formatDate(job.lastAt)} ${formatTime(job.lastAt)}`}
+                  </span>
+                </span>
+                <span style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 3, flexShrink: 0 }}>{isOpen ? "▲" : "▼"}</span>
+              </button>
+
+              {isOpen && (
+                <div style={{ borderTop: "1px solid var(--line)" }}>
+                  {job.rows.map((row) => (
+                    <button
+                      key={row.entry.id}
+                      onClick={() => navigate(`/work/task/${row.worker.id}/${row.task.id}`)}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        width: "100%",
+                        background: "none",
+                        border: "none",
+                        padding: "9px 14px",
+                        textAlign: "start",
+                      }}
+                    >
+                      {/* A fixed time column is what turns a list into a timeline: the
+                          eye runs down one edge instead of hunting for the hour inside
+                          each row. */}
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "var(--ink-faint)",
+                          fontVariantNumeric: "tabular-nums",
+                          width: 34,
+                          flexShrink: 0,
+                          paddingTop: 1,
+                        }}
+                      >
+                        {formatTime(row.entry.at)}
+                      </span>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: actionColor[row.entry.action], marginTop: 5, flexShrink: 0 }} />
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--ink)" }}>
+                          {activityLabels[row.entry.action] ?? row.entry.action}
+                          {row.count > 1 ? ` ×${row.count}` : ""}
+                        </span>
+                        <span style={{ display: "block", fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>
+                          {`${formatDate(row.entry.at)} · ${row.entry.by || row.worker.name}`}
+                          {row.entry.detail ? ` · ${row.entry.detail}` : ""}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                  {/* The header now belongs to the fold, so the way into the job has
+                      to be stated rather than left as a guess about which part of the
+                      row is a link. */}
+                  <button
+                    onClick={() => navigate(`/work/task/${job.worker.id}/${job.task.id}`)}
                     style={{
                       display: "block",
-                      fontSize: 11.5,
-                      color: "var(--ink-soft)",
-                      marginTop: 2,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      width: "100%",
+                      background: "none",
+                      border: "none",
+                      borderTop: "1px solid var(--line)",
+                      padding: "11px 14px",
+                      textAlign: "start",
+                      fontSize: 12.5,
+                      fontWeight: 800,
+                      color: work.waiting,
                     }}
                   >
-                    {row.task.title} · {row.entry.by || row.worker.name}
-                    {row.entry.detail ? ` · ${row.entry.detail}` : ""}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </section>
-        ))}
+                    פתיחת המשימה ›
+                  </button>
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
       <WorkBottomNav />
     </div>

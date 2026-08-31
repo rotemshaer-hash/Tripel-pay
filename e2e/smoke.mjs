@@ -120,14 +120,20 @@ if ((await submit.count()) > 0) {
 }
 await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(2500);
+check("the manager's journal shows the worker's activity", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
+// The trail lives inside the job now rather than loose in a stream, so reading it
+// means opening the job — which is the arrangement, not an obstacle to it.
+await m.getByText("בדיקת מזגנים").first().click();
+await m.waitForTimeout(800);
 const journal = await m.locator("body").innerText();
-check("the manager's journal shows the worker's activity", journal.includes("בדיקת מזגנים"));
 check("the trail records that the worker saw it", journal.includes("נצפתה") || journal.includes("אישרה קבלה") || journal.includes("אישר קבלה"));
 
 console.log("6. a worker with no account reports from the WhatsApp link");
 await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(1200);
 await m.getByText("בדיקת מזגנים").first().click();
+await m.waitForTimeout(600);
+await m.getByText("פתיחת המשימה ›").first().click();
 await m.waitForURL("**/work/task/**", { timeout: 15000 });
 await m.waitForTimeout(1200);
 const waHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
@@ -239,10 +245,20 @@ await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(4000);
 check("it reaches the manager's journal", (await m.locator("body").innerText()).includes("ניקיון מחסן"));
 
+// The journal lists jobs, not a stream of everybody's events interleaved by clock.
+// A job's own history stays folded away until it is asked for — that fold is the
+// whole point of the screen, so it is asserted in both positions.
+check("a job's history stays folded until asked for", !(await m.locator("body").innerText()).includes("אושרה קבלה"));
+await m.getByText("ניקיון מחסן").first().click();
+await m.waitForTimeout(800);
+check("opening the job shows its own history", (await m.locator("body").innerText()).includes("אושרה קבלה"));
+
 console.log("8. the manager changes the job after sending it");
 await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(1500);
 await m.getByText("ניקיון מחסן").first().click();
+await m.waitForTimeout(600);
+await m.getByText("פתיחת המשימה ›").first().click();
 await m.waitForURL("**/work/task/**", { timeout: 15000 });
 await m.waitForTimeout(1500);
 // The name the worker typed has to survive all the way to the manager's record, or it
