@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "../data/store";
 import { V, work } from "../data/vocabulary";
@@ -55,7 +55,7 @@ type LocalState = Record<string, { ack?: boolean; started?: boolean; done?: bool
 
 export function WorkerDay() {
   const { token = "" } = useParams();
-  const { loadWorkerDay, sendDayUpdate } = useStore();
+  const { loadWorkerDay, sendDayUpdate, uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
   const [day, setDay] = useState<WorkerDaySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -230,12 +230,13 @@ export function WorkerDay() {
           const isOpen = openTask === task.taskId;
           const needsProof = day.requireProof !== false && mine.proofs === 0;
 
-          // One job, one obvious next move. Everything else is available but quiet.
+          // One job, two moves: I have it, and I have finished it. A third button in
+          // between ("started") was a status the business never acted on and one more
+          // thing to remember while holding a ladder, so it is gone — jobs already
+          // marked started elsewhere still read as started.
           const primary = !acknowledged
             ? { label: "✅ קיבלתי", tone: "ink" as const, run: () => report(task.taskId, { kind: "ack", at: now() }, { ack: true }) }
-            : !started
-              ? { label: "▶️ התחלתי לעבוד", tone: "active" as const, run: () => report(task.taskId, { kind: "started", at: now() }, { started: true }) }
-              : { label: "🏁 סיימתי", tone: "done" as const, run: () => report(task.taskId, { kind: "done", at: now() }, { done: true }) };
+            : { label: "🏁 סיימתי", tone: "done" as const, run: () => report(task.taskId, { kind: "done", at: now() }, { done: true }) };
 
           return (
             <section
@@ -321,16 +322,39 @@ export function WorkerDay() {
                         <BigButton label={primary.label} tone={primary.tone} disabled={busy} onClick={primary.run} />
                       )}
 
-                      <PhotoButton
+                      <ProofButtons
                         busy={busy}
                         onPicked={async (file) => {
                           setBusy(true);
+                          setError("");
                           try {
-                            const photo = await resizeImageToDataUrl(file, 900, 0.7);
-                            await report(task.taskId, { kind: "photo", at: now(), photo }, { proofs: state(task.taskId).proofs + 1 });
+                            if (file.type.startsWith("image/")) {
+                              const photo = await resizeImageToDataUrl(file, 900, 0.7);
+                              await report(task.taskId, { kind: "photo", at: now(), photo }, { proofs: state(task.taskId).proofs + 1 });
+                              return;
+                            }
+                            // Drive hands over an empty shell for a Doc or a Sheet
+                            // rather than a file, and an upload of nothing fails with
+                            // nothing to show for it. Say which file and why.
+                            if (file.size === 0) {
+                              setError("קובץ Google (Docs/Sheets) לא נשלח ישירות מהטלפון. אפשר לייצא ל-PDF ולשלוח, או לצלם.");
+                              setBusy(false);
+                              return;
+                            }
+                            if (file.size > maxUploadBytes) {
+                              setError(`הקובץ גדול מדי (עד ${Math.round(maxUploadBytes / 1024 / 1024)}MB).`);
+                              setBusy(false);
+                              return;
+                            }
+                            const stored = await uploadAttachment(`day/${task.taskId}`, file);
+                            await report(
+                              task.taskId,
+                              { kind: "file", at: now(), file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size } },
+                              { proofs: state(task.taskId).proofs + 1 }
+                            );
                           } catch (err) {
-                            console.error("Preparing the photo failed:", err);
-                            setError("לא הצלחנו לצרף את התמונה. נסה/י שוב.");
+                            console.error("Sending the evidence failed:", err);
+                            setError(describeUploadFailure(err));
                             setBusy(false);
                           }
                         }}
@@ -352,15 +376,6 @@ export function WorkerDay() {
                         </button>
                       </div>
 
-                      {acknowledged && !started && (
-                        <button
-                          onClick={() => report(task.taskId, { kind: "done", at: now() }, { done: true })}
-                          disabled={busy || needsProof}
-                          style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 12.5, fontWeight: 700, textDecoration: "underline", opacity: needsProof ? 0.4 : 1 }}
-                        >
-                          סיימתי בלי לסמן התחלה
-                        </button>
-                      )}
                     </>
                   )}
 
@@ -478,36 +493,66 @@ function BigButton({ label, tone, onClick, disabled }: { label: string; tone: "i
   );
 }
 
-function PhotoButton({ busy, onPicked }: { busy: boolean; onPicked: (file: File) => void }) {
+/**
+ * The three ways evidence actually arrives from a site.
+ *
+ * This button used to be a camera and nothing else, which meant a delivery note
+ * already photographed that morning, or a PDF the supplier sent, had no way onto the
+ * job at all — the one screen the whole product rests on could accept a fresh photo
+ * or nothing. Naming each source separately also keeps Android from answering a tap
+ * with its "choose an action" sheet, where a person hunting for a document is offered
+ * a voice recorder.
+ *
+ * The file input carries no `accept` on purpose: filtering it narrows the picker to
+ * local files of those types, which is how somebody looking for a document in Drive
+ * ends up staring at their Downloads folder.
+ */
+function ProofButtons({ busy, onPicked }: { busy: boolean; onPicked: (file: File) => void }) {
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) onPicked(file);
+  }
+
+  const sources = [
+    { label: "📷 מצלמה", ref: cameraRef },
+    { label: "🖼️ גלריה", ref: galleryRef },
+    { label: "📄 קובץ", ref: fileRef },
+  ];
+
   return (
-    <label
-      style={{
-        display: "block",
-        width: "100%",
-        background: "rgba(255,255,255,0.82)",
-        border: "1px solid rgba(255,255,255,0.9)",
-        borderRadius: 14,
-        padding: "16px",
-        fontSize: 15.5,
-        fontWeight: 800,
-        textAlign: "center",
-        opacity: busy ? 0.5 : 1,
-        cursor: "pointer",
-        boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 20px -16px rgba(20,26,45,0.6)",
-      }}
-    >
-      📷 צילום ושליחה
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) onPicked(file);
-        }}
-      />
-    </label>
+    <div>
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={pick} style={{ display: "none" }} />
+      <input ref={galleryRef} type="file" accept="image/*" onChange={pick} style={{ display: "none" }} />
+      <input ref={fileRef} type="file" onChange={pick} style={{ display: "none" }} />
+      <div style={{ display: "flex", gap: 7 }}>
+        {sources.map((source) => (
+          <button
+            key={source.label}
+            type="button"
+            disabled={busy}
+            onClick={() => source.ref.current?.click()}
+            style={{
+              flex: 1,
+              background: "rgba(255,255,255,0.85)",
+              border: "1px solid rgba(255,255,255,0.9)",
+              borderRadius: 13,
+              padding: "15px 6px",
+              fontSize: 14,
+              fontWeight: 800,
+              color: "var(--ink)",
+              opacity: busy ? 0.5 : 1,
+              boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 20px -16px rgba(20,26,45,0.6)",
+            }}
+          >
+            {busy ? "שולח…" : source.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

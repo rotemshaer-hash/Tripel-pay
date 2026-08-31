@@ -184,11 +184,12 @@ if ((await d.getByPlaceholder("הערה למנהל…").count()) === 0) {
   await d.waitForTimeout(600);
 }
 
-// One job, one obvious next move: got it, then started, then finished.
+// One job, two moves: got it, then finished. There is deliberately nothing in
+// between — a "started" status the business never acted on was one more thing to
+// remember while holding a ladder.
 await d.getByText("✅ קיבלתי").click();
 await d.waitForTimeout(1500);
-await d.getByText("▶️ התחלתי לעבוד").click();
-await d.waitForTimeout(1500);
+check("there is no third status to remember", (await d.getByText("התחלתי לעבוד").count()) === 0);
 
 // The evidence gate: a job with nothing attached cannot be closed.
 check("finishing is refused while there is no evidence", (await d.getByText("לפני סגירה צריך לצרף").count()) > 0);
@@ -196,6 +197,18 @@ await d.getByPlaceholder("הערה למנהל…").fill("הגעתי לאתר, ה
 await d.getByRole("button", { name: "שליחה" }).click();
 await d.waitForTimeout(2000);
 check("a report from the daily link is accepted", (await d.getByText("צורפו").count()) > 0);
+
+// The link page could take a fresh camera photo and nothing else, so a delivery note
+// already sitting on the phone, or a PDF from the supplier, had no way onto the job.
+// The unfiltered input is the "file" source: it must reach Storage under the worker's
+// anonymous uid and come back as evidence.
+await d.setInputFiles('input[type="file"]:not([accept])', {
+  name: "teudat-mishloach.txt",
+  mimeType: "text/plain",
+  buffer: Buffer.from("delivery note"),
+});
+await d.waitForTimeout(4000);
+check("a worker with no account can send a real file, not only a photo", (await d.getByText("צורפו 2").count()) > 0);
 check("and then finishing is allowed", (await d.getByText("לפני סגירה צריך לצרף").count()) === 0);
 await d.getByText("🏁 סיימתי").click();
 await d.waitForTimeout(2000);

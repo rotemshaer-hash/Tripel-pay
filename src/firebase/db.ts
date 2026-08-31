@@ -78,7 +78,12 @@ export async function fetchTaskLink(token: string): Promise<TaskLinkSnapshot | n
 }
 
 export async function pushLinkUpdate(familyUid: string, entry: LinkUpdate & { token: string; childId: string; taskId: string; by: string }) {
-  await push(ref(db, `linkInbox/${familyUid}`), entry);
+  // The one write that used to skip this. It got away with it while every field was a
+  // string the caller had already checked, but an update now carries a nested file
+  // whose size and type are only sometimes known — and a single undefined anywhere in
+  // the payload makes Firebase reject the whole report, from a roof, with the evidence
+  // in it.
+  await push(ref(db, `linkInbox/${familyUid}`), forFirebase(entry));
 }
 
 export function subscribeLinkInbox(

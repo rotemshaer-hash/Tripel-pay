@@ -101,25 +101,42 @@ export function WorkSettings() {
             one who needs to know which. Silent failure is what cost this product days. */}
         {(connection.error || connection.unsaved) && (
           <section style={{ ...card, borderColor: "#f3c0c9" }}>
-            <div style={{ ...cardTitle, color: work.alert }}>יש שינויים שלא נשמרו לשרת</div>
+            <div style={{ ...cardTitle, color: work.alert }}>
+              {connection.sessionLost ? "החיבור לחשבון אבד" : "יש שינויים שלא נשמרו לשרת"}
+            </div>
             <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 10 }}>
               {connection.error ?? "השמירה האחרונה לא הושלמה."}
               {connection.failedAt ? ` (${formatDateTime(connection.failedAt)})` : ""}
               {" "}
-              הכל שמור במכשיר ולא הלך לאיבוד — כשהחיבור יחזור זה יישלח לבד, ואפשר גם לנסות עכשיו.
+              {connection.sessionLost
+                ? "הכל שמור במכשיר ולא הלך לאיבוד. אחרי התחברות מחדש זה יישלח לשרת."
+                : "הכל שמור במכשיר ולא הלך לאיבוד — כשהחיבור יחזור זה יישלח לבד, ואפשר גם לנסות עכשיו."}
             </div>
-            <button
-              onClick={async () => {
-                setRetrying(true);
-                await retrySync();
-                setRetrying(false);
-                showToast("ניסיון סנכרון בוצע");
-              }}
-              disabled={retrying}
-              style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800, opacity: retrying ? 0.5 : 1 }}
-            >
-              {retrying ? "מסנכרן…" : "ניסיון סנכרון עכשיו"}
-            </button>
+            {/* Retrying the save is the right offer for lost reception and the wrong one
+                for a lost identity: the server is not refusing the data, it is refusing
+                this person, and the same button pressed all evening would keep saying
+                so. Signing in again is the only thing that moves. */}
+            {connection.sessionLost ? (
+              <button
+                onClick={() => void logout()}
+                style={{ width: "100%", background: work.alert, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800 }}
+              >
+                התנתקות והתחברות מחדש
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  setRetrying(true);
+                  await retrySync();
+                  setRetrying(false);
+                  showToast("ניסיון סנכרון בוצע");
+                }}
+                disabled={retrying}
+                style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800, opacity: retrying ? 0.5 : 1 }}
+              >
+                {retrying ? "מסנכרן…" : "ניסיון סנכרון עכשיו"}
+              </button>
+            )}
           </section>
         )}
 

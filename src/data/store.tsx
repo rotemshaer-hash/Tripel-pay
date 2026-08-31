@@ -124,7 +124,7 @@ type Action =
   | { type: "SET_PROFESSION"; professionId: string }
   | { type: "SET_REQUIRE_PROOF"; value: boolean }
   | { type: "ENSURE_DAY_TOKENS" }
-  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string }
+  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string; file?: LinkUpdate["file"] }
   | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ACKNOWLEDGE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "MARK_TASK_SENT"; childId: string; taskId: string; by: string; at?: string }
@@ -870,14 +870,30 @@ function reducer(state: AppState, action: Action): AppState {
               if (t.status === "completed" || t.status === "pending_approval") return t;
               return logActivity({ ...t, status: "pending_approval", submittedAt: at, seenAt: t.seenAt ?? at }, { by: action.by, action: "submitted" }, at);
             }
-            const attachment: Attachment = {
-              id: `at-${crypto.randomUUID()}`,
-              kind: action.kind === "photo" ? "image" : "note",
-              name: action.kind === "photo" ? "צילום מהשטח" : "הערת ביצוע",
-              content: action.kind === "photo" ? (action.photo ?? "") : (action.note ?? ""),
-              addedAt: at,
-              addedBy: action.by,
-            };
+            // A photo brought its own bytes; a file left them in Storage and sent an
+            // address. Either way it lands as evidence on the task, indistinguishable
+            // from what the manager attaches inside the app.
+            const attachment: Attachment =
+              action.kind === "file"
+                ? {
+                    id: `at-${crypto.randomUUID()}`,
+                    kind: "file",
+                    name: action.file?.name || "קובץ מהשטח",
+                    content: action.file?.url ?? "",
+                    ...(action.file?.path ? { path: action.file.path } : {}),
+                    ...(action.file?.size ? { size: action.file.size } : {}),
+                    ...(action.file?.mime ? { mime: action.file.mime } : {}),
+                    addedAt: at,
+                    addedBy: action.by,
+                  }
+                : {
+                    id: `at-${crypto.randomUUID()}`,
+                    kind: action.kind === "photo" ? "image" : "note",
+                    name: action.kind === "photo" ? "צילום מהשטח" : "הערת ביצוע",
+                    content: action.kind === "photo" ? (action.photo ?? "") : (action.note ?? ""),
+                    addedAt: at,
+                    addedBy: action.by,
+                  };
             return logActivity({ ...t, proofs: [...(t.proofs ?? []), attachment] }, { by: action.by, action: "attached" }, at);
           })
         ),
@@ -1097,6 +1113,10 @@ export interface ConnectionInfo {
   unsaved: boolean;
   /** When the last save attempt failed. */
   failedAt: string | null;
+  /** The session belongs to somebody other than the record on this device — an
+   * anonymous worker session holding a manager's data. Retrying a save can never fix
+   * that, so the screen has to offer signing in again instead of a doomed button. */
+  sessionLost: boolean;
 }
 
 
@@ -1145,7 +1165,7 @@ const StoreCtx = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitial);
-  const [connection, setConnection] = useState<ConnectionInfo>({ signedInAs: null, live: false, error: null, unsaved: false, failedAt: null });
+  const [connection, setConnection] = useState<ConnectionInfo>({ signedInAs: null, live: false, error: null, unsaved: false, failedAt: null, sessionLost: false });
   const skipNextRemoteSave = useRef(false);
   const latestState = useRef(state);
   latestState.current = state;
@@ -1185,7 +1205,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         unsubFamily = null;
       }
       if (user) {
-        setConnection((c) => ({ ...c, signedInAs: identityLabel(user.email), live: false, error: null }));
+        // An anonymous session is what a worker's link runs on, and it has no business
+        // holding somebody's company record. When one turns up while the cached state
+        // still belongs to a real account, every write is refused and the app sits
+        // there reporting "not connected" over a session that is very much connected —
+        // just as the wrong person. Naming it is the difference between a sign-out and
+        // an evening.
+        if (user.isAnonymous && latestState.current.familyUid && latestState.current.familyUid !== user.uid) {
+          setConnection((c) => ({
+            ...c,
+            signedInAs: null,
+            live: false,
+            error: "החיבור לחשבון אבד — צריך להתנתק ולהתחבר מחדש כדי שהעבודה תישמר לשרת.",
+            sessionLost: true,
+          }));
+          return;
+        }
+        setConnection((c) => ({ ...c, signedInAs: identityLabel(user.email), live: false, error: null, sessionLost: false }));
         fetchChildLink(user.uid)
           .then(async (childLink) => {
             const parentLink = childLink ? null : await fetchParentLink(user.uid);
@@ -1218,7 +1254,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             setConnection((c) => ({ ...c, live: false, error: describeSyncError(err) }));
           });
       } else {
-        setConnection({ signedInAs: null, live: false, error: null, unsaved: false, failedAt: null });
+        setConnection({ signedInAs: null, live: false, error: null, unsaved: false, failedAt: null, sessionLost: false });
         dispatch({ type: "SIGN_OUT" });
       }
     });
@@ -1396,6 +1432,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             by: entry.by,
             ...(entry.note ? { note: entry.note } : {}),
             ...(entry.photo ? { photo: entry.photo } : {}),
+            ...(entry.file ? { file: entry.file } : {}),
           });
           clearInboxEntry(familyUid, entryId).catch((err) => console.error("Clearing a link update failed:", err));
         }

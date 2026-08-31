@@ -25,12 +25,21 @@ export interface TaskLinkSnapshot {
 }
 
 export interface LinkUpdate {
-  kind: "ack" | "started" | "done" | "note" | "photo";
+  /** `started` is no longer offered: a worker marks a job received and then finished,
+   * and a third button in between was one more thing to remember while holding a
+   * ladder. The kind stays in the union so reports already sitting in an inbox, and
+   * the trails they wrote, still read. */
+  kind: "ack" | "started" | "done" | "note" | "photo" | "file";
   at: string;
   note?: string;
   /** A compressed data URL. Photos ride inside the update rather than through Storage
    * so the worker never needs an account for the bucket either. */
   photo?: string;
+  /** Everything that is not a photo — a delivery note as a PDF, a scan, a document out
+   * of Drive. Too big to ride inside the update, so the bytes go to Storage under the
+   * worker's own anonymous uid, which the bucket rules already allow, and only the
+   * address travels here. */
+  file?: { name: string; url: string; path?: string; mime?: string; size?: number };
 }
 
 
