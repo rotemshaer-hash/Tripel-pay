@@ -53,13 +53,12 @@ export function WorkBottomNav() {
 
   return (
     <nav
+      className="glass-bar"
       style={{
         marginTop: "auto",
         display: "flex",
         justifyContent: "space-around",
         alignItems: "stretch",
-        background: "#ffffff",
-        borderTop: "1px solid var(--line)",
         padding: "8px 4px calc(8px + env(safe-area-inset-bottom))",
         flexShrink: 0,
       }}

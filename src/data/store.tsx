@@ -21,6 +21,7 @@ import {
   deleteOwnAccount,
 } from "../firebase/auth";
 import { auth } from "../firebase/config";
+import { runReadinessChecks, type CheckResult } from "../firebase/diagnostics";
 import { uploadFile as uploadToStorage, deleteStoredFile, describeUploadError, MAX_UPLOAD_BYTES, type StoredFile } from "../firebase/storage";
 import {
   subscribeFamily,
@@ -1119,6 +1120,8 @@ interface StoreContextValue {
   completeMissingAccount: (name: string, companyName: string) => Promise<void>;
   /** Pushes whatever is unsaved to the server again, on demand. */
   retrySync: () => Promise<void>;
+  /** Tests the three console switches the worker links depend on. */
+  checkReadiness: () => Promise<CheckResult[]>;
   /** Reads the one task behind a share token — for the no-account worker screen. */
   loadTaskLink: (token: string) => Promise<TaskLinkSnapshot | null>;
   /** Reads one person's whole open list behind their daily token. */
@@ -1512,6 +1515,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await pushLinkUpdate(day.familyUid, { ...update, token: taskId, childId: day.childId, taskId, by: day.workerName });
   }, []);
 
+  const checkReadiness = useCallback(async () => {
+    const sample = childrenList(latestState.current.family).find((c) => c.dayToken)?.dayToken ?? null;
+    return runReadinessChecks(sample);
+  }, []);
+
   const retrySync = useCallback(async () => {
     await pushToServer(latestState.current);
   }, [pushToServer]);
@@ -1589,8 +1597,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetPassword = useMemo(() => async (email: string) => resetParentPassword(email), []);
 
   const value = useMemo(
-    () => ({ state, connection, dispatch, retrySync, loadTaskLink, sendLinkUpdate, loadWorkerDay, sendDayUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
-    [state, connection, retrySync, loadTaskLink, sendLinkUpdate, loadWorkerDay, sendDayUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
+    () => ({ state, connection, dispatch, retrySync, checkReadiness, loadTaskLink, sendLinkUpdate, loadWorkerDay, sendDayUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, describeUploadFailure: describeUploadError, maxUploadBytes: MAX_UPLOAD_BYTES, resetPassword }),
+    [state, connection, retrySync, checkReadiness, loadTaskLink, sendLinkUpdate, loadWorkerDay, sendDayUpdate, completeOnboarding, login, completeMissingAccount, registerChildSession, loginChildSession, registerSecondParentSession, logout, deleteAccount, uploadAttachment, resetPassword]
   );
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

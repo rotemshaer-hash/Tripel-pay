@@ -45,7 +45,7 @@ export function SendPanel({
   const crew = workers.length > 1;
 
   return (
-    <section style={{ background: "#ffffff", border: "1px solid #bfe4d8", borderRadius: 13, padding: "15px 16px", display: "flex", flexDirection: "column", gap: 11 }}>
+    <section className="pane pane-tint" style={{ "--tint": work.done, padding: "16px", display: "flex", flexDirection: "column", gap: 11 } as React.CSSProperties}>
       <div style={{ fontSize: 14.5, fontWeight: 800, color: work.done }}>
         {crew ? `✓ המשימה הוקצתה ל-${workers.length} ${V.workerPlural}` : `✓ המשימה הוקצתה ל${workers[0]?.name ?? ""}`}
       </div>
@@ -99,7 +99,7 @@ export function SendPanel({
                 style={{
                   flex: 1,
                   textAlign: "center",
-                  background: already ? "#ffffff" : "#25D366",
+                  background: already ? "rgba(255,255,255,0.8)" : "linear-gradient(150deg, #4ade80 0%, #25d366 52%, #17a54a 100%)",
                   color: already ? "var(--ink-soft)" : "#ffffff",
                   border: already ? "1px solid var(--line)" : "none",
                   borderRadius: 11,

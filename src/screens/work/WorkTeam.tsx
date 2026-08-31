@@ -29,7 +29,7 @@ export function WorkTeam() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header title={state.family.companyName || "צוות"} subtitle={`${workers.length} ${V.workerPlural}`} tint="pro" />
 
       <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -38,7 +38,7 @@ export function WorkTeam() {
           const awaiting = w.tasks.filter((t) => t.status === "pending_approval").length;
           const late = w.tasks.filter((t) => isOverdue(t.dueAt, t.status)).length;
           return (
-            <div key={w.id} style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 15px" }}>
+            <div key={w.id} className="pane" style={{ padding: "14px 15px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span
                   style={{
@@ -128,7 +128,7 @@ export function WorkTeam() {
           );
         })}
         {workers.length === 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "20px 16px" }}>
+          <div className="pane" style={{ padding: "20px 16px" }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 7 }}>{`מוסיפים ${V.worker} — והוא לא מתקין כלום`}</div>
             <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.7 }}>
               {`מספיק שם ומספר טלפון. מכאן שולחים לו בוואטסאפ קישור אישי שנשאר נכון כל יום: הוא לוחץ, רואה את המשימות שלו, ומדווח קבלה, התחלה, סיום, תמונה או הערה — בלי התקנה ובלי סיסמה.`}
@@ -136,7 +136,7 @@ export function WorkTeam() {
           </div>
         )}
 
-        <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 15px", marginTop: 4 }}>
+        <section className="pane" style={{ padding: "14px 15px", marginTop: 4 }}>
           <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 9 }}>{`הוספת ${V.worker}`}</div>
           <div style={{ display: "flex", gap: 8 }}>
             <input

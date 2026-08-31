@@ -117,7 +117,16 @@ export function WorkerDay() {
         console.error("Loading the day link failed:", err);
         if (!alive) return;
         setLoading(false);
-        setError("לא הצלחנו לטעון את המשימות. בדוק/י חיבור ונסה/י שוב.");
+        // "Check your connection" is the wrong advice for what this almost always is:
+        // a Firebase switch the business has not turned on yet. The worker cannot fix
+        // that, and should not be sent to fiddle with their phone over it.
+        const code = (err as { code?: string })?.code ?? "";
+        const message = (err as { message?: string })?.message ?? "";
+        setError(
+          code === "auth/operation-not-allowed" || /permission|denied/i.test(`${code} ${message}`)
+            ? "הקישור עדיין לא פעיל אצל המנהל — צריך להפעיל את השירות בהגדרות של העסק. כדאי להראות לו את ההודעה הזו."
+            : "לא הצלחנו לטעון את המשימות. בדוק/י חיבור ונסה/י שוב."
+        );
       });
     return () => {
       alive = false;
@@ -196,7 +205,7 @@ export function WorkerDay() {
         )}
 
         {allDone && (
-          <div style={{ background: work.done, color: "#ffffff", borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
+          <div style={{ background: `linear-gradient(150deg, #35c0a8 0%, ${work.done} 55%, #14806f 100%)`, color: "#ffffff", borderRadius: 16, padding: "20px 16px", textAlign: "center", boxShadow: "0 1px 0 rgba(255,255,255,0.4) inset, 0 16px 30px -18px rgba(20,128,111,0.9)" }}>
             <div style={{ fontSize: 26 }}>🎉</div>
             <div style={{ fontSize: 16.5, fontWeight: 900, marginTop: 4 }}>סיימת הכל להיום</div>
             <div style={{ fontSize: 12.5, opacity: 0.9, marginTop: 4, lineHeight: 1.5 }}>הכל נשלח למנהל. אם תיפתח משימה חדשה — היא תופיע כאן באותו קישור.</div>
@@ -204,7 +213,7 @@ export function WorkerDay() {
         )}
 
         {day.tasks.length === 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 14, padding: "26px 16px", textAlign: "center" }}>
+          <div className="pane" style={{ padding: "26px 16px", textAlign: "center" }}>
             <div style={{ fontSize: 26 }}>☕</div>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginTop: 6 }}>אין משימות פתוחות</div>
             <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 4 }}>כשהמנהל יקצה לך משהו — זה יופיע כאן.</div>
@@ -230,15 +239,11 @@ export function WorkerDay() {
           return (
             <section
               key={task.taskId}
+              className="pane pane-tint"
               style={{
-                background: "#ffffff",
-                border: "1px solid var(--line)",
-                borderInlineStartWidth: 4,
-                borderInlineStartColor: finished ? work.done : late ? work.alert : started ? work.active : work.idle,
-                borderRadius: 14,
-                overflow: "hidden",
-                opacity: finished ? 0.72 : 1,
-              }}
+                "--tint": finished ? work.done : late ? work.alert : started ? work.active : work.waiting,
+                opacity: finished ? 0.74 : 1,
+              } as React.CSSProperties}
             >
               <button
                 onClick={() => setOpenTask(isOpen ? null : task.taskId)}
@@ -294,7 +299,7 @@ export function WorkerDay() {
                   )}
 
                   {(task.steps ?? []).length > 0 && (
-                    <div style={{ background: "var(--paper)", borderRadius: 10, padding: "11px 13px" }}>
+                    <div style={{ background: "rgba(35,42,59,0.045)", borderRadius: 11, padding: "11px 13px", border: "1px solid rgba(255,255,255,0.7)" }}>
                       <div style={{ fontSize: 11.5, fontWeight: 800, color: "var(--ink-soft)", marginBottom: 6 }}>שלבי ביצוע</div>
                       {(task.steps ?? []).map((step) => (
                         <div key={step.id} style={{ fontSize: 13.5, padding: "3px 0", lineHeight: 1.5 }}>{`• ${step.text}`}</div>
@@ -392,15 +397,17 @@ function Frame({
 }) {
   const percent = total && total > 0 ? Math.round(((done ?? 0) / total) * 100) : 0;
   return (
-    <div className="screen">
-      <div style={{ background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)", padding: "20px 18px 18px", flexShrink: 0 }}>
+    <div className="screen work-ground">
+      <div className="hero" style={{ padding: "22px 18px 20px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <span
             style={{
               width: 40,
               height: 40,
               borderRadius: 11,
-              background: "rgba(255,255,255,0.12)",
+              background: "linear-gradient(150deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.1) 100%)",
+              border: "1px solid rgba(255,255,255,0.22)",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.35) inset",
               color: "#ffffff",
               display: "flex",
               alignItems: "center",
@@ -438,7 +445,16 @@ function Frame({
 }
 
 function BigButton({ label, tone, onClick, disabled }: { label: string; tone: "ink" | "active" | "done" | "plain"; onClick: () => void; disabled?: boolean }) {
-  const background = tone === "active" ? work.active : tone === "done" ? work.done : tone === "ink" ? work.ink : "#ffffff";
+  // Each action carries its own light so the one to press is obvious at arm's length,
+  // in the sun, through a phone case.
+  const background =
+    tone === "active"
+      ? `linear-gradient(150deg, #ff9a4d 0%, ${work.active} 55%, #cf5c0a 100%)`
+      : tone === "done"
+        ? `linear-gradient(150deg, #35c0a8 0%, ${work.done} 55%, #14806f 100%)`
+        : tone === "ink"
+          ? "linear-gradient(150deg, #3b4664 0%, #232a3b 100%)"
+          : "rgba(255,255,255,0.8)";
   return (
     <button
       onClick={onClick}
@@ -447,12 +463,13 @@ function BigButton({ label, tone, onClick, disabled }: { label: string; tone: "i
         width: "100%",
         background,
         color: tone === "plain" ? "var(--ink)" : "#ffffff",
-        border: tone === "plain" ? "1px solid var(--line)" : "none",
-        borderRadius: 13,
-        padding: "18px",
-        fontSize: 17,
+        border: tone === "plain" ? "1px solid rgba(255,255,255,0.9)" : "none",
+        borderRadius: 15,
+        padding: "19px",
+        fontSize: 17.5,
         fontWeight: 900,
         opacity: disabled ? 0.45 : 1,
+        boxShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.45) inset, 0 14px 26px -16px rgba(20,26,45,0.8)",
       }}
     >
       {label}
@@ -466,15 +483,16 @@ function PhotoButton({ busy, onPicked }: { busy: boolean; onPicked: (file: File)
       style={{
         display: "block",
         width: "100%",
-        background: "#ffffff",
-        border: "1px solid var(--line)",
-        borderRadius: 12,
-        padding: "15px",
-        fontSize: 15,
+        background: "rgba(255,255,255,0.82)",
+        border: "1px solid rgba(255,255,255,0.9)",
+        borderRadius: 14,
+        padding: "16px",
+        fontSize: 15.5,
         fontWeight: 800,
         textAlign: "center",
         opacity: busy ? 0.5 : 1,
         cursor: "pointer",
+        boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 20px -16px rgba(20,26,45,0.6)",
       }}
     >
       📷 צילום ושליחה

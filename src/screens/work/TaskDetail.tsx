@@ -46,7 +46,7 @@ export function TaskDetail() {
 
   if (!worker || !task) {
     return (
-      <div className="screen">
+      <div className="screen work-ground">
         <Header title={V.task} back tint="pro" />
         <div style={{ padding: 24, color: "var(--ink-faint)", fontSize: 13.5 }}>המשימה לא נמצאה.</div>
       </div>
@@ -90,7 +90,7 @@ export function TaskDetail() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header title={task.title} subtitle={`${worker.name}${task.site ? ` · ${task.site}` : ""}`} back tint="pro" />
 
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -448,7 +448,7 @@ export function TaskDetail() {
 
 function Panel({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 15px" }}>
+    <section className="pane" style={{ padding: "14px 15px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "0 0 9px" }}>
         <h2 style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)", margin: 0 }}>{title}</h2>
         {right}

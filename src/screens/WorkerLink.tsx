@@ -55,7 +55,16 @@ export function WorkerLink() {
         console.error("Loading the task link failed:", err);
         if (!alive) return;
         setLoading(false);
-        setError("לא הצלחנו לטעון את המשימה. בדוק/י את החיבור ונסה/י שוב.");
+        // "Check your connection" is the wrong advice for what this almost always is:
+        // a Firebase switch the business has not turned on yet. The worker cannot fix
+        // that, and should not be sent to fiddle with their phone over it.
+        const code = (err as { code?: string })?.code ?? "";
+        const message = (err as { message?: string })?.message ?? "";
+        setError(
+          code === "auth/operation-not-allowed" || /permission|denied/i.test(`${code} ${message}`)
+            ? "הקישור עדיין לא פעיל אצל המנהל — צריך להפעיל את השירות בהגדרות של העסק. כדאי להראות לו את ההודעה הזו."
+            : "לא הצלחנו לטעון את המשימה. בדוק/י חיבור ונסה/י שוב."
+        );
       });
     return () => {
       alive = false;
@@ -196,7 +205,7 @@ export function WorkerLink() {
 
 function Frame({ company, children }: { company?: string; children: React.ReactNode }) {
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <div style={{ background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)", padding: "22px 20px 18px", flexShrink: 0 }}>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{V.appName}</div>
         <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", marginTop: 3 }}>{company ?? "משימה"}</div>

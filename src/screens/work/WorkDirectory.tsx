@@ -26,7 +26,7 @@ export function WorkDirectory() {
   const { isManager } = useWorkView();
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header title="ספקים ומידע" subtitle="טלפונים ומסמכים לכל הצוות" tint="pro" />
 
       <div style={{ display: "flex", gap: 6, padding: "16px 20px 0" }}>

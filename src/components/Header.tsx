@@ -70,12 +70,12 @@ export function Header({
   const pro = tint === "pro";
   return (
     <header
-      className={playful ? "dream-sky" : undefined}
+      className={playful ? "dream-sky" : pro ? "hero" : undefined}
       style={{
         background: playful
           ? "linear-gradient(120deg, var(--header-gradient) 0%, var(--violet-700) 45%, var(--amber-600) 75%, var(--header-gradient) 100%)"
           : pro
-            ? "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)"
+            ? undefined /* the .hero class paints it — one definition, in the stylesheet */
             : tint === "transparent"
               ? "none"
               : tint === "purple"

@@ -7,7 +7,7 @@ import { getStorage, connectStorageEmulator } from "firebase/storage";
 // renamed to Work It. That is deliberate: it is a real infrastructure id holding real
 // accounts, and "renaming" it means migrating to a new project and losing the data —
 // it is not a text edit. Never point this at Drushe's project (kidemy-83a17) either.
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBtXCf1yM7I45qeskazLsxUFDniq5X2deQ",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "triplepay-prod.firebaseapp.com",
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://triplepay-prod-default-rtdb.firebaseio.com",

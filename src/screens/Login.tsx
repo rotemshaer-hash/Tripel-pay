@@ -103,11 +103,11 @@ export function Login() {
   const canSubmit = role === "parent" ? emailValid && password.length >= 6 : isUsernameUsable(username) && password.length >= 6;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isWork ? "0 0 20px" : "70px 24px 28px", position: "relative", overflow: "hidden" }}>
+    <div className={isWork ? "work-ground" : undefined} style={{ flex: 1, display: "flex", flexDirection: "column", padding: isWork ? "0 0 20px" : "70px 24px 28px", position: "relative", overflow: "hidden" }}>
       {MODE !== "work" && <BrandDecor />}
 
       {isWork && (
-        <div style={{ background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)", padding: "38px 24px 26px", flexShrink: 0 }}>
+        <div className="hero" style={{ padding: "40px 24px 30px", flexShrink: 0 }}>
           <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
             {V.appName.split(" ")[0]} <span style={{ color: work.onDark }}>{V.appName.split(" ").slice(1).join(" ")}</span>
           </div>

@@ -23,7 +23,7 @@ import { InstallButton } from "../../components/InstallButton";
  * privilege — without it a worker is locked into the app on a shared phone.
  */
 export function WorkSettings() {
-  const { state, connection, dispatch, retrySync, logout, deleteAccount } = useStore();
+  const { state, connection, dispatch, retrySync, checkReadiness, logout, deleteAccount } = useStore();
   const { isManager } = useWorkView();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
@@ -35,6 +35,8 @@ export function WorkSettings() {
   const [deleting, setDeleting] = useState(false);
   const [adminInviteOpen, setAdminInviteOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checks, setChecks] = useState<{ id: string; title: string; ok: boolean; detail: string; fix?: string }[] | null>(null);
   const workers = childrenList(state.family);
   const me = workers.find((c) => c.id === state.activeChildId);
 
@@ -70,7 +72,7 @@ export function WorkSettings() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header title="הגדרות" subtitle={isManager ? "החשבון והצוות" : "החשבון שלי"} tint="pro" />
 
       <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -129,31 +131,49 @@ export function WorkSettings() {
           <InstallButton />
         </section>
 
+        {/* Three switches live in the Firebase console, not in this app, and any one of
+            them being off gives the worker the same useless "check your connection".
+            This says which. */}
         {isManager && (
           <section style={card}>
-            <div style={cardTitle}>אסמכתאות</div>
+            <div style={cardTitle}>בדיקת מוכנות</div>
             <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
-              {`כשזה דלוק, ${V.worker} לא יכול לסמן "סיימתי" בלי לצרף תמונה או הערה. זה מה ששומר על התיעוד שווה משהו.`}
+              בודק בדיוק את מה שקורה כשעובד לוחץ על הקישור שלו, ואת העלאת הקבצים — ואומר מה חסם אם משהו לא עובד.
             </div>
             <button
-              onClick={() => {
-                const value = state.family.requireProof === false;
-                dispatch({ type: "SET_REQUIRE_PROOF", value });
-                showToast(value ? "נדרשת אסמכתא לסגירת משימה" : "אפשר לסגור משימה בלי אסמכתא");
+              onClick={async () => {
+                setChecking(true);
+                setChecks(null);
+                try {
+                  setChecks(await checkReadiness());
+                } catch (err) {
+                  console.error("Readiness check failed:", err);
+                  setChecks([{ id: "error", title: "הבדיקה נכשלה", ok: false, detail: "לא הצלחנו להריץ את הבדיקה. בדוק חיבור ונסה שוב." }]);
+                }
+                setChecking(false);
               }}
-              style={{
-                width: "100%",
-                background: state.family.requireProof === false ? "#ffffff" : work.ink,
-                color: state.family.requireProof === false ? "var(--ink)" : "#ffffff",
-                border: "1px solid var(--line)",
-                borderRadius: 10,
-                padding: "12px",
-                fontSize: 13,
-                fontWeight: 800,
-              }}
+              disabled={checking}
+              style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800, opacity: checking ? 0.5 : 1 }}
             >
-              {state.family.requireProof === false ? "כבוי — אפשר לסגור בלי אסמכתא" : "דלוק — חובה אסמכתא לפני סגירה"}
+              {checking ? "בודק…" : "הרצת בדיקה"}
             </button>
+            {checks && (
+              <div style={{ marginTop: 11, display: "flex", flexDirection: "column", gap: 9 }}>
+                {checks.map((check) => (
+                  <div key={check.id} style={{ background: check.ok ? "#eaf7f2" : "#fdf0f3", border: `1px solid ${check.ok ? "#bfe4d8" : "#f3c0c9"}`, borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: check.ok ? "#136c58" : work.alert }}>
+                      {`${check.ok ? "✓" : "✗"} ${check.title}`}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 3 }}>{check.detail}</div>
+                    {check.fix && (
+                      <div dir="ltr" style={{ fontSize: 11, color: "var(--ink)", background: "#ffffff", borderRadius: 7, padding: "7px 9px", marginTop: 7, lineHeight: 1.5, textAlign: "start" }}>
+                        {check.fix}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
@@ -184,6 +204,7 @@ export function WorkSettings() {
             </button>
           </section>
         )}
+
 
         {isManager && (
         <section style={card}>
@@ -358,10 +379,13 @@ function Row({ label, value, ltr }: { label: string; value: string; ltr?: boolea
 }
 
 const card: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid var(--line)",
-  borderRadius: 12,
-  padding: "14px 15px",
+  // Kept as a style object rather than the .pane class because these sections carry
+  // their own accent colours on top of it.
+  background: "linear-gradient(158deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.72) 100%)",
+  border: "1px solid rgba(255,255,255,0.9)",
+  borderRadius: 16,
+  padding: "15px 16px",
+  boxShadow: "0 1px 0 rgba(255,255,255,0.85) inset, 0 14px 30px -20px rgba(20,26,45,0.45)",
 };
 
 const cardTitle: React.CSSProperties = {

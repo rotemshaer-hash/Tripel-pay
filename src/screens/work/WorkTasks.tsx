@@ -46,7 +46,7 @@ export function WorkTasks() {
   }, [scope, filter]);
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header
         title={V.taskPlural}
         subtitle={isManager ? "כל המשימות בצוות" : "המשימות שלי"}

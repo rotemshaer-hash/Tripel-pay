@@ -83,7 +83,7 @@ export function WorkJournal() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header
         title={V.journal}
         titleNote={state.family.companyName}
@@ -163,7 +163,7 @@ export function WorkJournal() {
         {/* An empty log is the one screen where a person decides whether this is worth
             the trouble, so it says what will land here and why that is the product. */}
         {feed.length === 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "20px 16px" }}>
+          <div className="pane" style={{ padding: "20px 16px" }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 7 }}>כאן נרשם הכל, לבד</div>
             <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.7 }}>
               כל משימה שתשלח, כל אישור קבלה, כל התחלה וסיום, וכל תמונה שעובד יצרף — נכנסים לכאן עם שם ושעה,

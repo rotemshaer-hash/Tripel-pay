@@ -102,7 +102,7 @@ export function NewTask() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header title={`${V.task} חדשה`} subtitle="הקצאה מתועדת לעובד" back tint="pro" />
 
       <div style={{ padding: "16px 20px 28px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -220,11 +220,12 @@ function Chip({ label, active, onClick, activeColor }: { label: string; active: 
     <button
       onClick={onClick}
       style={{
-        background: active ? activeColor : "#ffffff",
+        background: active ? `linear-gradient(150deg, color-mix(in srgb, ${activeColor} 76%, white 24%) 0%, ${activeColor} 100%)` : "rgba(255,255,255,0.82)",
         color: active ? "#ffffff" : "var(--ink)",
-        border: `1px solid ${active ? activeColor : "var(--line)"}`,
+        border: `1px solid ${active ? "transparent" : "rgba(255,255,255,0.9)"}`,
+        boxShadow: active ? `0 1px 0 rgba(255,255,255,0.45) inset, 0 10px 20px -14px ${activeColor}` : "0 1px 0 rgba(255,255,255,0.8) inset",
         borderRadius: 999,
-        padding: "9px 14px",
+        padding: "10px 15px",
         fontSize: 13,
         fontWeight: 700,
       }}
@@ -236,27 +237,31 @@ function Chip({ label, active, onClick, activeColor }: { label: string; active: 
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "12px 13px",
-  borderRadius: 10,
-  border: "1px solid var(--line)",
+  padding: "13px 14px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.9)",
+  background: "rgba(255,255,255,0.85)",
+  boxShadow: "0 1px 0 rgba(255,255,255,0.8) inset, 0 6px 16px -14px rgba(20,26,45,0.6)",
   fontSize: 14.5,
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: work.ink,
+  background: "linear-gradient(150deg, #3b4664 0%, #232a3b 100%)",
   color: "#ffffff",
   border: "none",
-  borderRadius: 11,
+  borderRadius: 13,
+  boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 14px 26px -18px rgba(20,26,45,0.9)",
   padding: "15px",
   fontSize: 15,
   fontWeight: 800,
 };
 
 const secondaryBtn: React.CSSProperties = {
-  background: "#ffffff",
+  background: "rgba(255,255,255,0.82)",
   color: "var(--ink)",
-  border: "1px solid var(--line)",
-  borderRadius: 11,
+  border: "1px solid rgba(255,255,255,0.9)",
+  borderRadius: 13,
+  boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
   padding: "15px 16px",
   fontSize: 13.5,
   fontWeight: 700,

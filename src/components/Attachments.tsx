@@ -34,9 +34,12 @@ export function AttachButton({
   camera?: boolean;
 }) {
   const { uploadAttachment, describeUploadFailure, maxUploadBytes } = useStore();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [done, setDone] = useState("");
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -44,10 +47,12 @@ export function AttachButton({
     if (!file) return;
     setBusy(true);
     setError("");
+    setDone("");
     try {
       if (file.type.startsWith("image/")) {
         const content = await resizeImageToDataUrl(file, 900, 0.75);
         onAttached({ kind: "image", name: file.name, content });
+        setDone(`${file.name} צורפה`);
         return;
       }
       if (file.size > maxUploadBytes) {
@@ -56,6 +61,7 @@ export function AttachButton({
       }
       const stored = await uploadAttachment(folder, file);
       onAttached({ kind: "file", name: stored.name, content: stored.url, path: stored.path, size: stored.size, mime: stored.mime });
+      setDone(`${file.name} הועלה`);
     } catch (err) {
       console.error("Attachment upload failed:", err);
       setError(describeUploadFailure(err));
@@ -64,34 +70,48 @@ export function AttachButton({
     }
   }
 
+  // Android's "choose an action" sheet is where an attachment goes to die: a person
+  // looking for a photo is shown a voice recorder and a video camera. Naming the
+  // source up front means the phone opens the right picker and nothing else.
+  const sources: { label: string; ref: React.RefObject<HTMLInputElement | null> }[] = camera
+    ? [{ label, ref: cameraRef }]
+    : [
+        { label: "📷 מצלמה", ref: cameraRef },
+        { label: "🖼️ גלריה", ref: galleryRef },
+        { label: "📄 קובץ", ref: fileRef },
+      ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={camera ? "image/*" : undefined}
-        {...(camera ? { capture: "environment" as const } : {})}
-        onChange={onPick}
-        style={{ display: "none" }}
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={busy}
-        style={{
-          background: "#ffffff",
-          color: "var(--ink)",
-          border: "1px solid var(--line)",
-          borderRadius: 10,
-          padding: "12px",
-          fontSize: 13.5,
-          fontWeight: 800,
-          opacity: busy ? 0.6 : 1,
-        }}
-      >
-        {busy ? "מעלה…" : label}
-      </button>
-      {error && <div style={{ fontSize: 12, color: work.alert }}>{error}</div>}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPick} style={{ display: "none" }} />
+      <input ref={galleryRef} type="file" accept="image/*" onChange={onPick} style={{ display: "none" }} />
+      <input ref={fileRef} type="file" accept="application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={onPick} style={{ display: "none" }} />
+
+      <div style={{ display: "flex", gap: 7 }}>
+        {sources.map((source) => (
+          <button
+            key={source.label}
+            type="button"
+            onClick={() => source.ref.current?.click()}
+            disabled={busy}
+            style={{
+              flex: 1,
+              background: "#ffffff",
+              color: "var(--ink)",
+              border: "1px solid var(--line)",
+              borderRadius: 10,
+              padding: "12px 8px",
+              fontSize: camera ? 15 : 13,
+              fontWeight: 800,
+              opacity: busy ? 0.6 : 1,
+            }}
+          >
+            {busy ? "מעלה…" : source.label}
+          </button>
+        ))}
+      </div>
+      {done && <div style={{ fontSize: 12, color: work.done, fontWeight: 700 }}>{`✓ ${done}`}</div>}
+      {error && <div style={{ fontSize: 12, color: work.alert, lineHeight: 1.5 }}>{error}</div>}
     </div>
   );
 }

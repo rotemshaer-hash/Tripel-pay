@@ -43,14 +43,11 @@ export function WorkBoard() {
   const rows = (filter === "open" ? open : done).sort((a, b) => weight(a.task) - weight(b.task));
 
   return (
-    <div className="screen">
+    <div className="screen work-ground">
       <Header title="משימות" titleNote={company} subtitle={`${open.length} פתוחות · ${done.length} הושלמו`} tint="pro" />
 
       <div style={{ padding: "14px 18px 20px", display: "flex", flexDirection: "column", gap: 11 }}>
-        <button
-          onClick={() => navigate("/work/new")}
-          style={{ background: work.action, color: "#20160a", border: "none", borderRadius: 12, padding: "15px", fontSize: 15, fontWeight: 900 }}
-        >
+        <button className="press" onClick={() => navigate("/work/new")} style={{ padding: "16px", fontSize: 15.5 }}>
           + {V.task} חדשה
         </button>
 
@@ -60,7 +57,7 @@ export function WorkBoard() {
         </div>
 
         {rows.length === 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 13, padding: "22px 16px" }}>
+          <div className="pane" style={{ padding: "22px 16px" }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 6 }}>
               {filter === "open" ? "אין משימות פתוחות" : "עוד לא הושלמה אף משימה"}
             </div>
@@ -73,7 +70,11 @@ export function WorkBoard() {
         )}
 
         {rows.map(({ worker, task }) => (
-          <div key={`${worker.id}-${task.id}`} style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
+          <div
+            key={`${worker.id}-${task.id}`}
+            className="pane pane-tint"
+            style={{ "--tint": accentOf(task) } as React.CSSProperties}
+          >
             <button
               onClick={() => navigate(`/work/task/${worker.id}/${task.id}`)}
               style={{ width: "100%", background: "none", border: "none", padding: "13px 15px", textAlign: "start", display: "flex", alignItems: "flex-start", gap: 10 }}
@@ -117,7 +118,7 @@ export function WorkBoard() {
                   dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor });
                   showToast("אושר ונסגר");
                 }}
-                style={{ width: "100%", background: work.done, color: "#ffffff", border: "none", padding: "11px", fontSize: 13, fontWeight: 800 }}
+                style={{ width: "100%", background: `linear-gradient(150deg, #35c0a8 0%, ${work.done} 100%)`, color: "#ffffff", border: "none", padding: "12px", fontSize: 13.5, fontWeight: 800 }}
               >
                 אישור וסגירה
               </button>
@@ -141,21 +142,33 @@ function weight(task: TaskItem): number {
 }
 
 /** Where the job stands — and for an open one, whether it ever reached the person. */
+/** The colour a job carries everywhere it appears — one definition, so the pill, the
+ * edge of the pane and the wash behind it can never disagree. */
+function accentOf(task: TaskItem): string {
+  if (task.status === "completed") return taskStatusColor.completed;
+  if (task.status === "pending_approval") return work.waiting;
+  if (task.status === "in_progress") return work.active;
+  if (isOverdue(task.dueAt, task.status)) return work.alert;
+  if (task.acknowledgedAt) return work.done;
+  if (task.seenAt) return work.idle;
+  return work.alert;
+}
+
 function StatusChip({ task }: { task: TaskItem }) {
-  const [text, color] =
+  const text =
     task.status === "completed"
-      ? ["הושלמה", taskStatusColor.completed]
+      ? "הושלמה"
       : task.status === "pending_approval"
-        ? ["ממתין לאישורך", work.waiting]
+        ? "ממתין לאישורך"
         : task.status === "in_progress"
-          ? ["בביצוע", work.active]
+          ? "בביצוע"
           : task.acknowledgedAt
-            ? ["אישר קבלה", work.done]
+            ? "אישר קבלה"
             : task.seenAt
-              ? ["נצפתה", work.idle]
-              : ["טרם נצפתה", work.alert];
+              ? "נצפתה"
+              : "טרם נצפתה";
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 800, color: "#ffffff", background: color, borderRadius: 999, padding: "4px 9px", flexShrink: 0, marginTop: 2 }}>
+    <span className="pill" style={{ "--tint": accentOf(task), flexShrink: 0, marginTop: 2 } as React.CSSProperties}>
       {text}
     </span>
   );
@@ -167,10 +180,11 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
       onClick={onClick}
       style={{
         flex: 1,
-        background: active ? work.ink : "#ffffff",
+        background: active ? "linear-gradient(150deg, #3b4664 0%, #232a3b 100%)" : "rgba(255,255,255,0.72)",
         color: active ? "#ffffff" : "var(--ink-soft)",
-        border: `1px solid ${active ? work.ink : "var(--line)"}`,
-        borderRadius: 10,
+        border: `1px solid ${active ? "transparent" : "rgba(255,255,255,0.9)"}`,
+        boxShadow: active ? "0 10px 20px -14px rgba(20,26,45,0.9)" : "0 1px 0 rgba(255,255,255,0.8) inset",
+        borderRadius: 12,
         padding: "10px",
         fontSize: 13,
         fontWeight: 800,
