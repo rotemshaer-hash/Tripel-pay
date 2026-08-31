@@ -5,6 +5,7 @@ import { V, work } from "../data/vocabulary";
 import { resizeImageToDataUrl } from "../utils/resizeImage";
 import { formatDate, formatTime, isOverdue } from "../utils/datetime";
 import { isServiceNotEnabled } from "../utils/authErrors";
+import { FILE_PICKER_HINT } from "../components/Attachments";
 import type { LinkUpdate, WorkerDaySnapshot } from "../data/tasklink";
 
 /**
@@ -627,6 +628,7 @@ function ProofButtons({ busy, onPicked }: { busy: boolean; onPicked: (file: File
           </button>
         ))}
       </div>
+      <div style={{ fontSize: 11, color: "var(--ink-faint)", lineHeight: 1.5, marginTop: 7 }}>{FILE_PICKER_HINT}</div>
     </div>
   );
 }

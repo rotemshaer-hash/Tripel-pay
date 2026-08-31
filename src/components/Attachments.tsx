@@ -8,6 +8,18 @@ import type { AttachmentDraft } from "../data/attachments";
 import type { Attachment } from "../data/types";
 
 /**
+ * Where the file actually is, said out loud.
+ *
+ * Tapping "file" hands over to Android's document picker, which opens on "Recent" —
+ * a view that is empty on most phones and looks like the picker is broken or like the
+ * phone has no files on it. The way to the device's own storage is a hamburger in the
+ * corner that nobody finds by accident. The picker is the operating system's and
+ * cannot be replaced from a web page; the sentence telling somebody where to tap is
+ * the part that is ours, and it is cheaper than the support call.
+ */
+export const FILE_PICKER_HINT = "לא רואה את הקובץ? במסך שנפתח יש ☰ בפינה — משם בוחרים את הטלפון או Drive.";
+
+/**
  * The one control for putting a file on something.
  *
  * It existed only inside the task-detail screen, which is why the manager could attach
@@ -122,6 +134,7 @@ export function AttachButton({
           </button>
         ))}
       </div>
+      {!camera && <div style={{ fontSize: 11, color: "var(--ink-faint)", lineHeight: 1.5 }}>{FILE_PICKER_HINT}</div>}
       {done && <div style={{ fontSize: 12, color: work.done, fontWeight: 700 }}>{`✓ ${done}`}</div>}
       {error && <div style={{ fontSize: 12, color: work.alert, lineHeight: 1.5 }}>{error}</div>}
     </div>
