@@ -38,23 +38,24 @@ export async function runReadinessChecks(sampleToken: string | null): Promise<Ch
     results.push({ id: "anonymous", title: "כניסה אנונימית", ok: true, detail: "פעילה — דף העובד יכול להיפתח בלי חשבון." });
   } catch (err) {
     const code = (err as { code?: string })?.code ?? "";
-    // Two different switches produce two different codes, and pointing at the wrong
-    // one costs an evening. `operation-not-allowed` is the Anonymous provider itself;
-    // `admin-restricted-operation` is the project-wide sign-up block — anonymous
-    // sign-in creates a user, so blocking sign-up blocks it too, even with the
-    // Anonymous provider on.
-    const signUpBlocked = code === "auth/admin-restricted-operation";
+    // Anonymous sign-in creates a user, so two different switches can refuse it, and
+    // on an Identity Platform project both arrive as `admin-restricted-operation`
+    // rather than the `operation-not-allowed` you would expect from a disabled
+    // provider. Naming only one of them sent someone to a settings page while the
+    // real cause — no Anonymous provider in the list at all — sat one tab away, so
+    // this names both, cheapest to check first.
+    const createBlocked = code === "auth/admin-restricted-operation";
     results.push({
       id: "anonymous",
       title: "כניסה אנונימית",
       ok: false,
-      detail: signUpBlocked
-        ? "Anonymous מופעל, אבל יצירת משתמשים חדשים חסומה בפרויקט — וכניסה אנונימית היא יצירת משתמש."
+      detail: createBlocked
+        ? "השרת חסם את יצירת המשתמש: או שספק Anonymous לא מופעל, או שיצירת משתמשים חדשים חסומה בפרויקט."
         : code === "auth/operation-not-allowed"
           ? "כבויה בפרויקט Firebase."
           : `נכשלה (${code || "שגיאה לא ידועה"}).`,
-      fix: signUpBlocked
-        ? 'Firebase Console ← Authentication ← Settings ← User actions ← לסמן "Enable create (sign-up)"'
+      fix: createBlocked
+        ? 'קודם: Authentication ← Sign-in method ← Add new provider ← Anonymous ← Enable. אם Anonymous כבר ברשימה: Authentication ← Settings ← User actions ← "Enable create (sign-up)"'
         : "Firebase Console ← Authentication ← Sign-in method ← Anonymous ← Enable",
     });
   }
