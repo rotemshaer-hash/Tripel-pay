@@ -38,12 +38,24 @@ export async function runReadinessChecks(sampleToken: string | null): Promise<Ch
     results.push({ id: "anonymous", title: "כניסה אנונימית", ok: true, detail: "פעילה — דף העובד יכול להיפתח בלי חשבון." });
   } catch (err) {
     const code = (err as { code?: string })?.code ?? "";
+    // Two different switches produce two different codes, and pointing at the wrong
+    // one costs an evening. `operation-not-allowed` is the Anonymous provider itself;
+    // `admin-restricted-operation` is the project-wide sign-up block — anonymous
+    // sign-in creates a user, so blocking sign-up blocks it too, even with the
+    // Anonymous provider on.
+    const signUpBlocked = code === "auth/admin-restricted-operation";
     results.push({
       id: "anonymous",
       title: "כניסה אנונימית",
       ok: false,
-      detail: code === "auth/operation-not-allowed" ? "כבויה בפרויקט Firebase." : `נכשלה (${code || "שגיאה לא ידועה"}).`,
-      fix: "Firebase Console ← Authentication ← Sign-in method ← Anonymous ← Enable",
+      detail: signUpBlocked
+        ? "Anonymous מופעל, אבל יצירת משתמשים חדשים חסומה בפרויקט — וכניסה אנונימית היא יצירת משתמש."
+        : code === "auth/operation-not-allowed"
+          ? "כבויה בפרויקט Firebase."
+          : `נכשלה (${code || "שגיאה לא ידועה"}).`,
+      fix: signUpBlocked
+        ? 'Firebase Console ← Authentication ← Settings ← User actions ← לסמן "Enable create (sign-up)"'
+        : "Firebase Console ← Authentication ← Sign-in method ← Anonymous ← Enable",
     });
   }
 
