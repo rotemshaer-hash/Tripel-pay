@@ -104,7 +104,7 @@ await w.waitForTimeout(800);
 check("receipt is recorded", (await w.getByText("אישר/ה קבלה").count()) > 0);
 
 // A real file goes to Storage, which means the storage rules are exercised too.
-await w.setInputFiles('input[type="file"][accept*="pdf"]', {
+await w.setInputFiles('input[type="file"]:not([accept])', {
   name: "evidence.txt",
   mimeType: "text/plain",
   buffer: Buffer.from("done"),

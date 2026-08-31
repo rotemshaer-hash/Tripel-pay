@@ -40,6 +40,8 @@ export function AttachButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [link, setLink] = useState("");
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -53,6 +55,12 @@ export function AttachButton({
         const content = await resizeImageToDataUrl(file, 900, 0.75);
         onAttached({ kind: "image", name: file.name, content });
         setDone(`${file.name} צורפה`);
+        return;
+      }
+      // A Google Doc, Sheet or Slide is not a file on the device — Drive hands over an
+      // empty shell, or nothing at all. Saying so beats a failed upload with no reason.
+      if (file.size === 0) {
+        setError("נראה שזה קובץ Google (Docs/Sheets) שלא ניתן לצרף ישירות. אפשר לצרף אותו כקישור בכפתור 🔗, או לייצא אותו ל-PDF ולצרף.");
         return;
       }
       if (file.size > maxUploadBytes) {
@@ -81,11 +89,38 @@ export function AttachButton({
         { label: "📄 קובץ", ref: fileRef },
       ];
 
+  function attachLink() {
+    const raw = link.trim();
+    if (!raw) return;
+    const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    let name = url;
+    try {
+      const parsed = new URL(url);
+      name = parsed.hostname.replace(/^www\./, "") + (parsed.pathname !== "/" ? " — קישור" : "");
+      if (/docs\.google\.com/.test(parsed.hostname)) {
+        name = /spreadsheets/.test(parsed.pathname) ? "גיליון Google" : /presentation/.test(parsed.pathname) ? "מצגת Google" : "מסמך Google";
+      } else if (/drive\.google\.com/.test(parsed.hostname)) {
+        name = "קובץ ב-Google Drive";
+      }
+    } catch {
+      /* an address that will not parse is still worth keeping as typed */
+    }
+    onAttached({ kind: "file", name, content: url });
+    setDone(`${name} צורף`);
+    setLink("");
+    setLinkOpen(false);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPick} style={{ display: "none" }} />
       <input ref={galleryRef} type="file" accept="image/*" onChange={onPick} style={{ display: "none" }} />
-      <input ref={fileRef} type="file" accept="application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={onPick} style={{ display: "none" }} />
+      {/* No accept filter on purpose. Restricting it narrows Android's picker to
+          local files of those types — which is how a person looking for a document in
+          Google Drive ends up staring at their Downloads folder. Unfiltered, the picker
+          opens with every source it has: the phone, Drive, Dropbox, whatever is
+          installed. */}
+      <input ref={fileRef} type="file" onChange={onPick} style={{ display: "none" }} />
 
       <div style={{ display: "flex", gap: 7 }}>
         {sources.map((source) => (
@@ -110,6 +145,38 @@ export function AttachButton({
           </button>
         ))}
       </div>
+      {/* Anything living in Drive — a sheet the office keeps open all week, a shared
+          folder — belongs here as a link, not as a copy that goes stale the moment
+          somebody edits the original. */}
+      {!camera && !linkOpen && (
+        <button
+          type="button"
+          onClick={() => setLinkOpen(true)}
+          style={{ background: "none", border: "none", color: work.waiting, fontSize: 12.5, fontWeight: 800, textAlign: "start", padding: 0 }}
+        >
+          🔗 צירוף קישור (Google Drive / Sheets / כל כתובת)
+        </button>
+      )}
+      {linkOpen && (
+        <div style={{ display: "flex", gap: 7 }}>
+          <input
+            dir="ltr"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && attachLink()}
+            placeholder="https://docs.google.com/…"
+            style={{ flex: 1, padding: "11px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.9)", background: "rgba(255,255,255,0.85)", fontSize: 13 }}
+          />
+          <button
+            type="button"
+            onClick={attachLink}
+            disabled={!link.trim()}
+            style={{ background: "#232a3b", color: "#ffffff", border: "none", borderRadius: 10, padding: "0 15px", fontSize: 12.5, fontWeight: 800, opacity: link.trim() ? 1 : 0.4 }}
+          >
+            צירוף
+          </button>
+        </div>
+      )}
       {done && <div style={{ fontSize: 12, color: work.done, fontWeight: 700 }}>{`✓ ${done}`}</div>}
       {error && <div style={{ fontSize: 12, color: work.alert, lineHeight: 1.5 }}>{error}</div>}
     </div>
