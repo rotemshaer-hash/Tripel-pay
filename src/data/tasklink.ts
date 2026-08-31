@@ -35,6 +35,10 @@ export interface LinkUpdate {
   /** A compressed data URL. Photos ride inside the update rather than through Storage
    * so the worker never needs an account for the bucket either. */
   photo?: string;
+  /** What the photo shows, in the worker's words. Every shot used to arrive called
+   * "צילום מהשטח", which is fine on the job and useless in the pack the customer
+   * reads: twelve identical captions and no way to tell the leak from the repair. */
+  name?: string;
   /** Everything that is not a photo — a delivery note as a PDF, a scan, a document out
    * of Drive. Too big to ride inside the update, so the bytes go to Storage under the
    * worker's own anonymous uid, which the bucket rules already allow, and only the

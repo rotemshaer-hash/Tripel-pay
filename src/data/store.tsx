@@ -124,7 +124,7 @@ type Action =
   | { type: "SET_PROFESSION"; professionId: string }
   | { type: "SET_REQUIRE_PROOF"; value: boolean }
   | { type: "ENSURE_DAY_TOKENS" }
-  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string; file?: LinkUpdate["file"] }
+  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string; name?: string; file?: LinkUpdate["file"] }
   | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ACKNOWLEDGE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "MARK_TASK_SENT"; childId: string; taskId: string; by: string; at?: string }
@@ -442,11 +442,14 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
     case "DELETE_TASK": {
-      // Only before anyone has touched it. Once work has started the task has a record,
-      // and deleting a record is the one thing this product must never make easy.
+      // A job sent to the wrong person, or cancelled by the customer before anyone
+      // moved, is a real and ordinary event, and refusing to delete it left the board
+      // carrying work nobody would ever do. So deleting is allowed at any stage — but
+      // never made easy: the screen states what record is about to go with it, because
+      // destroying a record is still the thing this product exists not to do.
       const child = state.family.children[action.childId];
       const task = child?.tasks.find((t) => t.id === action.taskId);
-      if (!task || task.status !== "available") return state;
+      if (!task) return state;
       return { ...state, family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: c.tasks.filter((t) => t.id !== action.taskId) })) };
     }
     case "ADD_CHECKLIST_ITEM": {
@@ -889,7 +892,7 @@ function reducer(state: AppState, action: Action): AppState {
                 : {
                     id: `at-${crypto.randomUUID()}`,
                     kind: action.kind === "photo" ? "image" : "note",
-                    name: action.kind === "photo" ? "צילום מהשטח" : "הערת ביצוע",
+                    name: action.kind === "photo" ? (action.name?.trim() || "צילום מהשטח") : "הערת ביצוע",
                     content: action.kind === "photo" ? (action.photo ?? "") : (action.note ?? ""),
                     addedAt: at,
                     addedBy: action.by,
@@ -1432,6 +1435,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             by: entry.by,
             ...(entry.note ? { note: entry.note } : {}),
             ...(entry.photo ? { photo: entry.photo } : {}),
+            ...(entry.name ? { name: entry.name } : {}),
             ...(entry.file ? { file: entry.file } : {}),
           });
           clearInboxEntry(familyUid, entryId).catch((err) => console.error("Clearing a link update failed:", err));

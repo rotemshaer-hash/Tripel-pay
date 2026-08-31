@@ -63,6 +63,12 @@ export function WorkerDay() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [local, setLocal] = useState<LocalState>({});
+  /** A photo waits here for its caption instead of going straight out. The customer's
+   * pack is the point of the photo, and a pack of twelve shots all called "צילום
+   * מהשטח" cannot be read — but a person on a site will not fill in a form either, so
+   * it is one optional line and the send button is right there. */
+  const [pendingPhoto, setPendingPhoto] = useState<{ taskId: string; dataUrl: string } | null>(null);
+  const [photoName, setPhotoName] = useState("");
   const [pending, setPending] = useState<PendingReport[]>(() => readQueue().filter((p) => p.token === token));
 
   // The manager can change a job after sending it, and the link is the only copy the
@@ -345,6 +351,48 @@ export function WorkerDay() {
                         <BigButton label={primary.label} tone={primary.tone} disabled={busy} onClick={primary.run} />
                       )}
 
+                      {pendingPhoto?.taskId === task.taskId ? (
+                        <div style={{ background: "rgba(255,255,255,0.9)", border: "1px solid rgba(255,255,255,0.95)", borderRadius: 13, padding: 11, display: "flex", flexDirection: "column", gap: 9 }}>
+                          <img src={pendingPhoto.dataUrl} alt="" style={{ width: "100%", maxHeight: 190, objectFit: "cover", borderRadius: 9, display: "block" }} />
+                          <input
+                            value={photoName}
+                            onChange={(e) => setPhotoName(e.target.value)}
+                            placeholder="מה רואים בתמונה? (למשל: הצנרת אחרי התיקון)"
+                            style={{ padding: "12px 13px", borderRadius: 10, border: "1px solid var(--line)", fontSize: 14 }}
+                          />
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              onClick={async () => {
+                                const name = photoName.trim();
+                                const dataUrl = pendingPhoto.dataUrl;
+                                setPendingPhoto(null);
+                                setPhotoName("");
+                                await report(
+                                  task.taskId,
+                                  { kind: "photo", at: now(), photo: dataUrl, ...(name ? { name } : {}) },
+                                  { proofs: state(task.taskId).proofs + 1 }
+                                );
+                              }}
+                              disabled={busy}
+                              style={{ flex: 1, background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "13px", fontSize: 14, fontWeight: 800, opacity: busy ? 0.5 : 1 }}
+                            >
+                              שליחת התמונה
+                            </button>
+                            <button
+                              onClick={() => {
+                                setPendingPhoto(null);
+                                setPhotoName("");
+                              }}
+                              style={{ background: "none", border: "1px solid var(--line)", borderRadius: 10, padding: "0 16px", fontSize: 13, fontWeight: 700, color: "var(--ink-soft)" }}
+                            >
+                              ביטול
+                            </button>
+                          </div>
+                          {/* Naming it is worth a moment but never worth losing the shot
+                              over, so sending without a name stays one tap away. */}
+                          <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>אפשר לשלוח גם בלי שם — השם עוזר בתיק שנשלח ללקוח.</div>
+                        </div>
+                      ) : (
                       <ProofButtons
                         busy={busy}
                         onPicked={async (file) => {
@@ -353,7 +401,9 @@ export function WorkerDay() {
                           try {
                             if (file.type.startsWith("image/")) {
                               const photo = await resizeImageToDataUrl(file, 900, 0.7);
-                              await report(task.taskId, { kind: "photo", at: now(), photo }, { proofs: state(task.taskId).proofs + 1 });
+                              setPendingPhoto({ taskId: task.taskId, dataUrl: photo });
+                              setPhotoName("");
+                              setBusy(false);
                               return;
                             }
                             // Drive hands over an empty shell for a Doc or a Sheet
@@ -382,6 +432,7 @@ export function WorkerDay() {
                           }
                         }}
                       />
+                      )}
 
                       <div style={{ display: "flex", gap: 8 }}>
                         <input

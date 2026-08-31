@@ -182,6 +182,11 @@ export function WorkReport() {
                     .map((a) => (
                       <figure key={a.id}>
                         <img src={a.content} alt={a.name} />
+                        {/* What the shot shows comes first and in the reader's own
+                            terms; who took it and when is provenance, and belongs
+                            under it. A pack whose every caption said "צילום מהשטח"
+                            was a stack of pictures the customer had to interpret. */}
+                        {a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
                         <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
                       </figure>
                     ))}
@@ -338,6 +343,7 @@ const printCss = `
 .report-proof-shots figure { margin: 0; width: 30%; min-width: 150px; }
 .report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
 .report-proof-shots figcaption { font-size: 9.5px; color: #5c5f6b; margin-top: 3px; }
+.report-proof-shots figcaption.report-proof-name { font-size: 11px; font-weight: 700; color: #232a3b; margin-top: 5px; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .report-table th { text-align: start; font-weight: 800; padding: 7px 6px; border-bottom: 1.5px solid #232a3b; font-size: 11px; }
 .report-table td { padding: 6px; border-bottom: 1px solid #eceef2; vertical-align: top; line-height: 1.45; }

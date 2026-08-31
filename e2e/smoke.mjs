@@ -209,6 +209,25 @@ await d.setInputFiles('input[type="file"]:not([accept])', {
 });
 await d.waitForTimeout(4000);
 check("a worker with no account can send a real file, not only a photo", (await d.getByText("צורפו 2").count()) > 0);
+
+// A photo is the evidence the customer actually looks at, and every one used to arrive
+// called "צילום מהשטח" — a pack of identical captions the customer cannot read. The
+// worker names it before it goes.
+const onePixelPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64"
+);
+await d.setInputFiles('input[accept="image/*"]:not([capture])', {
+  name: "after.png",
+  mimeType: "image/png",
+  buffer: onePixelPng,
+});
+await d.waitForTimeout(1500);
+check("a photo waits to be named instead of going straight out", (await d.getByPlaceholder("מה רואים בתמונה? (למשל: הצנרת אחרי התיקון)").count()) > 0);
+await d.getByPlaceholder("מה רואים בתמונה? (למשל: הצנרת אחרי התיקון)").fill("המדף העליון אחרי הניקוי");
+await d.getByRole("button", { name: "שליחת התמונה" }).click();
+await d.waitForTimeout(3000);
+check("the named photo is sent", (await d.getByText("צורפו 3").count()) > 0);
 check("and then finishing is allowed", (await d.getByText("לפני סגירה צריך לצרף").count()) === 0);
 await d.getByText("🏁 סיימתי").click();
 await d.waitForTimeout(2000);
@@ -225,6 +244,10 @@ await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(1500);
 await m.getByText("ניקיון מחסן").first().click();
 await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1500);
+// The name the worker typed has to survive all the way to the manager's record, or it
+// was never worth asking for: this is what the customer's pack is built from.
+check("the worker's own words on the photo reach the manager", (await m.locator("body").innerText()).includes("המדף העליון אחרי הניקוי"));
 await m.waitForTimeout(1500);
 await m.getByText("עריכה", { exact: true }).click();
 await m.waitForTimeout(600);

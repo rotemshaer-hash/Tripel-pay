@@ -145,7 +145,16 @@ export function AttachmentList({
       {items.map((a) => (
         <div key={a.id} style={{ background: "var(--paper)", borderRadius: 9, padding: 9 }}>
           {a.kind === "image" ? (
-            <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
+            <>
+              <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
+              {/* What the worker called the shot lived in the alt attribute, which is
+                  to say nowhere: the manager assembling a pack for a customer could
+                  see twelve photos and not one of the captions written to tell them
+                  apart. */}
+              {a.name && a.name !== "צילום מהשטח" && (
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginTop: 6 }}>{a.name}</div>
+              )}
+            </>
           ) : a.kind === "file" ? (
             <a
               href={a.content}
