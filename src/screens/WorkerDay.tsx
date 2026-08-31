@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useStore } from "../data/store";
 import { V, work } from "../data/vocabulary";
 import { resizeImageToDataUrl } from "../utils/resizeImage";
-import { formatDate, isOverdue } from "../utils/datetime";
+import { formatDate, formatTime, isOverdue } from "../utils/datetime";
 import { isServiceNotEnabled } from "../utils/authErrors";
 import type { LinkUpdate, WorkerDaySnapshot } from "../data/tasklink";
 
@@ -229,6 +229,8 @@ export function WorkerDay() {
           const late = isOverdue(task.dueAt, task.status);
           const isOpen = openTask === task.taskId;
           const needsProof = day.requireProof !== false && mine.proofs === 0;
+          const messages = task.messages ?? [];
+          const lastMessage = messages[messages.length - 1];
 
           // One job, two moves: I have it, and I have finished it. A third button in
           // between ("started") was a status the business never acted on and one more
@@ -253,21 +255,42 @@ export function WorkerDay() {
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontSize: 16.5, fontWeight: 800, lineHeight: 1.35, textDecoration: finished ? "line-through" : "none" }}>{task.title}</span>
-                  {(task.messages ?? []).length > 0 && (
+                  {/* When a manager corrects a job after sending it, this is the only
+                      place the worker finds out. It was a status pill with a sentence
+                      cut off at forty characters — the shape used for one-word states,
+                      carrying the most important text on the card. It reads as a note
+                      now: quoted, two lines before it truncates, stamped with when it
+                      arrived. */}
+                  {lastMessage && (
                     <span
                       style={{
-                        display: "inline-block",
-                        marginTop: 6,
+                        display: "block",
+                        marginTop: 8,
                         background: "#eef2ff",
-                        color: work.waiting,
                         border: "1px solid #d5dcfb",
-                        borderRadius: 999,
-                        padding: "3px 9px",
-                        fontSize: 11,
-                        fontWeight: 800,
+                        borderInlineStartWidth: 3,
+                        borderInlineStartColor: work.waiting,
+                        borderRadius: 10,
+                        padding: "8px 11px",
                       }}
                     >
-                      {`💬 הודעה מהמנהל: ${(task.messages ?? [])[(task.messages ?? []).length - 1].text.slice(0, 40)}`}
+                      <span style={{ display: "block", fontSize: 10.5, fontWeight: 800, color: work.waiting }}>
+                        {`💬 ${lastMessage.by} · ${formatTime(lastMessage.at)}`}
+                      </span>
+                      <span
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          color: "var(--ink)",
+                          marginTop: 3,
+                        }}
+                      >
+                        {lastMessage.text}
+                      </span>
                     </span>
                   )}
                   <span style={{ display: "block", fontSize: 12, color: late && !finished ? work.alert : "var(--ink-soft)", marginTop: 4 }}>

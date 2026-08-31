@@ -5,7 +5,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels, work } from "../../data/vocabulary";
-import { formatDateExact, formatDateTime, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
+import { formatDate, formatDateExact, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import { downloadCsv, toCsv } from "../../utils/exportCsv";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
@@ -31,6 +31,52 @@ interface FeedRow {
   worker: Child;
 }
 
+/** A run of identical events on one job, shown once with a count. Four separate
+ * "attached a file" rows tell a reader nothing four times. */
+interface GroupedRow extends FeedRow {
+  count: number;
+}
+
+interface DayGroup {
+  label: string;
+  rows: GroupedRow[];
+}
+
+/**
+ * The feed, as something a person can actually read.
+ *
+ * A journal is scanned for what happened, so the event is the headline and the job is
+ * the context under it — the other way round gave a column of cards all shouting the
+ * same task name, with the one word that differed set in the small grey type. Runs of
+ * the same action on the same job by the same person collapse into one row, and the
+ * whole thing is grouped under the day it belongs to, so a day reads as a day instead
+ * of as fourteen floating cards.
+ */
+function groupFeed(rows: FeedRow[]): DayGroup[] {
+  const days: DayGroup[] = [];
+  for (const row of rows) {
+    const label = formatDate(row.entry.at);
+    let day = days[days.length - 1];
+    if (!day || day.label !== label) {
+      day = { label, rows: [] };
+      days.push(day);
+    }
+    const previous = day.rows[day.rows.length - 1];
+    const sameThing =
+      previous &&
+      previous.task.id === row.task.id &&
+      previous.worker.id === row.worker.id &&
+      previous.entry.action === row.entry.action &&
+      (previous.entry.detail ?? "") === (row.entry.detail ?? "");
+    if (sameThing) {
+      previous.count++;
+      continue;
+    }
+    day.rows.push({ ...row, count: 1 });
+  }
+  return days;
+}
+
 /**
  * The manager's work journal: an auditable record of everything that happened across
  * the team, over a chosen day / week / month. This is the product's core promise —
@@ -44,7 +90,7 @@ export function WorkJournal() {
 
   const workers = childrenList(state.family);
 
-  const { feed, done, awaiting, overdue } = useMemo(() => {
+  const { feed, days, done, awaiting, overdue } = useMemo(() => {
     const scoped = workerId === "all" ? workers : workers.filter((w) => w.id === workerId);
     const rows: FeedRow[] = [];
     let done = 0;
@@ -61,7 +107,7 @@ export function WorkJournal() {
       }
     }
     rows.sort((a, b) => Date.parse(b.entry.at) - Date.parse(a.entry.at));
-    return { feed: rows, done, awaiting, overdue };
+    return { feed: rows, days: groupFeed(rows), done, awaiting, overdue };
   }, [workers, workerId, range]);
 
   // Exactly what's on screen — the same range and worker filter — so the file the
@@ -133,11 +179,17 @@ export function WorkJournal() {
 
       {/* activity feed */}
       <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)" }}>יומן פעילות</div>
-          {/* Exporting acts on this feed, so the controls sit with it rather than in
-              the title bar, where they left the title no room to exist. */}
-          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {feed.length > 0 && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{`${feed.length} פעולות`}</div>
+          )}
+        </div>
+        {/* Exporting acts on this feed, so the controls sit with it rather than in
+            the title bar, where they left the title no room to exist. Their own row:
+            three buttons wedged beside a heading is how a phone screen starts to feel
+            like a cockpit. */}
+        <div style={{ display: "flex", gap: 6 }}>
             <button
               onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
               style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800 }}
@@ -158,7 +210,6 @@ export function WorkJournal() {
                 CSV
               </button>
             )}
-          </div>
         </div>
         {/* An empty log is the one screen where a person decides whether this is worth
             the trouble, so it says what will land here and why that is the product. */}
@@ -177,32 +228,75 @@ export function WorkJournal() {
             </button>
           </div>
         )}
-        {feed.map(({ entry, task, worker }) => (
-          <button
-            key={entry.id}
-            onClick={() => navigate(`/work/task/${worker.id}/${task.id}`)}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              background: "#ffffff",
-              border: "1px solid var(--line)",
-              borderRadius: 12,
-              padding: "11px 13px",
-              textAlign: "start",
-              boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
-            }}
-          >
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: actionColor[entry.action], marginTop: 6, flexShrink: 0 }} />
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>{task.title}</span>
-              <span style={{ display: "block", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
-                {activityLabels[entry.action] ?? entry.action} · {entry.by || worker.name}
-                {entry.detail ? ` · ${entry.detail}` : ""}
-              </span>
-              <span style={{ display: "block", fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{formatDateTime(entry.at)}</span>
-            </span>
-          </button>
+        {days.map((day) => (
+          <section key={day.label} className="pane" style={{ padding: 0, overflow: "hidden" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                padding: "11px 14px",
+                borderBottom: "1px solid var(--line)",
+              }}
+            >
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink)" }}>{day.label}</span>
+              <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>{`${day.rows.length} רשומות`}</span>
+            </div>
+            {day.rows.map((row, i) => (
+              <button
+                key={row.entry.id}
+                onClick={() => navigate(`/work/task/${row.worker.id}/${row.task.id}`)}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  borderTop: i === 0 ? "none" : "1px solid var(--line)",
+                  padding: "11px 14px",
+                  textAlign: "start",
+                }}
+              >
+                {/* A fixed time column is what turns a list into a timeline: the eye
+                    runs down one edge instead of hunting for the hour inside each row. */}
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    color: "var(--ink-faint)",
+                    fontVariantNumeric: "tabular-nums",
+                    width: 38,
+                    flexShrink: 0,
+                    paddingTop: 1,
+                  }}
+                >
+                  {formatTime(row.entry.at)}
+                </span>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: actionColor[row.entry.action], marginTop: 5, flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
+                    {activityLabels[row.entry.action] ?? row.entry.action}
+                    {row.count > 1 ? ` ×${row.count}` : ""}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: 11.5,
+                      color: "var(--ink-soft)",
+                      marginTop: 2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {row.task.title} · {row.entry.by || row.worker.name}
+                    {row.entry.detail ? ` · ${row.entry.detail}` : ""}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </section>
         ))}
       </div>
       <WorkBottomNav />

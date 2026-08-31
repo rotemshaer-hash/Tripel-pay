@@ -240,9 +240,11 @@ await m.waitForTimeout(2500);
 const { ctx: reopenCtx, page: r } = await openPage();
 await r.goto(dayLink.replace(/^https?:\/\/[^/]+/, BASE));
 await r.waitForTimeout(3000);
-// A finished job is collapsed, so the message shows as a badge on the card; open it
-// to read the rest.
-check("a new message from the manager is visible without opening the job", (await r.getByText("💬 הודעה מהמנהל", { exact: false }).count()) > 0);
+// A finished job is collapsed, so the correction has to be readable on the card
+// itself. Asserting the manager's actual words, not a label above them: the words are
+// what the worker has to act on, and a heading can be present while the message it
+// introduces is cut to nothing.
+check("a new message from the manager is visible without opening the job", (await r.getByText("תתחיל מהמדף העליון", { exact: false }).count()) > 0);
 await r.getByText("ניקיון מחסן").first().click();
 await r.waitForTimeout(800);
 const reopened = await r.locator("body").innerText();
