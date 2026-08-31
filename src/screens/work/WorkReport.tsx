@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, activityLabels, taskStatusLabels } from "../../data/vocabulary";
+import { V, taskStatusLabels } from "../../data/vocabulary";
 import { formatDateExact, formatTime, isOverdue, rangeLabels, rangeStart, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
@@ -22,19 +22,14 @@ import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 export function WorkReport() {
   const { state } = useStore();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const range = (params.get("range") as JournalRange) || "month";
   const workerId = params.get("worker") || "all";
-  // A proof pack answers a different question from a management report: not "is my
-  // team doing what I asked" but "here is what was done at your site, with photos and
-  // times" — the document that gets an invoice paid.
-  const isProof = params.get("mode") === "proof";
-  const site = params.get("site") || "all";
 
   const workers = childrenList(state.family);
   const company = state.family.companyName || state.family.parentName;
 
-  const { rows, done, awaiting, overdue, scopeLabel } = useMemo(() => {
+  const { done, awaiting, overdue, scopeLabel } = useMemo(() => {
     const scope = workerId === "all" ? workers : workers.filter((w) => w.id === workerId);
     const all: { entry: ActivityEntry; task: TaskItem; worker: Child }[] = [];
     let done = 0;
@@ -52,7 +47,6 @@ export function WorkReport() {
     }
     all.sort((a, b) => Date.parse(a.entry.at) - Date.parse(b.entry.at));
     return {
-      rows: all,
       done,
       awaiting,
       overdue,
@@ -60,26 +54,22 @@ export function WorkReport() {
     };
   }, [workers, workerId, range]);
 
-  const sites = useMemo(() => {
-    const set = new Set<string>();
-    for (const worker of workers) for (const task of worker.tasks) if (task.site) set.add(task.site);
-    return [...set].sort((a, b) => a.localeCompare(b, "he"));
-  }, [workers]);
-
-  const proofTasks = useMemo(() => {
+  // Every job that moved in the period, not only the approved ones: a manager asking
+  // "what was this work" is usually asking about something still open, and a document
+  // that silently dropped those was the reason three of them existed.
+  const jobs = useMemo(() => {
     const scope = workerId === "all" ? workers : workers.filter((w) => w.id === workerId);
     const out: { task: TaskItem; worker: Child }[] = [];
     for (const worker of scope) {
       for (const task of worker.tasks) {
-        if (task.status !== "completed") continue;
-        if (site !== "all" && (task.site ?? "") !== site) continue;
-        if (!withinRange(task.approvedAt ?? task.submittedAt, range)) continue;
+        const moved = (task.activity ?? []).some((entry) => withinRange(entry.at, range));
+        if (!moved && !withinRange(task.createdAt, range)) continue;
         out.push({ task, worker });
       }
     }
-    out.sort((a, b) => Date.parse(a.task.approvedAt ?? "") - Date.parse(b.task.approvedAt ?? ""));
+    out.sort((a, b) => Date.parse(b.task.createdAt ?? "") - Date.parse(a.task.createdAt ?? ""));
     return out;
-  }, [workers, workerId, site, range]);
+  }, [workers, workerId, range]);
 
   const from = formatDateExact(rangeStart(range).toISOString());
   const to = formatDateExact(new Date().toISOString());
@@ -97,56 +87,12 @@ export function WorkReport() {
         </button>
       </div>
 
-      {/* Choosing what the document covers belongs on the document, not on the screen
-          you came from — a proof pack is usually built for one customer at a time. */}
-      <div className="report-bar report-bar-controls no-print">
-        <button
-          onClick={() => {
-            const next = new URLSearchParams(params);
-            next.delete("mode");
-            setParams(next, { replace: true });
-          }}
-          className={`report-bar-btn${isProof ? "" : " report-bar-primary"}`}
-        >
-          {`דוח ${V.journal}`}
-        </button>
-        <button
-          onClick={() => {
-            const next = new URLSearchParams(params);
-            next.set("mode", "proof");
-            setParams(next, { replace: true });
-          }}
-          className={`report-bar-btn${isProof ? " report-bar-primary" : ""}`}
-        >
-          תיק הוכחות ללקוח
-        </button>
-        {isProof && (
-          <select
-            value={site}
-            onChange={(e) => {
-              const next = new URLSearchParams(params);
-              if (e.target.value === "all") next.delete("site");
-              else next.set("site", e.target.value);
-              setParams(next, { replace: true });
-            }}
-            className="report-bar-select"
-          >
-            <option value="all">כל האתרים</option>
-            {sites.map((siteName) => (
-              <option key={siteName} value={siteName}>
-                {siteName}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
       <div className="report-sheet">
         <header className="report-head">
           <div>
             <div className="report-company">{company}</div>
             <div className="report-title">
-              {isProof ? `תיק הוכחות${site !== "all" ? ` — ${site}` : ""} · ${rangeLabels[range]}` : `דוח ${V.journal} — ${rangeLabels[range]}`}
+              {`דוח עבודה — ${rangeLabels[range]}`}
             </div>
           </div>
           <div className="report-meta">
@@ -156,60 +102,20 @@ export function WorkReport() {
           </div>
         </header>
 
-        {isProof ? (
-          <section className="report-proof">
-            <div className="report-section-title">{`עבודות שהושלמו ואושרו — ${proofTasks.length}`}</div>
-            {proofTasks.map(({ task, worker }) => (
-              <article key={task.id} className="report-proof-item">
-                <div className="report-proof-head">
-                  <span className="report-proof-title">{task.title}</span>
-                  <span className="report-proof-meta">
-                    {`${worker.name} · ${formatDateExact(task.approvedAt ?? "")} ${formatTime(task.approvedAt ?? "")}`}
-                    {task.site ? ` · ${task.site}` : ""}
-                  </span>
-                </div>
-                {task.brief && <div className="report-proof-brief">{task.brief}</div>}
-                {(task.checklist ?? []).length > 0 && (
-                  <ul className="report-proof-steps">
-                    {(task.checklist ?? []).map((step) => (
-                      <li key={step.id}>{`${step.done ? "✓" : "—"} ${step.text}`}</li>
-                    ))}
-                  </ul>
-                )}
-                <div className="report-proof-shots">
-                  {(task.proofs ?? [])
-                    .filter((a) => a.kind === "image")
-                    .map((a) => (
-                      <figure key={a.id}>
-                        <img src={a.content} alt={a.name} />
-                        {/* What the shot shows comes first and in the reader's own
-                            terms; who took it and when is provenance, and belongs
-                            under it. A pack whose every caption said "צילום מהשטח"
-                            was a stack of pictures the customer had to interpret. */}
-                        {a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
-                        <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
-                      </figure>
-                    ))}
-                </div>
-                {(task.proofs ?? []).filter((a) => a.kind !== "image").length > 0 && (
-                  <div className="report-proof-notes">
-                    {(task.proofs ?? [])
-                      .filter((a) => a.kind !== "image")
-                      .map((a) => (
-                        <div key={a.id}>{`• ${a.kind === "note" ? a.content : a.name} (${a.addedBy})`}</div>
-                      ))}
-                  </div>
-                )}
-              </article>
-            ))}
-            {proofTasks.length === 0 && <div className="report-empty">אין עבודות מאושרות בתקופה ובאתר שנבחרו.</div>}
-          </section>
-        ) : (
-        <>
+        {/* One document, per job: what was asked, and what came back. It used to be
+            three — a statistics table, a separate "proof pack" for customers, and a CSV
+            — which meant the manager had to know which of the three answered the
+            question before they could ask it, and none of them put the brief next to
+            the evidence. There is one question here ("what was this job, and what
+            happened") and now one answer. */}
         <section className="report-stats">
           <div className="report-stat">
+            <div className="report-stat-value">{jobs.length}</div>
+            <div className="report-stat-label">עבודות בתקופה</div>
+          </div>
+          <div className="report-stat">
             <div className="report-stat-value">{done}</div>
-            <div className="report-stat-label">משימות שאושרו</div>
+            <div className="report-stat-label">הושלמו</div>
           </div>
           <div className="report-stat">
             <div className="report-stat-value">{awaiting}</div>
@@ -219,82 +125,109 @@ export function WorkReport() {
             <div className="report-stat-value">{overdue}</div>
             <div className="report-stat-label">באיחור</div>
           </div>
-          <div className="report-stat">
-            <div className="report-stat-value">{rows.length}</div>
-            <div className="report-stat-label">רישומים בתקופה</div>
-          </div>
         </section>
 
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th style={{ width: "13%" }}>תאריך</th>
-              <th style={{ width: "8%" }}>שעה</th>
-              <th style={{ width: "16%" }}>{V.worker}</th>
-              <th style={{ width: "31%" }}>{V.task}</th>
-              <th style={{ width: "16%" }}>{V.site}</th>
-              <th style={{ width: "16%" }}>פעולה</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ entry, task, worker }) => (
-              <tr key={entry.id}>
-                <td>{formatDateExact(entry.at)}</td>
-                <td>{formatTime(entry.at)}</td>
-                <td>{worker.name}</td>
-                <td>
-                  {task.title}
-                  {task.status === "completed" && <span className="report-ok"> ✓</span>}
-                </td>
-                <td>{task.site ?? "—"}</td>
-                <td>
-                  {activityLabels[entry.action] ?? entry.action}
-                  {entry.detail ? ` (${entry.detail})` : ""}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={6} className="report-empty">
-                  אין פעילות מתועדת בתקופה הזו.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <section className="report-proof">
+          {jobs.map(({ task, worker }) => {
+            const photos = (task.proofs ?? []).filter((a) => a.kind === "image");
+            const notes = (task.proofs ?? []).filter((a) => a.kind === "note");
+            const files = (task.proofs ?? []).filter((a) => a.kind === "file");
+            const briefFiles = task.briefAttachments ?? [];
+            const stamps: [string, string | undefined][] = [
+              ["נשלחה", task.createdAt],
+              ["נצפתה", task.seenAt],
+              ["אושרה קבלה", task.acknowledgedAt],
+              ["הוגשה", task.submittedAt],
+              ["אושרה", task.approvedAt],
+            ];
+            return (
+              <article key={`${worker.id}-${task.id}`} className="report-proof-item">
+                <div className="report-proof-head">
+                  <span className="report-proof-title">{task.title}</span>
+                  <span className="report-proof-meta">
+                    {[worker.name, task.site, task.dueAt ? `יעד: ${formatDateExact(task.dueAt)}` : "", taskStatusLabels[task.status]]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </div>
 
-        <section className="report-open">
-          <div className="report-section-title">משימות פתוחות בסוף התקופה</div>
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th style={{ width: "20%" }}>{V.worker}</th>
-                <th style={{ width: "40%" }}>{V.task}</th>
-                <th style={{ width: "20%" }}>תאריך יעד</th>
-                <th style={{ width: "20%" }}>סטטוס</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workers
-                .filter((w) => workerId === "all" || w.id === workerId)
-                .flatMap((w) => w.tasks.filter((t) => t.status !== "completed").map((t) => ({ w, t })))
-                .map(({ w, t }) => (
-                  <tr key={t.id}>
-                    <td>{w.name}</td>
-                    <td>{t.title}</td>
-                    <td>
-                      {t.dueAt ? formatDateExact(t.dueAt) : "—"}
-                      {isOverdue(t.dueAt, t.status) && <span className="report-late"> באיחור</span>}
-                    </td>
-                    <td>{taskStatusLabels[t.status]}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+                <div className="report-block-title">מה התבקש</div>
+                {task.brief ? <div className="report-proof-brief">{task.brief}</div> : <div className="report-quiet">לא נכתב פירוט.</div>}
+                {(task.checklist ?? []).length > 0 && (
+                  <ul className="report-proof-steps">
+                    {(task.checklist ?? []).map((step) => (
+                      <li key={step.id}>{`${step.done ? "✓" : "—"} ${step.text}`}</li>
+                    ))}
+                  </ul>
+                )}
+                {briefFiles.length > 0 && (
+                  <div className="report-proof-shots">
+                    {briefFiles
+                      .filter((a) => a.kind === "image")
+                      .map((a) => (
+                        <figure key={a.id}>
+                          <img src={a.content} alt={a.name} />
+                          <figcaption>{a.name}</figcaption>
+                        </figure>
+                      ))}
+                  </div>
+                )}
+                {briefFiles.filter((a) => a.kind !== "image").length > 0 && (
+                  <div className="report-proof-notes">
+                    {briefFiles
+                      .filter((a) => a.kind !== "image")
+                      .map((a) => (
+                        <div key={a.id}>{`• ${a.kind === "note" ? a.content : a.name}`}</div>
+                      ))}
+                  </div>
+                )}
+
+                <div className="report-block-title">מה בוצע</div>
+                <div className="report-stamps">
+                  {stamps
+                    .filter(([, at]) => !!at)
+                    .map(([label, at]) => (
+                      <span key={label}>{`${label}: ${formatDateExact(at)} ${formatTime(at)}`}</span>
+                    ))}
+                </div>
+                {photos.length === 0 && files.length === 0 && notes.length === 0 && (
+                  <div className="report-quiet">לא צורפו אסמכתאות.</div>
+                )}
+                {photos.length > 0 && (
+                  <div className="report-proof-shots">
+                    {photos.map((a) => (
+                      <figure key={a.id}>
+                        <img src={a.content} alt={a.name} />
+                        {/* What the shot shows comes first and in the worker's own
+                            words; who took it and when is provenance, under it. */}
+                        {a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
+                        <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
+                {(files.length > 0 || notes.length > 0) && (
+                  <div className="report-proof-notes">
+                    {files.map((a) => (
+                      <div key={a.id}>{`• ${a.name} (${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)})`}</div>
+                    ))}
+                    {notes.map((a) => (
+                      <div key={a.id}>{`• ${a.content} (${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)})`}</div>
+                    ))}
+                  </div>
+                )}
+                {(task.comments ?? []).length > 0 && (
+                  <div className="report-proof-notes">
+                    {(task.comments ?? []).map((c) => (
+                      <div key={c.at}>{`• ${c.by}: ${c.text}`}</div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+          {jobs.length === 0 && <div className="report-empty">אין עבודות בתקופה שנבחרה.</div>}
         </section>
-
-        </>
-        )}
 
         <footer className="report-foot">
           <div className="report-sign">
@@ -344,6 +277,9 @@ const printCss = `
 .report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
 .report-proof-shots figcaption { font-size: 9.5px; color: #5c5f6b; margin-top: 3px; }
 .report-proof-shots figcaption.report-proof-name { font-size: 11px; font-weight: 700; color: #232a3b; margin-top: 5px; }
+.report-block-title { font-size: 10px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
+.report-stamps { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 10.5px; color: #232a3b; }
+.report-quiet { font-size: 10.5px; color: #8b8e99; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .report-table th { text-align: start; font-weight: 800; padding: 7px 6px; border-bottom: 1.5px solid #232a3b; font-size: 11px; }
 .report-table td { padding: 6px; border-bottom: 1px solid #eceef2; vertical-align: top; line-height: 1.45; }

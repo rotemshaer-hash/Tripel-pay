@@ -317,7 +317,7 @@ export function WorkSettings() {
                 <div style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.65, marginBottom: 10 }}>
                   יימחקו לצמיתות: {workers.length} {V.workerPlural}, כל המשימות והאסמכתאות, וכל יומן העבודה.
                   {" "}
-                  <strong>כדאי לייצא את היומן ל-CSV לפני כן.</strong>
+                  <strong>כדאי להפיק ולשמור דוח עבודה לפני כן.</strong>
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.6, marginBottom: 12, background: "var(--paper)", borderRadius: 8, padding: "8px 10px" }}>
                   {`${V.workerPlural} שכבר נרשמו נשארים עם חשבון משלהם שאי אפשר למחוק מכאן — הוא פשוט לא יוביל לשום מקום. כל אחד מהם יכול למחוק אותו בעצמו.`}

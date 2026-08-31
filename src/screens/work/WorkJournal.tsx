@@ -5,8 +5,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels, work } from "../../data/vocabulary";
-import { formatDate, formatDateExact, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
-import { downloadCsv, toCsv } from "../../utils/exportCsv";
+import { formatDate, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
 const actionColor: Record<ActivityEntry["action"], string> = {
@@ -110,24 +109,6 @@ export function WorkJournal() {
     return { feed: rows, days: groupFeed(rows), done, awaiting, overdue };
   }, [workers, workerId, range]);
 
-  // Exactly what's on screen — the same range and worker filter — so the file the
-  // manager sends on always matches the journal they were just looking at.
-  function exportRange() {
-    const rows = feed.map(({ entry, task, worker }) => [
-      formatDateExact(entry.at),
-      formatTime(entry.at),
-      worker.name,
-      task.title,
-      task.site ?? "",
-      activityLabels[entry.action] ?? entry.action,
-      entry.by,
-      entry.detail ?? "",
-      task.dueAt ? formatDateExact(task.dueAt) : "",
-    ]);
-    const csv = toCsv(["תאריך", "שעה", V.worker, V.task, V.site, "פעולה", "בוצע על ידי", "פירוט", "תאריך יעד"], rows);
-    downloadCsv(`work-journal-${range}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
-  }
-
   return (
     <div className="screen work-ground">
       <Header
@@ -185,31 +166,16 @@ export function WorkJournal() {
             <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{`${feed.length} פעולות`}</div>
           )}
         </div>
-        {/* Exporting acts on this feed, so the controls sit with it rather than in
-            the title bar, where they left the title no room to exist. Their own row:
-            three buttons wedged beside a heading is how a phone screen starts to feel
-            like a cockpit. */}
+        {/* One button, because there is one document. It used to offer a statistics
+            report, a separate customer "proof pack" and a CSV, which made the manager
+            choose between three answers before they had asked the question. */}
         <div style={{ display: "flex", gap: 6 }}>
-            <button
-              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
-              style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800 }}
-            >
-              דוח PDF
-            </button>
-            <button
-              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}&mode=proof`)}
-              style={{ background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}
-            >
-              תיק ללקוח
-            </button>
-            {feed.length > 0 && (
-              <button
-                onClick={exportRange}
-                style={{ background: "#ffffff", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}
-              >
-                CSV
-              </button>
-            )}
+          <button
+            onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
+            style={{ flex: 1, background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13, fontWeight: 800 }}
+          >
+            דוח עבודה
+          </button>
         </div>
         {/* An empty log is the one screen where a person decides whether this is worth
             the trouble, so it says what will land here and why that is the product. */}

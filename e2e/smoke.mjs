@@ -292,6 +292,17 @@ await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(2500);
 check("signing back in restores the account from the server", (await m.getByText("בדיקת מזגנים").count()) > 0);
 
+console.log("10. one work report, holding both halves of the job");
+// The whole reason there is one document now: what was asked and what came back have
+// to sit on the same page. Three separate outputs each held one half.
+await m.goto(`${BASE}/work/report?range=month&worker=all`);
+await m.waitForTimeout(3000);
+const report = await m.locator("body").innerText();
+check("the report states what was asked", report.includes("מה התבקש"));
+check("and what was done", report.includes("מה בוצע"));
+check("the brief the manager wrote is in it", report.includes("לרוקן את המדף העליון"));
+check("so is the worker's evidence, in their words", report.includes("המדף העליון אחרי הניקוי"));
+
 await managerCtx.close();
 await workerCtx.close();
 await browser.close();
