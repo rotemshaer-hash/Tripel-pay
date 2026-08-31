@@ -4,6 +4,7 @@ import { useStore } from "../data/store";
 import { V, work } from "../data/vocabulary";
 import { resizeImageToDataUrl } from "../utils/resizeImage";
 import { formatDate } from "../utils/datetime";
+import { isServiceNotEnabled } from "../utils/authErrors";
 import type { LinkUpdate, TaskLinkSnapshot } from "../data/tasklink";
 
 /**
@@ -61,7 +62,7 @@ export function WorkerLink() {
         const code = (err as { code?: string })?.code ?? "";
         const message = (err as { message?: string })?.message ?? "";
         setError(
-          code === "auth/operation-not-allowed" || /permission|denied/i.test(`${code} ${message}`)
+          isServiceNotEnabled(code, message)
             ? "הקישור עדיין לא פעיל אצל המנהל — צריך להפעיל את השירות בהגדרות של העסק. כדאי להראות לו את ההודעה הזו."
             : "לא הצלחנו לטעון את המשימה. בדוק/י חיבור ונסה/י שוב."
         );
