@@ -55,8 +55,20 @@ export interface ParentLink {
  * account by it.
  */
 export async function ensureSomeSession(): Promise<void> {
+  // On a cold page load `auth.currentUser` is null for a moment even when a signed-in
+  // session is about to be restored from storage, so reading it straight away is
+  // exactly how the manager above gets replaced by an anonymous user — the promise in
+  // this comment was never actually kept. Let the restore settle before deciding.
+  await auth.authStateReady();
   if (auth.currentUser) return;
-  await signInAnonymously(auth);
+  const cred = await signInAnonymously(auth);
+  // The same race `writeNewFamily` already guards against, on the path that matters
+  // most: the database connection can still be unauthenticated when signInAnonymously
+  // resolves, and the read that follows comes back PERMISSION_DENIED. The worker's
+  // screen can only translate that into "the manager has not switched something on",
+  // so a person on a roof is told to go chase their manager over a handshake that
+  // needed another moment. Forcing a token makes the connection carry one first.
+  await cred.user.getIdToken(true).catch(() => {});
 }
 
 export function onAuthChange(cb: (user: User | null) => void) {
