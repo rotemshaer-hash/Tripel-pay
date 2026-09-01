@@ -118,7 +118,17 @@ export function WorkSettings() {
                 so. Signing in again is the only thing that moves. */}
             {connection.sessionLost ? (
               <button
-                onClick={() => void logout()}
+                onClick={async () => {
+                  // Without this, nothing here navigates: logout() alone leaves
+                  // RequireParent to notice the state change and fall back to its own
+                  // redirect, which reads the CURRENT path — still /work/settings —
+                  // as where to return after signing in. That is never useful here:
+                  // this button lives only on the settings screen itself, so "return
+                  // to where you were" always means "back to settings" instead of
+                  // wherever this person actually opens the app to go.
+                  await logout();
+                  navigate(entryPath());
+                }}
                 style={{ width: "100%", background: work.alert, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800 }}
               >
                 התנתקות והתחברות מחדש
