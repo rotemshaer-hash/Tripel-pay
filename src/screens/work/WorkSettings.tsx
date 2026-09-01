@@ -177,8 +177,8 @@ export function WorkSettings() {
             {checks && (
               <div style={{ marginTop: 11, display: "flex", flexDirection: "column", gap: 9 }}>
                 {checks.map((check) => (
-                  <div key={check.id} style={{ background: check.ok ? "#eaf7f2" : "#fdf0f3", border: `1px solid ${check.ok ? "#bfe4d8" : "#f3c0c9"}`, borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: check.ok ? "#136c58" : work.alert }}>
+                  <div key={check.id} style={{ background: check.ok ? "var(--success-bg)" : "var(--alert-bg)", border: `1px solid ${check.ok ? "var(--success-bg)" : "var(--alert-bg)"}`, borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: check.ok ? "var(--success)" : work.alert }}>
                       {`${check.ok ? "✓" : "✗"} ${check.title}`}
                     </div>
                     <div style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 3 }}>{check.detail}</div>
@@ -298,7 +298,7 @@ export function WorkSettings() {
         </button>
 
         {isOwner && (
-          <section style={{ ...card, borderColor: "#f3c0c9", marginTop: 8 }}>
+          <section style={{ ...card, borderColor: work.alert, marginTop: 8 }}>
             <div style={{ ...cardTitle, color: work.alert }}>מחיקת החשבון</div>
             {!closing ? (
               <>

@@ -36,6 +36,16 @@ export function WorkerLink() {
   const [pendingPhoto, setPendingPhoto] = useState<{ blob: Blob; previewUrl: string; fileName: string; mime: string } | null>(null);
   const [photoName, setPhotoName] = useState("");
 
+  // React Router navigates within the same tab, so leaving this page for another one
+  // does not reload it — a blob URL created here and never revoked would sit in memory
+  // for the rest of the session, not just for the moment this component happened to be
+  // mounted.
+  useEffect(() => {
+    return () => {
+      if (pendingPhoto) URL.revokeObjectURL(pendingPhoto.previewUrl);
+    };
+  }, [pendingPhoto]);
+
   // Re-read whenever the person comes back to the page: a manager can change the job
   // after sending it, and this link is the only copy the worker has.
   const [refreshKey, setRefreshKey] = useState(0);

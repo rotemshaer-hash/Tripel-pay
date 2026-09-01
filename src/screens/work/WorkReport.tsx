@@ -371,14 +371,14 @@ export function WorkReport() {
 
 const printCss = `
 .report-page { background: #f2f3f7; min-height: 100%; padding-bottom: 40px; }
-.report-bar { display: flex; gap: 8px; padding: 14px 18px; position: sticky; top: 0; background: #232a3b; }
-.report-bar-btn { flex: 1; padding: 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.25);
+/* This bar is "no-print" — the app's own chrome, still in the retired navy while
+   everything else on screen moved to the header teal. The sheet below it keeps its
+   own fixed ink-on-paper palette on purpose (a printed report should not reflow its
+   colours every time the app is restyled); this bar is not the sheet. */
+.report-bar { display: flex; gap: 8px; padding: 14px 18px; position: sticky; top: 0; background: var(--accent); }
+.report-bar-btn { flex: 1; padding: 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.3);
   background: transparent; color: #fff; font-size: 13.5px; font-weight: 700; }
-.report-bar-primary { background: #fff; color: #232a3b; border: none; font-weight: 800; }
-.report-bar-controls { top: 62px; border-top: 1px solid rgba(255,255,255,0.12); }
-.report-bar-select { flex: 1; padding: 11px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.25);
-  background: transparent; color: #fff; font-size: 13px; font-weight: 700; }
-.report-bar-select option { color: #1a1d26; }
+.report-bar-primary { background: #fff; color: var(--accent); border: none; font-weight: 800; }
 .report-sheet { background: #fff; margin: 16px auto; padding: 26px 24px; max-width: 820px;
   box-shadow: 0 1px 4px rgba(16,24,40,0.10); color: #1a1d26; }
 .report-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;

@@ -118,7 +118,9 @@ export function WorkBoard() {
                   dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor });
                   showToast("אושר ונסגר");
                 }}
-                style={{ width: "100%", background: `linear-gradient(150deg, #35c0a8 0%, ${work.done} 100%)`, color: "#ffffff", border: "none", padding: "12px", fontSize: 13.5, fontWeight: 800 }}
+                // The last of the retired glass gradients — flat now, like the rest
+                // of the board's controls.
+                style={{ width: "100%", background: work.done, color: "#ffffff", border: "none", padding: "12px", fontSize: 13.5, fontWeight: 800 }}
               >
                 אישור וסגירה
               </button>

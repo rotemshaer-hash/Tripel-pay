@@ -450,6 +450,14 @@ function reducer(state: AppState, action: Action): AppState {
       const child = state.family.children[action.childId];
       const task = child?.tasks.find((t) => t.id === action.taskId);
       if (!task) return state;
+      // Every photo a job accumulates now lives in Storage, not inline — a round at
+      // twenty stops is fifty objects in the bucket, and REMOVE_DOCUMENT already
+      // proved what happens to a record's files when nobody frees them: they keep
+      // paying rent forever. Fire-and-forget, same as there: a cleanup that failed
+      // must never be the reason a delete the user asked for did not happen.
+      for (const a of [...(task.proofs ?? []), ...(task.briefAttachments ?? [])]) {
+        if (a.path) void deleteStoredFile(a.path);
+      }
       return { ...state, family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: c.tasks.filter((t) => t.id !== action.taskId) })) };
     }
     case "ADD_CHECKLIST_ITEM": {

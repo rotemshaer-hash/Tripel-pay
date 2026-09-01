@@ -23,7 +23,10 @@ export function Splash() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#ffffff", overflow: "hidden" }}>
         <div
           style={{
-            background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)",
+            // The first thing anyone sees, still in the navy the rest of the app
+            // moved off of — this screen sat outside the design pass because it
+            // never appears in the app itself, only before signing in.
+            background: work.ink,
             padding: "0 26px 34px",
             display: "flex",
             flexDirection: "column",
@@ -35,7 +38,7 @@ export function Splash() {
           <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
             {firstWord} <span style={{ color: work.onDark }}>{restOfName.join(" ")}</span>
           </div>
-          <div style={{ fontSize: 14.5, color: "rgba(255,255,255,0.72)", marginTop: 10, lineHeight: 1.65 }}>
+          <div style={{ fontSize: 14.5, color: work.onDark, marginTop: 10, lineHeight: 1.65 }}>
             יומן עבודה לצוותים קטנים — משימות עם אחראי ותאריך יעד, אסמכתאות לכל ביצוע, ותיעוד של מי עשה מה ומתי.
           </div>
         </div>

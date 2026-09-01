@@ -72,9 +72,12 @@ export function Success() {
     const workers = childrenList(state.family);
     return (
       <div className="screen">
-        <div style={{ background: "linear-gradient(180deg, #232a3b 0%, #1b2130 100%)", padding: "28px 22px 22px", flexShrink: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#ffffff" }}>החשבון נוצר</div>
-          <div style={{ fontSize: 13.5, color: "rgba(255,255,255,0.72)", marginTop: 6, lineHeight: 1.6 }}>
+        {/* Reached at the end of the very sign-up flow the design pass started from,
+            and still in the retired navy gradient — this screen shows exactly once
+            per account, which is precisely how it went unnoticed. */}
+        <div className="hero" style={{ padding: "16px 22px 17px", flexShrink: 0 }}>
+          <div className="display" style={{ fontSize: 21, color: "#ffffff" }}>החשבון נוצר</div>
+          <div style={{ fontSize: 13.5, color: work.onDark, marginTop: 6, lineHeight: 1.6 }}>
             {workers.length > 0
               ? `נשאר לשלוח לכל ${V.worker} את הקישור שלו. אפשר לעשות את זה גם אחר כך ממסך הצוות.`
               : `אפשר להוסיף ${V.workerPlural} בכל שלב ממסך ההגדרות.`}

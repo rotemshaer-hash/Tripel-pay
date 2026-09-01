@@ -439,6 +439,34 @@ export function TaskDetail() {
             ))}
         </Panel>
 
+        {/* A job sent to the wrong person, or called off by the customer, has to be
+            removable at any stage — a board that cannot forget fills up with work
+            nobody will do. This used to live inside the editor, which the "עריכה"
+            toggle above only offers before a job is completed — so a finished job,
+            the one a manager is actually most likely to be clearing out, had no way
+            to reach it at all. Deleting is its own control, not a side effect of
+            editing, so it stays reachable regardless of status. What it must not be
+            is casual, so the confirmation counts out loud what is about to be
+            destroyed instead of asking a generic "are you sure". */}
+        {isManager && (
+          <ConfirmButton
+            style={{ background: "none", border: "none", color: work.alert, fontSize: 12.5, fontWeight: 700, padding: "6px 0", textAlign: "start" }}
+            label="מחיקת המשימה"
+            warning={(() => {
+              const proofs = (task.proofs ?? []).length;
+              const events = (task.activity ?? []).length;
+              const carries = task.status !== "available" || proofs > 0 || events > 1;
+              return carries
+                ? `למחוק את "${task.title}"? יש לה תיעוד: ${events} רשומות ביומן ו-${proofs} אסמכתאות. הכל יימחק לצמיתות ואי אפשר לשחזר.`
+                : `למחוק את "${task.title}"? המשימה טרם התחילה, אז אין לה תיעוד לאבד.`;
+            })()}
+            onConfirm={() => {
+              dispatch({ type: "DELETE_TASK", childId: activeWorker.id, taskId: activeTask.id });
+              navigate("/work/tasks", { replace: true });
+            }}
+          />
+        )}
+
         <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 13, fontWeight: 700, padding: 8 }}>
           חזרה
         </button>
@@ -623,27 +651,6 @@ function TaskEditor({
           ביטול
         </button>
       </div>
-
-      {/* A job sent to the wrong person, or called off by the customer, has to be
-          removable — a board that cannot forget fills up with work nobody will do.
-          What it must not be is casual, so the confirmation counts out loud what is
-          about to be destroyed instead of asking a generic "are you sure". */}
-      <ConfirmButton
-        style={{ background: "none", border: "none", color: work.alert, fontSize: 12.5, fontWeight: 700, padding: "6px 0", textAlign: "start" }}
-        label="מחיקת המשימה"
-        warning={(() => {
-          const proofs = (task.proofs ?? []).length;
-          const events = (task.activity ?? []).length;
-          const carries = task.status !== "available" || proofs > 0 || events > 1;
-          return carries
-            ? `למחוק את "${task.title}"? יש לה תיעוד: ${events} רשומות ביומן ו-${proofs} אסמכתאות. הכל יימחק לצמיתות ואי אפשר לשחזר.`
-            : `למחוק את "${task.title}"? המשימה טרם התחילה, אז אין לה תיעוד לאבד.`;
-        })()}
-        onConfirm={() => {
-          dispatch({ type: "DELETE_TASK", childId: worker.id, taskId: task.id });
-          navigate("/work/tasks", { replace: true });
-        }}
-      />
     </div>
   );
 }

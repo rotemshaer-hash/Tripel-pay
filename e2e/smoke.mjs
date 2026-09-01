@@ -396,6 +396,34 @@ await m.reload();
 await m.waitForTimeout(4500);
 check("and they stay gone once the record is re-read", !(await m.locator("body").innerText()).includes("בדיקת מזגנים"));
 
+console.log("11. a completed job can still be deleted from its own page");
+// This control used to live inside the "עריכה" editor, which the board only offers
+// before a job is completed — so a finished job, the one a manager is most likely to
+// be clearing out, had no way to reach its own delete button at all. "ניקיון מחסן"
+// is the one survivor left in the record; approving it closes the loop this bug
+// opened, and deleting it here (rather than through the report's bulk picker) proves
+// the fix on the path that was actually broken.
+await m.goto(`${BASE}/work/board`);
+await m.waitForTimeout(1500);
+await m.getByRole("button", { name: "אישור וסגירה" }).first().click();
+await m.waitForTimeout(1200);
+await m.goto(`${BASE}/work/journal?range=month`);
+await m.waitForTimeout(2000);
+await m.getByText("ניקיון מחסן").first().click();
+await m.waitForTimeout(600);
+await m.getByText("פתיחת המשימה ›").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1200);
+check("a completed job offers no way to edit it", (await m.getByText("עריכה", { exact: true }).count()) === 0);
+check("but deleting it is reachable without opening an editor", (await m.getByText("מחיקת המשימה").count()) > 0);
+await m.getByText("מחיקת המשימה").click();
+await m.waitForTimeout(600);
+await m.getByRole("button", { name: "כן, למחוק" }).click();
+await m.waitForURL("**/work/tasks", { timeout: 15000 });
+await m.goto(`${BASE}/work/journal?range=month`);
+await m.waitForTimeout(2000);
+check("the completed job is actually gone", !(await m.locator("body").innerText()).includes("ניקיון מחסן"));
+
 await managerCtx.close();
 await workerCtx.close();
 await browser.close();

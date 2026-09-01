@@ -72,6 +72,16 @@ export function WorkerDay() {
   const [photoName, setPhotoName] = useState("");
   const [pending, setPending] = useState<PendingReport[]>(() => readQueue().filter((p) => p.token === token));
 
+  // React Router navigates within the same tab, so leaving this page for another one
+  // does not reload it — a blob URL created here and never revoked would sit in memory
+  // for the rest of the session, not just for the moment this component happened to be
+  // mounted.
+  useEffect(() => {
+    return () => {
+      if (pendingPhoto) URL.revokeObjectURL(pendingPhoto.previewUrl);
+    };
+  }, [pendingPhoto]);
+
   // The manager can change a job after sending it, and the link is the only copy the
   // worker has. Coming back to the page — from WhatsApp, from a locked screen — is
   // exactly when it must be re-read, or a person works from instructions that changed
@@ -257,7 +267,23 @@ export function WorkerDay() {
               } as React.CSSProperties}
             >
               <button
-                onClick={() => setOpenTask(isOpen ? null : task.taskId)}
+                onClick={() => {
+                  const next = isOpen ? null : task.taskId;
+                  // The naming panel only renders under its own task, but the photo it
+                  // is holding lives in one slot of state shared by all of them. Without
+                  // this, collapsing the card — or opening a different job — didn't
+                  // touch that slot: the panel just stopped rendering, the blob URL was
+                  // never revoked, and picking a photo somewhere else silently
+                  // overwrote it. A photo that was about to be sent has to either get
+                  // sent or be visibly discarded, never disappear because a different
+                  // button was tapped.
+                  if (pendingPhoto && pendingPhoto.taskId !== next) {
+                    URL.revokeObjectURL(pendingPhoto.previewUrl);
+                    setPendingPhoto(null);
+                    setPhotoName("");
+                  }
+                  setOpenTask(next);
+                }}
                 style={{ width: "100%", background: "none", border: "none", padding: "15px 16px", textAlign: "start", display: "flex", alignItems: "flex-start", gap: 10 }}
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
