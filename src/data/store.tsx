@@ -873,15 +873,19 @@ function reducer(state: AppState, action: Action): AppState {
               if (t.status === "completed" || t.status === "pending_approval") return t;
               return logActivity({ ...t, status: "pending_approval", submittedAt: at, seenAt: t.seenAt ?? at }, { by: action.by, action: "submitted" }, at);
             }
-            // A photo brought its own bytes; a file left them in Storage and sent an
-            // address. Either way it lands as evidence on the task, indistinguishable
-            // from what the manager attaches inside the app.
+            // A photo used to carry its own bytes inline; now it leaves them in
+            // Storage the same way a file does, because a job's evidence can run to
+            // dozens of shots and the whole family record loads as one object on
+            // every sign-in — fifty inline photos is a record too big to load
+            // quickly, forever. `action.photo` (base64) is read only when no
+            // uploaded file came with the update, for the rare update still queued
+            // on a phone from before this changed.
             const attachment: Attachment =
-              action.kind === "file"
+              action.kind === "file" || (action.kind === "photo" && action.file)
                 ? {
                     id: `at-${crypto.randomUUID()}`,
-                    kind: "file",
-                    name: action.file?.name || "קובץ מהשטח",
+                    kind: action.kind === "photo" ? "image" : "file",
+                    name: action.kind === "photo" ? action.name?.trim() || "צילום מהשטח" : action.file?.name || "קובץ מהשטח",
                     content: action.file?.url ?? "",
                     ...(action.file?.path ? { path: action.file.path } : {}),
                     ...(action.file?.size ? { size: action.file.size } : {}),

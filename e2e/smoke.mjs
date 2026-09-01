@@ -18,6 +18,11 @@ const HEADLESS = true;
 const stamp = Date.now();
 const manager = { name: "רותם בדיקה", email: `manager.${stamp}@example.com`, password: "test123456", company: "מסגריית בדיקה" };
 const worker = { name: "יוסי בדיקה", username: `yossi${stamp}`, password: "worker123456" };
+// The smallest possible valid PNG, reused wherever the suite needs to pick "a photo".
+const onePixelPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 const failures = [];
 function check(label, condition) {
@@ -111,6 +116,17 @@ await w.setInputFiles('input[type="file"]:not([accept])', {
 });
 await w.waitForTimeout(4000);
 check("the uploaded file appears on the task", (await w.getByText("evidence.txt").count()) > 0);
+
+// A photo attached in-app used to ride inline as base64; it goes to Storage now, the
+// same as any other file, so this must still render as a picture and not as a download
+// link with a filename.
+await w.setInputFiles('input[accept="image/*"]:not([capture])', {
+  name: "before.png",
+  mimeType: "image/png",
+  buffer: onePixelPng,
+});
+await w.waitForTimeout(4000);
+check("an in-app photo uploads to Storage and renders as an image", (await w.locator('img[alt="before.png"]').count()) > 0);
 
 console.log("5. the worker submits and the manager approves");
 const submit = w.getByRole("button", { name: /הגשה|סיימתי|להגשה/ });
@@ -219,21 +235,33 @@ check("a worker with no account can send a real file, not only a photo", (await 
 // A photo is the evidence the customer actually looks at, and every one used to arrive
 // called "צילום מהשטח" — a pack of identical captions the customer cannot read. The
 // worker names it before it goes.
-const onePixelPng = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64"
-);
 await d.setInputFiles('input[accept="image/*"]:not([capture])', {
   name: "after.png",
   mimeType: "image/png",
   buffer: onePixelPng,
 });
 await d.waitForTimeout(1500);
-check("a photo waits to be named instead of going straight out", (await d.getByPlaceholder("מה רואים בתמונה? (למשל: הצנרת אחרי התיקון)").count()) > 0);
-await d.getByPlaceholder("מה רואים בתמונה? (למשל: הצנרת אחרי התיקון)").fill("המדף העליון אחרי הניקוי");
+check("a photo waits to be named instead of going straight out", (await d.getByPlaceholder("מה רואים בתמונה? (למשל: סניף רמת גן, אחרי התיקון)").count()) > 0);
+await d.getByPlaceholder("מה רואים בתמונה? (למשל: סניף רמת גן, אחרי התיקון)").fill("המדף העליון אחרי הניקוי");
 await d.getByRole("button", { name: "שליחת התמונה" }).click();
-await d.waitForTimeout(3000);
+// A photo now uploads to Storage before the report is sent — one more round trip
+// than the old inline-base64 write, so the wait is longer than the others.
+await d.waitForTimeout(4500);
 check("the named photo is sent", (await d.getByText("צורפו 3").count()) > 0);
+
+// A round done at several stops produces several photos under the same name — this
+// sends a second one sharing "המדף העליון אחרי הניקוי" so the report's grouping has
+// something real to fold together.
+await d.setInputFiles('input[accept="image/*"]:not([capture])', {
+  name: "after2.png",
+  mimeType: "image/png",
+  buffer: onePixelPng,
+});
+await d.waitForTimeout(1500);
+await d.getByPlaceholder("מה רואים בתמונה? (למשל: סניף רמת גן, אחרי התיקון)").fill("המדף העליון אחרי הניקוי");
+await d.getByRole("button", { name: "שליחת התמונה" }).click();
+await d.waitForTimeout(4500);
+check("a second photo under the same name is sent too", (await d.getByText("צורפו 4").count()) > 0);
 check("and then finishing is allowed", (await d.getByText("לפני סגירה צריך לצרף").count()) === 0);
 await d.getByText("🏁 סיימתי").click();
 await d.waitForTimeout(2000);
@@ -308,6 +336,25 @@ await m.goto(`${BASE}/work/journal`);
 await m.waitForTimeout(2500);
 check("signing back in restores the account from the server", (await m.getByText("בדיקת מזגנים").count()) > 0);
 
+check("a yearly range is offered alongside day/week/month", (await m.getByText("שנתי", { exact: true }).count()) > 0);
+check("and an all-time one", (await m.getByText("הכל", { exact: true }).count()) > 0);
+
+console.log("9.5 searching the journal by name and by date");
+await m.getByPlaceholder("חיפוש לפי שם משימה או עובד…").fill("ניקיון");
+await m.waitForTimeout(600);
+check("a name search finds the matching job", (await m.getByText("ניקיון מחסן").count()) > 0);
+check("and hides the one that doesn't match", (await m.getByText("בדיקת מזגנים").count()) === 0);
+await m.getByPlaceholder("חיפוש לפי שם משימה או עובד…").fill("");
+await m.waitForTimeout(400);
+// The date field searches across all history rather than the selected range tab —
+// today's date has to find both jobs even though the range buttons default to "day".
+const today = new Date().toISOString().slice(0, 10);
+await m.locator('input[type="date"]').fill(today);
+await m.waitForTimeout(600);
+check("a date search finds today's jobs", (await m.getByText("ניקיון מחסן").count()) > 0 && (await m.getByText("בדיקת מזגנים").count()) > 0);
+await m.locator('input[type="date"]').fill("");
+await m.waitForTimeout(400);
+
 console.log("10. one work report, holding both halves of the job");
 // The whole reason there is one document now: what was asked and what came back have
 // to sit on the same page. Three separate outputs each held one half.
@@ -318,6 +365,10 @@ check("the report states what was asked", report.includes("מה התבקש"));
 check("and what was done", report.includes("מה בוצע"));
 check("the brief the manager wrote is in it", report.includes("לרוקן את המדף העליון"));
 check("so is the worker's evidence, in their words", report.includes("המדף העליון אחרי הניקוי"));
+// Two photos sent under the same name — the way evidence arrives from a round of
+// several stops — fold into one heading with a count, rather than reading as two
+// separate, identically-captioned pictures.
+check("photos sharing a name are grouped under one heading", report.includes("המדף העליון אחרי הניקוי · 2"));
 
 // A period is a blunt way to choose what a customer's document covers, so the jobs in
 // it are ticked individually. Unticking one has to actually remove it from the sheet —

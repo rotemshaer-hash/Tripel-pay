@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useStore } from "../data/store";
-import { resizeImageToDataUrl } from "../utils/resizeImage";
+import { resizeImageToBlob } from "../utils/resizeImage";
 import { formatBytes, fileIcon } from "../utils/files";
 import { formatDateTime } from "../utils/datetime";
 import { work } from "../data/vocabulary";
@@ -20,16 +20,77 @@ import type { Attachment } from "../data/types";
 export const FILE_PICKER_HINT = "לא רואה את הקובץ? במסך שנפתח יש ☰ בפינה — משם בוחרים את הטלפון או Drive.";
 
 /**
+ * The three ways evidence actually arrives from a site: a fresh photo, one already on
+ * the phone, or a document. Shared by the daily link and the single-task link, which
+ * used to disagree — one offered all three, the other only a camera, so a delivery
+ * note already photographed that morning had a way onto one link and not the other.
+ *
+ * No `accept` on the file input on purpose: filtering it narrows Android's picker to
+ * local files of those types, which is how someone looking for a document in Drive
+ * ends up staring at their Downloads folder.
+ */
+export function ProofButtons({ busy, onPicked }: { busy: boolean; onPicked: (file: File) => void }) {
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) onPicked(file);
+  }
+
+  const sources = [
+    { label: "📷 מצלמה", ref: cameraRef },
+    { label: "🖼️ גלריה", ref: galleryRef },
+    { label: "📄 קובץ", ref: fileRef },
+  ];
+
+  return (
+    <div>
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={pick} style={{ display: "none" }} />
+      <input ref={galleryRef} type="file" accept="image/*" onChange={pick} style={{ display: "none" }} />
+      <input ref={fileRef} type="file" onChange={pick} style={{ display: "none" }} />
+      <div style={{ display: "flex", gap: 7 }}>
+        {sources.map((source) => (
+          <button
+            key={source.label}
+            type="button"
+            disabled={busy}
+            onClick={() => source.ref.current?.click()}
+            style={{
+              flex: 1,
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: 13,
+              padding: "15px 6px",
+              fontSize: 14,
+              fontWeight: 800,
+              color: "var(--ink)",
+              opacity: busy ? 0.5 : 1,
+            }}
+          >
+            {busy ? "שולח…" : source.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ fontSize: 11, color: "var(--ink-faint)", lineHeight: 1.5, marginTop: 7 }}>{FILE_PICKER_HINT}</div>
+    </div>
+  );
+}
+
+/**
  * The one control for putting a file on something.
  *
  * It existed only inside the task-detail screen, which is why the manager could attach
  * a file to a task that already existed but not to the one they were writing — the
  * form had no such control at all. One definition, used by both.
  *
- * Photos stay inline as a compressed data URL: they are small once resized, they load
- * with the record, and every one already stored is in that form. Real documents go to
- * Storage — a PDF has no lossy version, and putting one inside the database record
- * would blow past its size limit.
+ * Photos go to Storage, the same as any other file. They used to ride inline as a
+ * compressed data URL, which was fine for one or two but not for the evidence a real
+ * job produces — a task photographed at every stop can run to dozens of shots, and
+ * the whole family record loads as one object on every sign-in. Storage is what lets
+ * that scale with the job instead of with what the record can carry.
  */
 export function AttachButton({
   folder,
@@ -62,8 +123,9 @@ export function AttachButton({
     setDone("");
     try {
       if (file.type.startsWith("image/")) {
-        const content = await resizeImageToDataUrl(file, 900, 0.75);
-        onAttached({ kind: "image", name: file.name, content });
+        const blob = await resizeImageToBlob(file);
+        const stored = await uploadAttachment(folder, new File([blob], file.name || "photo.jpg", { type: blob.type }));
+        onAttached({ kind: "image", name: file.name, content: stored.url, path: stored.path, size: stored.size, mime: stored.mime });
         setDone(`${file.name} צורפה`);
         return;
       }

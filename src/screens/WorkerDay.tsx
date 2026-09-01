@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "../data/store";
 import { V, work } from "../data/vocabulary";
-import { resizeImageToDataUrl } from "../utils/resizeImage";
+import { resizeImageToBlob } from "../utils/resizeImage";
 import { formatDate, formatTime, isOverdue } from "../utils/datetime";
 import { isServiceNotEnabled } from "../utils/authErrors";
-import { FILE_PICKER_HINT } from "../components/Attachments";
+import { ProofButtons } from "../components/Attachments";
 import type { LinkUpdate, WorkerDaySnapshot } from "../data/tasklink";
 
 /**
@@ -68,7 +68,7 @@ export function WorkerDay() {
    * pack is the point of the photo, and a pack of twelve shots all called "צילום
    * מהשטח" cannot be read — but a person on a site will not fill in a form either, so
    * it is one optional line and the send button is right there. */
-  const [pendingPhoto, setPendingPhoto] = useState<{ taskId: string; dataUrl: string } | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<{ taskId: string; blob: Blob; previewUrl: string; fileName: string; mime: string } | null>(null);
   const [photoName, setPhotoName] = useState("");
   const [pending, setPending] = useState<PendingReport[]>(() => readQueue().filter((p) => p.token === token));
 
@@ -354,43 +354,63 @@ export function WorkerDay() {
 
                       {pendingPhoto?.taskId === task.taskId ? (
                         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 13, padding: 11, display: "flex", flexDirection: "column", gap: 9 }}>
-                          <img src={pendingPhoto.dataUrl} alt="" style={{ width: "100%", maxHeight: 190, objectFit: "cover", borderRadius: 9, display: "block" }} />
+                          <img src={pendingPhoto.previewUrl} alt="" style={{ width: "100%", maxHeight: 190, objectFit: "cover", borderRadius: 9, display: "block" }} />
                           <input
                             value={photoName}
                             onChange={(e) => setPhotoName(e.target.value)}
-                            placeholder="מה רואים בתמונה? (למשל: הצנרת אחרי התיקון)"
+                            placeholder="מה רואים בתמונה? (למשל: סניף רמת גן, אחרי התיקון)"
                             style={{ padding: "12px 13px", borderRadius: 10, border: "1px solid var(--line)", fontSize: 14 }}
                           />
                           <div style={{ display: "flex", gap: 8 }}>
                             <button
                               onClick={async () => {
                                 const name = photoName.trim();
-                                const dataUrl = pendingPhoto.dataUrl;
-                                setPendingPhoto(null);
-                                setPhotoName("");
-                                await report(
-                                  task.taskId,
-                                  { kind: "photo", at: now(), photo: dataUrl, ...(name ? { name } : {}) },
-                                  { proofs: state(task.taskId).proofs + 1 }
-                                );
+                                const { blob, fileName, mime } = pendingPhoto;
+                                setBusy(true);
+                                setError("");
+                                try {
+                                  const stored = await uploadAttachment(`day/${task.taskId}`, new File([blob], fileName, { type: mime }));
+                                  URL.revokeObjectURL(pendingPhoto.previewUrl);
+                                  setPendingPhoto(null);
+                                  setPhotoName("");
+                                  await report(
+                                    task.taskId,
+                                    {
+                                      kind: "photo",
+                                      at: now(),
+                                      ...(name ? { name } : {}),
+                                      file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size },
+                                    },
+                                    { proofs: state(task.taskId).proofs + 1 }
+                                  );
+                                } catch (err) {
+                                  console.error("Uploading the photo failed:", err);
+                                  setError(describeUploadFailure(err));
+                                  setBusy(false);
+                                }
                               }}
                               disabled={busy}
                               style={{ flex: 1, background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "13px", fontSize: 14, fontWeight: 800, opacity: busy ? 0.5 : 1 }}
                             >
-                              שליחת התמונה
+                              {busy ? "שולח…" : "שליחת התמונה"}
                             </button>
                             <button
                               onClick={() => {
+                                URL.revokeObjectURL(pendingPhoto.previewUrl);
                                 setPendingPhoto(null);
                                 setPhotoName("");
                               }}
+                              disabled={busy}
                               style={{ background: "none", border: "1px solid var(--line)", borderRadius: 10, padding: "0 16px", fontSize: 13, fontWeight: 700, color: "var(--ink-soft)" }}
                             >
                               ביטול
                             </button>
                           </div>
                           {/* Naming it is worth a moment but never worth losing the shot
-                              over, so sending without a name stays one tap away. */}
+                              over, so sending without a name stays one tap away. When a
+                              customer's site is a stop rather than a job — twenty
+                              branches on one visit — the name IS the address: every
+                              photo of "סניף רמת גן" lands together in the report. */}
                           <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>אפשר לשלוח גם בלי שם — השם עוזר בתיק שנשלח ללקוח.</div>
                         </div>
                       ) : (
@@ -401,8 +421,11 @@ export function WorkerDay() {
                           setError("");
                           try {
                             if (file.type.startsWith("image/")) {
-                              const photo = await resizeImageToDataUrl(file, 900, 0.7);
-                              setPendingPhoto({ taskId: task.taskId, dataUrl: photo });
+                              // Resized but not uploaded yet — the shot is only kept once
+                              // it is named and confirmed, so there is nothing on the
+                              // server to clean up if the person cancels.
+                              const blob = await resizeImageToBlob(file);
+                              setPendingPhoto({ taskId: task.taskId, blob, previewUrl: URL.createObjectURL(blob), fileName: file.name || "photo.jpg", mime: blob.type });
                               setPhotoName("");
                               setBusy(false);
                               return;
@@ -566,66 +589,3 @@ function BigButton({ label, tone, onClick, disabled }: { label: string; tone: "i
   );
 }
 
-/**
- * The three ways evidence actually arrives from a site.
- *
- * This button used to be a camera and nothing else, which meant a delivery note
- * already photographed that morning, or a PDF the supplier sent, had no way onto the
- * job at all — the one screen the whole product rests on could accept a fresh photo
- * or nothing. Naming each source separately also keeps Android from answering a tap
- * with its "choose an action" sheet, where a person hunting for a document is offered
- * a voice recorder.
- *
- * The file input carries no `accept` on purpose: filtering it narrows the picker to
- * local files of those types, which is how somebody looking for a document in Drive
- * ends up staring at their Downloads folder.
- */
-function ProofButtons({ busy, onPicked }: { busy: boolean; onPicked: (file: File) => void }) {
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  function pick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (file) onPicked(file);
-  }
-
-  const sources = [
-    { label: "📷 מצלמה", ref: cameraRef },
-    { label: "🖼️ גלריה", ref: galleryRef },
-    { label: "📄 קובץ", ref: fileRef },
-  ];
-
-  return (
-    <div>
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={pick} style={{ display: "none" }} />
-      <input ref={galleryRef} type="file" accept="image/*" onChange={pick} style={{ display: "none" }} />
-      <input ref={fileRef} type="file" onChange={pick} style={{ display: "none" }} />
-      <div style={{ display: "flex", gap: 7 }}>
-        {sources.map((source) => (
-          <button
-            key={source.label}
-            type="button"
-            disabled={busy}
-            onClick={() => source.ref.current?.click()}
-            style={{
-              flex: 1,
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: 13,
-              padding: "15px 6px",
-              fontSize: 14,
-              fontWeight: 800,
-              color: "var(--ink)",
-              opacity: busy ? 0.5 : 1,
-            }}
-          >
-            {busy ? "שולח…" : source.label}
-          </button>
-        ))}
-      </div>
-      <div style={{ fontSize: 11, color: "var(--ink-faint)", lineHeight: 1.5, marginTop: 7 }}>{FILE_PICKER_HINT}</div>
-    </div>
-  );
-}

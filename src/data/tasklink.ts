@@ -32,8 +32,13 @@ export interface LinkUpdate {
   kind: "ack" | "started" | "done" | "note" | "photo" | "file";
   at: string;
   note?: string;
-  /** A compressed data URL. Photos ride inside the update rather than through Storage
-   * so the worker never needs an account for the bucket either. */
+  /** A compressed data URL, read only when no `file` came with the update. This used
+   * to be how every photo travelled — inline, because an anonymous worker has no
+   * account for a bucket to belong to. That stopped being true the day evidence
+   * became a whole shift's worth of photos rather than one: an anonymous Firebase
+   * session still gets a uid, and the bucket rules already key on it, so a photo now
+   * uploads and travels as a `file` like anything else. Kept for the rare update
+   * still queued on a phone from before this changed. */
   photo?: string;
   /** What the photo shows, in the worker's words. Every shot used to arrive called
    * "צילום מהשטח", which is fine on the job and useless in the pack the customer

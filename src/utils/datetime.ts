@@ -58,15 +58,20 @@ export function formatDateTime(value: string | undefined): string {
   return `${formatDate(value)} ${formatTime(value)}`;
 }
 
-export type JournalRange = "day" | "week" | "month";
+export type JournalRange = "day" | "week" | "month" | "year" | "all";
 
 export const rangeLabels: Record<JournalRange, string> = {
   day: "יומי",
   week: "שבועי",
   month: "חודשי",
+  year: "שנתי",
+  all: "הכל",
 };
 
-/** Inclusive start of the given range, counting back from `now`. */
+/** Inclusive start of the given range, counting back from `now`. `"all"` is not a
+ * calendar period — Firebase keeps everything a business ever wrote until someone
+ * explicitly deletes it, there is no expiry to design around — so its start is simply
+ * before any record this product could hold. */
 export function rangeStart(range: JournalRange, now = new Date()): Date {
   const start = startOfDay(now);
   if (range === "day") return start;
@@ -74,13 +79,26 @@ export function rangeStart(range: JournalRange, now = new Date()): Date {
     // Israeli week starts on Sunday (getDay() === 0).
     return new Date(start.getFullYear(), start.getMonth(), start.getDate() - start.getDay());
   }
-  return new Date(start.getFullYear(), start.getMonth(), 1);
+  if (range === "month") return new Date(start.getFullYear(), start.getMonth(), 1);
+  if (range === "year") return new Date(start.getFullYear(), 0, 1);
+  return new Date(0);
 }
 
 export function withinRange(value: string | undefined, range: JournalRange, now = new Date()): boolean {
   const d = toDate(value);
   if (!d) return false;
   return d.getTime() >= rangeStart(range, now).getTime();
+}
+
+/** Does a timestamp fall on the given calendar day (an `<input type="date">` value,
+ * "YYYY-MM-DD")? Both sides are read in local time, so a shift that runs past
+ * midnight lands on the day it started, which is the day a person searching for it
+ * would type. */
+export function isOnDate(value: string | undefined, isoDate: string): boolean {
+  const d = toDate(value);
+  if (!d || !isoDate) return false;
+  const [y, m, day] = isoDate.split("-").map(Number);
+  return d.getFullYear() === y && d.getMonth() === m - 1 && d.getDate() === day;
 }
 
 /** Overdue = has a due date, it has passed, and the work isn't approved yet. */

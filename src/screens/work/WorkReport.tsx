@@ -5,7 +5,40 @@ import { ConfirmButton } from "../../components/ConfirmButton";
 import { childrenList } from "../../data/family";
 import { V, taskStatusLabels } from "../../data/vocabulary";
 import { formatDateExact, formatTime, isOverdue, rangeLabels, rangeStart, withinRange, type JournalRange } from "../../utils/datetime";
-import type { ActivityEntry, Child, TaskItem } from "../../data/types";
+import type { ActivityEntry, Attachment, Child, TaskItem } from "../../data/types";
+
+/**
+ * One job's photos, folded by what the worker called them.
+ *
+ * A job that was really a round of twenty stops produces fifty photos, and every one
+ * of them named after the stop it was taken at — that name is the client's own
+ * address, which is exactly what this groups by. Order is first-appearance, so the
+ * document reads in the order the worker actually moved through the day rather than
+ * alphabetically, and a name recurring later in the pile still joins its first group
+ * instead of starting a second one. Anything sent without a name — most of a smaller
+ * job, where there is only the one site — falls into a single trailing, unheaded
+ * group, exactly as before.
+ */
+function groupPhotosByName(photos: Attachment[]): { name: string; items: Attachment[] }[] {
+  const groups: { name: string; items: Attachment[] }[] = [];
+  const byKey = new Map<string, Attachment[]>();
+  for (const photo of photos) {
+    const key = photo.name && photo.name !== "צילום מהשטח" ? photo.name : "";
+    let items = byKey.get(key);
+    if (!items) {
+      items = [];
+      byKey.set(key, items);
+      groups.push({ name: key, items });
+    }
+    items.push(photo);
+  }
+  // The unnamed group reads last regardless of where its photos fell chronologically
+  // — named stops are the structure being reported on, and the leftover shots are a
+  // footnote to it, not one more stop in the middle of the sequence.
+  const unnamed = groups.findIndex((g) => !g.name);
+  if (unnamed >= 0 && unnamed < groups.length - 1) groups.push(groups.splice(unnamed, 1)[0]);
+  return groups;
+}
 
 /**
  * A report a manager can hand to a client, a bookkeeper or an auditor.
@@ -279,19 +312,25 @@ export function WorkReport() {
                 {photos.length === 0 && files.length === 0 && notes.length === 0 && (
                   <div className="report-quiet">לא צורפו אסמכתאות.</div>
                 )}
-                {photos.length > 0 && (
-                  <div className="report-proof-shots">
-                    {photos.map((a) => (
-                      <figure key={a.id}>
-                        <img src={a.content} alt={a.name} />
-                        {/* What the shot shows comes first and in the worker's own
-                            words; who took it and when is provenance, under it. */}
-                        {a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
-                        <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                )}
+                {photos.length > 0 &&
+                  groupPhotosByName(photos).map((group, gi) => (
+                    // A job photographed at twenty stops is twenty names repeated across
+                    // fifty shots, not fifty captions to read one at a time. Same name,
+                    // wherever it recurs in the pile, becomes one heading over its photos
+                    // — the branch is the heading now, not a line under every picture of it.
+                    <div key={group.name || `_${gi}`} className="report-shot-group">
+                      {group.name && <div className="report-shot-group-name">{`${group.name} · ${group.items.length}`}</div>}
+                      <div className="report-proof-shots">
+                        {group.items.map((a) => (
+                          <figure key={a.id}>
+                            <img src={a.content} alt={a.name} />
+                            {!group.name && a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
+                            <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 {(files.length > 0 || notes.length > 0) && (
                   <div className="report-proof-notes">
                     {files.map((a) => (
@@ -363,6 +402,8 @@ const printCss = `
 .report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
 .report-proof-shots figcaption { font-size: 9.5px; color: #5c5f6b; margin-top: 3px; }
 .report-proof-shots figcaption.report-proof-name { font-size: 11px; font-weight: 700; color: #232a3b; margin-top: 5px; }
+.report-shot-group + .report-shot-group { margin-top: 12px; }
+.report-shot-group-name { font-size: 12.5px; font-weight: 700; color: #232a3b; border-bottom: 1px solid #e3e5ea; padding-bottom: 4px; margin-top: 9px; }
 .report-block-title { font-size: 10px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
 .report-stamps { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 10.5px; color: #232a3b; }
 .report-quiet { font-size: 10.5px; color: #8b8e99; }

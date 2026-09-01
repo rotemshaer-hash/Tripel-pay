@@ -5,7 +5,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels, statusPillClass, taskStatusLabels, work } from "../../data/vocabulary";
-import { formatDate, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
+import { formatDate, formatTime, isOnDate, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
 // Every dot on the timeline comes from the palette. The three literals that used to
@@ -101,6 +101,9 @@ export function WorkJournal() {
   /** One job open at a time. Letting several stand open rebuilds the wall of detail
    * this screen exists to put away. */
   const [openJob, setOpenJob] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+  const searching = !!searchText.trim() || !!searchDate;
 
   const workers = childrenList(state.family);
 
@@ -110,19 +113,30 @@ export function WorkJournal() {
     let done = 0;
     let awaiting = 0;
     let overdue = 0;
+    // A search asks about the job, not about the tab the manager happened to be on —
+    // "מתי בדיוק תיקנו אצל X" is usually asked from outside the current day or week.
+    // So a name or a date turns the range buttons off for the duration of the search
+    // and looks across everything instead; they resume the moment the search is
+    // cleared.
+    const effectiveRange: JournalRange = searching ? "all" : range;
     for (const worker of scoped) {
       for (const task of worker.tasks) {
         if (task.status === "pending_approval") awaiting++;
         if (isOverdue(task.dueAt, task.status)) overdue++;
-        if (task.status === "completed" && withinRange(task.approvedAt, range)) done++;
+        if (task.status === "completed" && withinRange(task.approvedAt, effectiveRange)) done++;
         for (const entry of task.activity ?? []) {
-          if (withinRange(entry.at, range)) rows.push({ entry, task, worker });
+          if (!withinRange(entry.at, effectiveRange)) continue;
+          if (searchDate && !isOnDate(entry.at, searchDate)) continue;
+          rows.push({ entry, task, worker });
         }
       }
     }
     rows.sort((a, b) => Date.parse(b.entry.at) - Date.parse(a.entry.at));
-    return { feed: rows, jobs: groupByJob(rows), done, awaiting, overdue };
-  }, [workers, workerId, range]);
+    let grouped = groupByJob(rows);
+    const q = searchText.trim().toLowerCase();
+    if (q) grouped = grouped.filter((job) => job.task.title.toLowerCase().includes(q) || job.worker.name.toLowerCase().includes(q));
+    return { feed: rows, jobs: grouped, done, awaiting, overdue };
+  }, [workers, workerId, range, searching, searchText, searchDate]);
 
   return (
     <div className="screen work-ground">
@@ -134,18 +148,52 @@ export function WorkJournal() {
 
       />
 
-      {/* range switch */}
+      {/* "באיזה יום בדיוק תיקנו אצל X" is usually asked about a job outside today's
+          tab, so search looks past whichever range button is pressed rather than
+          respecting it — see the note on `effectiveRange` above. */}
       <div style={{ display: "flex", gap: 6, padding: "16px 20px 0" }}>
+        <input
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="חיפוש לפי שם משימה או עובד…"
+          style={{ flex: 1, minWidth: 0, padding: "10px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 13.5, color: "var(--ink)" }}
+        />
+        <input
+          type="date"
+          value={searchDate}
+          onChange={(e) => setSearchDate(e.target.value)}
+          style={{ flexShrink: 0, width: 132, padding: "10px 8px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 12.5, color: searchDate ? "var(--ink)" : "var(--text-muted)" }}
+        />
+        {searching && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchText("");
+              setSearchDate("");
+            }}
+            style={{ flexShrink: 0, background: "var(--muted-bg)", border: "none", borderRadius: 10, padding: "0 12px", fontSize: 12.5, fontWeight: 700, color: "var(--text-muted-2)" }}
+          >
+            ניקוי
+          </button>
+        )}
+      </div>
+
+      {/* range switch — scrolls rather than splitting evenly now that there are five,
+          not three: an evenly-split "הכל" next to "יומי" was either a sliver of a
+          button or forced every other label to shrink with it. Dimmed while a search
+          is active, since the search already looks past whichever one is pressed. */}
+      <div style={{ display: "flex", gap: 6, padding: "10px 20px 0", overflowX: "auto", opacity: searching ? 0.4 : 1, pointerEvents: searching ? "none" : undefined }}>
         {(Object.keys(rangeLabels) as JournalRange[]).map((r) => (
           <button
             key={r}
             onClick={() => setRange(r)}
             style={{
-              flex: 1,
-              padding: "9px 0",
+              flexShrink: 0,
+              padding: "9px 16px",
               borderRadius: 10,
               fontSize: 13,
               fontWeight: 700,
+              whiteSpace: "nowrap",
               border: range === r ? "none" : "1px solid var(--line)",
               background: range === r ? work.ink : "#ffffff",
               color: range === r ? "#ffffff" : "var(--ink-soft)",
@@ -178,7 +226,9 @@ export function WorkJournal() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-muted-2)" }}>
             {[
-              `${feed.length} פעולות`,
+              // A search that narrows the jobs below has to narrow this count too, or
+              // the line at the top and the list under it are visibly disagreeing.
+              `${searching ? jobs.reduce((n, job) => n + job.total, 0) : feed.length} פעולות`,
               done > 0 ? `${done} הושלמו` : "",
               awaiting > 0 ? `${awaiting} ממתינות` : "",
               overdue > 0 ? `${overdue} באיחור` : "",
@@ -208,8 +258,11 @@ export function WorkJournal() {
           )}
         </div>
         {/* An empty log is the one screen where a person decides whether this is worth
-            the trouble, so it says what will land here and why that is the product. */}
-        {feed.length === 0 && (
+            the trouble, so it says what will land here and why that is the product.
+            A search that matched nothing is a different fact and gets a different
+            message — "nothing has ever happened" would be a lie the moment there is
+            other, unrelated activity in the journal. */}
+        {feed.length === 0 && !searching && (
           <div className="pane" style={{ padding: "20px 16px" }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 7 }}>כאן נרשם הכל, לבד</div>
             <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.7 }}>
@@ -222,6 +275,11 @@ export function WorkJournal() {
             >
               למסך המשימות
             </button>
+          </div>
+        )}
+        {searching && jobs.length === 0 && (
+          <div className="pane" style={{ padding: "18px 16px", fontSize: 13, color: "var(--ink-soft)", textAlign: "center" }}>
+            שום משימה לא תואמת את החיפוש.
           </div>
         )}
         {jobs.map((job) => {
