@@ -1,30 +1,40 @@
 /* ===========================================================================
-   "Deep gold" — the approved palette, defined once.
+   The WhatsApp palette, defined once.
+
+   The product is an add-on to WhatsApp, so it reads as a relative of it. The one
+   rule that shapes everything here: the bright green everybody recognises cannot
+   be both the brand and the "done" state. If the top bar and the finished chip
+   are the same green, nothing on the screen stands out, which breaks the single
+   thing this product is for — seeing at a glance where the work stands. So the
+   deep teal holds the chrome, the bright green is spent on the one act that
+   genuinely means WhatsApp (sending), and "waiting" is amber on purpose so it
+   cannot be swallowed by the greens around it.
 
    The names on the right of each alias are the ones every screen already asks
    for, so the whole app re-skins from this block rather than from ten files of
-   hand-mixed hex. Success and alert are deliberately NOT part of the brand:
-   they carry meaning, so they stay put whatever the palette does.
+   hand-mixed hex.
    =========================================================================== */
 :root {
-  --accent: #b8901f;
-  --accent-text-on-dark: #f3e2b8;
-  --accent-text: #8a6a12;
-  --tint-1: #faf1dc;
-  --tint-2: #f5e6ba;
-  --page-bg: #f1efe9;
-  --border: #eae4d6;
-  --muted-bg: #f0ece1;
-  --text-muted: #96897a;
-  --text-muted-2: #8c7f6c;
-  --text-body: #47403a;
-  --success: #3f7a4a;
-  --success-bg: #ddebd8;
+  --accent: #075e54;
+  --accent-mid: #128c7e;
+  --send: #25d366;
+  --accent-text-on-dark: #a7d7cf;
+  --accent-text: #8a6410;
+  --tint-1: #e7f4ef;
+  --tint-2: #fdf0d2;
+  --page-bg: #f2f4f3;
+  --border: #e2e8e5;
+  --muted-bg: #eef1f0;
+  --text-muted: #8696a0;
+  --text-muted-2: #667781;
+  --text-body: #3b4a54;
+  --success: #157f45;
+  --success-bg: #d9f2e3;
   --alert: #b0281c;
   --alert-bg: #fbe3df;
 
   /* The names the screens use. */
-  --ink: #201a12;
+  --ink: #111b21;
   --ink-soft: var(--text-body);
   --ink-faint: var(--text-muted);
   --paper: var(--page-bg);
@@ -33,8 +43,8 @@
   --line: var(--border);
   --line-soft: var(--border);
   --header-gradient: var(--accent);
-  --shadow-card: 0 1px 2px rgba(32, 26, 18, 0.05);
-  --shadow-card-solid: 0 6px 18px -10px rgba(32, 26, 18, 0.3);
+  --shadow-card: 0 1px 2px rgba(17, 27, 33, 0.05);
+  --shadow-card-solid: 0 6px 18px -10px rgba(17, 27, 33, 0.3);
   --radius-lg: 18px;
   --radius-md: 14px;
   --radius-sm: 11px;
@@ -367,10 +377,10 @@ button.glass:active, .glass button:active {
 :root {
   --w-ink: var(--ink);
   --w-done: var(--success);
-  --w-wait: var(--accent);
-  --w-active: var(--accent-text);
+  --w-wait: var(--accent-text);
+  --w-active: var(--accent-mid);
   --w-alert: var(--alert);
-  --w-action: var(--accent);
+  --w-action: var(--send);
   /* The light itself: a low diagonal sheen reused by every pane. */
   --w-gloss: linear-gradient(150deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.55) 34%, rgba(255, 255, 255, 0.2) 62%, rgba(255, 255, 255, 0.55) 100%);
   --w-pane-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 14px 30px -18px rgba(20, 26, 45, 0.45), 0 2px 6px -3px rgba(20, 26, 45, 0.12);
@@ -396,7 +406,7 @@ button.glass:active, .glass button:active {
 
 /* A card that wants attention: the accent states it on the leading edge, and a
    job actually waiting on somebody gets the full 2px the spec calls for. */
-.pane-tint { border-inline-start: 3px solid var(--tint, var(--accent)); }
+.pane-tint { border-inline-start: 3px solid var(--tint, var(--accent-mid)); }
 
 /* The bar at the top of every screen: solid gold, the one place the brand
    speaks. Its title is the display face; everything under it steps down. */
@@ -452,10 +462,10 @@ button.glass:active, .glass button:active {
 .press-send {
   border: none;
   border-radius: 13px;
-  color: #ffffff;
+  color: #06301a;
   font-family: var(--font-display);
   font-weight: 400;
-  background: #1f8f4d;
+  background: var(--send);
 }
 .press-send:active { transform: translateY(1px); }
 

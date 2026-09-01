@@ -15,17 +15,17 @@
  */
 export const work = {
   /** The product's ink: active tabs, primary buttons, headers. */
-  ink: "#201a12",
+  ink: "#111b21",
   /** Something is wrong or is being undone: overdue, rejected, stopped, destructive. */
   alert: "#b0281c",
   /** Finished and accepted. */
-  done: "#3f7a4a",
+  done: "#157f45",
   /** Waiting on somebody. */
-  waiting: "#b8901f",
+  waiting: "#8a6410",
   /** In motion. */
-  active: "#8a6a12",
+  active: "#128c7e",
   /** Not started / neutral. */
-  idle: "#8c7f6c",
+  idle: "#667781",
   /**
    * The one colour that exists to be pressed, on the dark bar.
    *
@@ -34,11 +34,11 @@ export const work = {
    * up against the slate, and it does not collide with the white role chip or the red
    * text already sitting in that bar.
    */
-  action: "#b8901f",
+  action: "#25d366",
   /** The identity accent on a dark ground — the product name on the splash, the
    * company name in the title bar. Light enough to read on the slate, and quiet
    * enough not to compete with `action`, which is the only thing there to press. */
-  onDark: "#f3e2b8",
+  onDark: "#a7d7cf",
 } as const;
 
 export type ProductMode = "work" | "family";

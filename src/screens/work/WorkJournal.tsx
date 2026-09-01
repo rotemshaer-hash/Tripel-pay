@@ -8,18 +8,21 @@ import { V, activityLabels, taskStatusLabels, work } from "../../data/vocabulary
 import { formatDate, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
+// Every dot on the timeline comes from the palette. The three literals that used to
+// sit here — a stray blue, a stray grey, and WhatsApp's green typed out again — are
+// exactly how a system drifts back into forty slightly different colours.
 const actionColor: Record<ActivityEntry["action"], string> = {
   created: work.idle,
-  assigned: "#2f7fd1",
+  assigned: work.active,
   started: work.active,
   submitted: work.waiting,
   approved: work.done,
   reopened: work.alert,
-  commented: "#5c5f6b",
-  attached: "#2f7fd1",
+  commented: work.idle,
+  attached: work.active,
   edited: work.idle,
   reassigned: work.waiting,
-  sent: "#25D366",
+  sent: work.action,
   seen: work.idle,
   acknowledged: work.done,
 };
