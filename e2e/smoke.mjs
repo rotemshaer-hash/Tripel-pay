@@ -322,7 +322,7 @@ check("so is the worker's evidence, in their words", report.includes("המדף �
 // A period is a blunt way to choose what a customer's document covers, so the jobs in
 // it are ticked individually. Unticking one has to actually remove it from the sheet —
 // a picker that changes a count and nothing else is worse than no picker.
-check("every job in the period starts in the document", (await m.getByText("עבודות בדוח · 2 מתוך 2").count()) > 0);
+check("every job in the period starts in the document", (await m.getByText("מה ייכנס לדוח · 2 מתוך 2").count()) > 0);
 await m.locator(".report-picker-row", { hasText: "ניקיון מחסן" }).locator("input").uncheck();
 await m.waitForTimeout(600);
 const trimmed = await m.locator(".report-sheet").innerText();

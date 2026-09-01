@@ -121,12 +121,15 @@ export function WorkReport() {
       {jobs.length > 0 && (
         <div className="report-picker no-print">
           <div className="report-picker-head">
-            <span>{`עבודות בדוח · ${chosen.length} מתוך ${jobs.length}`}</span>
+            <span>{`מה ייכנס לדוח · ${chosen.length} מתוך ${jobs.length}`}</span>
+            {/* This said "ניקוי הכל", which in Hebrew promises deletion — and it was
+                read that way: jobs were unticked, and reported as coming back, because
+                nothing had ever been deleted. A control names the thing it does. */}
             <button
               type="button"
               onClick={() => setDropped(chosen.length === jobs.length ? new Set(jobs.map((j) => j.key)) : new Set())}
             >
-              {chosen.length === jobs.length ? "ניקוי הכל" : "בחירת הכל"}
+              {chosen.length === jobs.length ? "ביטול הסימון" : "סימון הכל"}
             </button>
           </div>
           {jobs.map((job) => (
@@ -280,7 +283,7 @@ export function WorkReport() {
               </article>
             );
           })}
-          {chosen.length === 0 && <div className="report-empty">לא נבחרו עבודות לדוח.</div>}
+          {chosen.length === 0 && <div className="report-empty">לא סומנה אף עבודה. סמן למעלה מה ייכנס לדוח.</div>}
         </section>
 
         <footer className="report-foot">
