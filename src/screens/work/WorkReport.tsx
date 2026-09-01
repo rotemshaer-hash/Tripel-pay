@@ -147,23 +147,29 @@ export function WorkReport() {
               wanting to clear finished work ends up — so the action lives here rather
               than in a second list built to hold the same names. It is separated,
               coloured as the destruction it is, and it counts out loud what goes. */}
-          {chosen.length > 0 && (
-            <ConfirmButton
-              className="report-picker-delete"
-              label={`מחיקת ${chosen.length} העבודות המסומנות לצמיתות`}
-              warning={(() => {
-                const proofs = chosen.reduce((n, job) => n + (job.task.proofs ?? []).length, 0);
-                const events = chosen.reduce((n, job) => n + (job.task.activity ?? []).length, 0);
-                const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
-                const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
-                return `למחוק לצמיתות ${chosen.length} עבודות — ${names}${more}? יימחקו איתן ${events} רשומות ביומן ו-${proofs} אסמכתאות, ואי אפשר לשחזר.`;
-              })()}
-              onConfirm={() => {
-                for (const job of chosen) dispatch({ type: "DELETE_TASK", childId: job.worker.id, taskId: job.task.id });
-                setDropped(new Set());
-              }}
-            />
-          )}
+        </div>
+      )}
+
+      {/* Detached from the list on purpose. Sitting inside that card, directly under a
+          row, the most destructive control in the product read as one more line of the
+          selection — a tick and a permanent delete an inch apart, in the same box. */}
+      {jobs.length > 0 && chosen.length > 0 && (
+        <div className="report-danger no-print">
+          <ConfirmButton
+            className="report-picker-delete"
+            label={`מחיקת ${chosen.length} העבודות המסומנות לצמיתות`}
+            warning={(() => {
+              const proofs = chosen.reduce((n, job) => n + (job.task.proofs ?? []).length, 0);
+              const events = chosen.reduce((n, job) => n + (job.task.activity ?? []).length, 0);
+              const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
+              const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
+              return `למחוק לצמיתות ${chosen.length} עבודות — ${names}${more}? יימחקו איתן ${events} רשומות ביומן ו-${proofs} אסמכתאות, ואי אפשר לשחזר.`;
+            })()}
+            onConfirm={() => {
+              for (const job of chosen) dispatch({ type: "DELETE_TASK", childId: job.worker.id, taskId: job.task.id });
+              setDropped(new Set());
+            }}
+          />
         </div>
       )}
 
@@ -372,7 +378,8 @@ const printCss = `
 .report-picker-row input { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
 .report-picker-name { font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .report-picker-meta { margin-inline-start: auto; font-size: 11px; color: var(--text-muted-2); white-space: nowrap; flex-shrink: 0; }
-.report-picker-delete { display: block; width: 100%; background: none; border: none; border-top: 1px solid var(--border); padding: 12px 14px; font-size: 12.5px; font-weight: 800; color: var(--alert); text-align: start; }
+.report-danger { margin: 10px auto 0; max-width: 780px; }
+.report-picker-delete { display: block; width: 100%; background: none; border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 12.5px; font-weight: 800; color: var(--alert); text-align: start; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .report-table th { text-align: start; font-weight: 800; padding: 7px 6px; border-bottom: 1.5px solid #232a3b; font-size: 11px; }
 .report-table td { padding: 6px; border-bottom: 1px solid #eceef2; vertical-align: top; line-height: 1.45; }

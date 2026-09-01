@@ -156,16 +156,9 @@ export function WorkJournal() {
         ))}
       </div>
 
-      {/* summary */}
-      <div style={{ display: "flex", gap: 8, padding: "12px 20px 0" }}>
-        <Stat label="הושלמו" value={done} color={work.done} />
-        <Stat label="ממתינות לאישור" value={awaiting} color={work.waiting} />
-        <Stat label="באיחור" value={overdue} color={work.alert} />
-      </div>
-
       {/* worker filter */}
       {workers.length > 1 && (
-        <div style={{ display: "flex", gap: 6, padding: "14px 20px 0", overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 6, padding: "10px 20px 0", overflowX: "auto" }}>
           <FilterChip label="הכל" active={workerId === "all"} onClick={() => setWorkerId("all")} />
           {workers.map((w) => (
             <FilterChip key={w.id} label={w.name} active={workerId === w.id} onClick={() => setWorkerId(w.id)} />
@@ -173,24 +166,46 @@ export function WorkJournal() {
         </div>
       )}
 
-      {/* activity feed */}
-      <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)" }}>יומן פעילות</div>
+      <div style={{ padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* One line where three tiles and two headings used to sit.
+            The tiles were mostly large zeroes, and they contradicted the header on the
+            way in — the header counts the whole business, they counted the chosen
+            period, and nobody reading "3 הושלמו" above "1 הושלמו" concludes anything
+            except that the screen is confused. A count of nothing is also not worth a
+            card: only the states that actually have work in them are named. The
+            per-job counts already sit on each row, so the total said "6 פעולות" twice
+            in a row before a single job appeared. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-muted-2)" }}>
+            {[
+              `${feed.length} פעולות`,
+              done > 0 ? `${done} הושלמו` : "",
+              awaiting > 0 ? `${awaiting} ממתינות` : "",
+              overdue > 0 ? `${overdue} באיחור` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+          {/* The report is built from what is on this screen, so it belongs beside the
+              summary of that — not as a full-width black bar between the filters and
+              the work, where it read as the next step rather than as an action. */}
           {feed.length > 0 && (
-            <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{`${feed.length} פעולות`}</div>
+            <button
+              onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
+              style={{
+                flexShrink: 0,
+                background: "var(--card)",
+                color: "var(--ink)",
+                border: "1px solid var(--border)",
+                borderRadius: 9,
+                padding: "8px 13px",
+                fontSize: 12.5,
+                fontWeight: 800,
+              }}
+            >
+              דוח עבודה
+            </button>
           )}
-        </div>
-        {/* One button, because there is one document. It used to offer a statistics
-            report, a separate customer "proof pack" and a CSV, which made the manager
-            choose between three answers before they had asked the question. */}
-        <div style={{ display: "flex", gap: 6 }}>
-          <button
-            onClick={() => navigate(`/work/report?range=${range}&worker=${workerId}`)}
-            style={{ flex: 1, background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13, fontWeight: 800 }}
-          >
-            דוח עבודה
-          </button>
         </div>
         {/* An empty log is the one screen where a person decides whether this is worth
             the trouble, so it says what will land here and why that is the product. */}
@@ -328,15 +343,6 @@ export function WorkJournal() {
         })}
       </div>
       <WorkBottomNav />
-    </div>
-  );
-}
-
-function Stat({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div style={{ flex: 1, background: "#ffffff", border: "1px solid var(--line)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
-      <div style={{ fontSize: 20, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginTop: 2 }}>{label}</div>
     </div>
   );
 }
