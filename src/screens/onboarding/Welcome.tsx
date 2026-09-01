@@ -37,10 +37,10 @@ function MarkTask() {
       <rect x="10" y="22" width="92" height="24" rx="6" fill="#eef0f4" />
       <rect x="10" y="54" width="92" height="24" rx="6" fill="#eef0f4" />
       <rect x="10" y="86" width="60" height="14" rx="6" fill="#f4f5f8" />
-      <rect x="18" y="30" width="8" height="8" rx="2" fill="#232a3b" />
+      <rect x="18" y="30" width="8" height="8" rx="2" fill={work.ink} />
       <rect x="32" y="31" width="40" height="6" rx="3" fill="#c9cdd6" />
       <circle cx="88" cy="34" r="6" fill="#4756b3" />
-      <rect x="18" y="62" width="8" height="8" rx="2" fill="#232a3b" />
+      <rect x="18" y="62" width="8" height="8" rx="2" fill={work.ink} />
       <rect x="32" y="63" width="52" height="6" rx="3" fill="#c9cdd6" />
       <circle cx="96" cy="66" r="6" fill="#f2761b" />
     </svg>
@@ -64,7 +64,7 @@ function MarkJournal() {
   return (
     <svg width="112" height="112" viewBox="0 0 112 112" fill="none" role="img" aria-label="יומן עבודה">
       <rect x="14" y="16" width="84" height="80" rx="8" fill="#eef0f4" />
-      <rect x="14" y="16" width="84" height="16" rx="8" fill="#232a3b" />
+      <rect x="14" y="16" width="84" height="16" rx="8" fill={work.ink} />
       <circle cx="30" cy="48" r="4" fill="#1f9e8a" />
       <rect x="42" y="45" width="42" height="6" rx="3" fill="#c9cdd6" />
       <circle cx="30" cy="64" r="4" fill="#4756b3" />
