@@ -108,6 +108,18 @@ export function Login() {
 
       {isWork && (
         <div className="hero" style={{ padding: "40px 24px 30px", flexShrink: 0 }}>
+          {/* The mark's teal bubble reads against a light ground, not against the
+              hero's own teal — it would vanish into it. A white tile behind it is
+              simpler than a second, colour-inverted version of the mark. */}
+          <div style={{ width: 46, height: 46, borderRadius: 13, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+            <svg width="28" height="28" viewBox="0 0 46 46" role="img" aria-hidden="true">
+              <path
+                d="M23 4c11.05 0 20 8.06 20 18s-8.95 18-20 18c-2.55 0-4.98-.43-7.22-1.22L6 42l3.1-8.9C6.9 30.1 6 27.2 6 24 6 12.06 12.95 4 23 4z"
+                fill="var(--accent)"
+              />
+              <path d="M14 22l5.5 6L33 14" stroke="var(--send)" strokeWidth="4.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
           <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
             {V.appName.split(" ")[0]} <span style={{ color: work.onDark }}>{V.appName.split(" ").slice(1).join(" ")}</span>
           </div>

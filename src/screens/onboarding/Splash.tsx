@@ -35,6 +35,18 @@ export function Splash() {
             minHeight: 0,
           }}
         >
+          {/* Same tile as the login screen's hero, and for the same reason: the mark's
+              teal bubble needs a light ground under it or it disappears into this
+              screen's near-black one. */}
+          <div style={{ width: 46, height: 46, borderRadius: 13, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+            <svg width="28" height="28" viewBox="0 0 46 46" role="img" aria-hidden="true">
+              <path
+                d="M23 4c11.05 0 20 8.06 20 18s-8.95 18-20 18c-2.55 0-4.98-.43-7.22-1.22L6 42l3.1-8.9C6.9 30.1 6 27.2 6 24 6 12.06 12.95 4 23 4z"
+                fill="var(--accent)"
+              />
+              <path d="M14 22l5.5 6L33 14" stroke="var(--send)" strokeWidth="4.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
           <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
             {firstWord} <span style={{ color: work.onDark }}>{restOfName.join(" ")}</span>
           </div>
