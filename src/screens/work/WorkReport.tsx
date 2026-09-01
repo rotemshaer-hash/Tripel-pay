@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
@@ -59,17 +59,44 @@ export function WorkReport() {
   // that silently dropped those was the reason three of them existed.
   const jobs = useMemo(() => {
     const scope = workerId === "all" ? workers : workers.filter((w) => w.id === workerId);
-    const out: { task: TaskItem; worker: Child }[] = [];
+    const out: { key: string; task: TaskItem; worker: Child }[] = [];
     for (const worker of scope) {
       for (const task of worker.tasks) {
-        const moved = (task.activity ?? []).some((entry) => withinRange(entry.at, range));
-        if (!moved && !withinRange(task.createdAt, range)) continue;
-        out.push({ task, worker });
+        // Every timestamp a job can carry, not just its trail. A job whose activity
+        // was written before this record kept one, or that arrived with only an
+        // approval stamp on it, was dropped from the document with nothing said —
+        // which looks exactly like a report that decided to show one job.
+        const moved =
+          (task.activity ?? []).some((entry) => withinRange(entry.at, range)) ||
+          [task.createdAt, task.dueAt, task.seenAt, task.acknowledgedAt, task.startedAt, task.submittedAt, task.approvedAt].some((at) =>
+            withinRange(at, range)
+          );
+        if (!moved) continue;
+        out.push({ key: `${worker.id}/${task.id}`, task, worker });
       }
     }
     out.sort((a, b) => Date.parse(b.task.createdAt ?? "") - Date.parse(a.task.createdAt ?? ""));
     return out;
   }, [workers, workerId, range]);
+
+  /**
+   * Which jobs the document is being built from.
+   *
+   * A period is a blunt way to choose: an invoice covers the three jobs done at one
+   * customer's site, not everything that moved that week. Selection is by exception —
+   * everything in the period starts ticked — so the common case stays one tap and
+   * narrowing it down is possible without leaving the page.
+   */
+  const [dropped, setDropped] = useState<Set<string>>(new Set());
+  const chosen = jobs.filter((job) => !dropped.has(job.key));
+  function toggle(key: string) {
+    setDropped((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const from = formatDateExact(rangeStart(range).toISOString());
   const to = formatDateExact(new Date().toISOString());
@@ -86,6 +113,33 @@ export function WorkReport() {
           הדפסה / שמירה כ-PDF
         </button>
       </div>
+
+      {/* Choosing what goes in belongs on the document rather than on the screen you
+          came from: you can see each job's name and state while you decide, and the
+          result is in front of you the moment you have. It is `no-print`, so the
+          picker never lands on paper. */}
+      {jobs.length > 0 && (
+        <div className="report-picker no-print">
+          <div className="report-picker-head">
+            <span>{`עבודות בדוח · ${chosen.length} מתוך ${jobs.length}`}</span>
+            <button
+              type="button"
+              onClick={() => setDropped(chosen.length === jobs.length ? new Set(jobs.map((j) => j.key)) : new Set())}
+            >
+              {chosen.length === jobs.length ? "ניקוי הכל" : "בחירת הכל"}
+            </button>
+          </div>
+          {jobs.map((job) => (
+            <label key={job.key} className="report-picker-row">
+              <input type="checkbox" checked={!dropped.has(job.key)} onChange={() => toggle(job.key)} />
+              <span className="report-picker-name">{job.task.title}</span>
+              <span className="report-picker-meta">
+                {[job.worker.name, job.task.site, taskStatusLabels[job.task.status]].filter(Boolean).join(" · ")}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
 
       <div className="report-sheet">
         <header className="report-head">
@@ -110,8 +164,8 @@ export function WorkReport() {
             happened") and now one answer. */}
         <section className="report-stats">
           <div className="report-stat">
-            <div className="report-stat-value">{jobs.length}</div>
-            <div className="report-stat-label">עבודות בתקופה</div>
+            <div className="report-stat-value">{chosen.length}</div>
+            <div className="report-stat-label">עבודות בדוח</div>
           </div>
           <div className="report-stat">
             <div className="report-stat-value">{done}</div>
@@ -128,7 +182,7 @@ export function WorkReport() {
         </section>
 
         <section className="report-proof">
-          {jobs.map(({ task, worker }) => {
+          {chosen.map(({ task, worker }) => {
             const photos = (task.proofs ?? []).filter((a) => a.kind === "image");
             const notes = (task.proofs ?? []).filter((a) => a.kind === "note");
             const files = (task.proofs ?? []).filter((a) => a.kind === "file");
@@ -226,7 +280,7 @@ export function WorkReport() {
               </article>
             );
           })}
-          {jobs.length === 0 && <div className="report-empty">אין עבודות בתקופה שנבחרה.</div>}
+          {chosen.length === 0 && <div className="report-empty">לא נבחרו עבודות לדוח.</div>}
         </section>
 
         <footer className="report-foot">
@@ -280,6 +334,18 @@ const printCss = `
 .report-block-title { font-size: 10px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
 .report-stamps { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 10.5px; color: #232a3b; }
 .report-quiet { font-size: 10.5px; color: #8b8e99; }
+
+/* The picker is screen furniture: it lives above the sheet, in the app's own
+   colours rather than the document's, so nobody mistakes it for part of the page
+   that prints. */
+.report-picker { margin: 12px auto 0; max-width: 780px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.report-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.report-picker-head button { background: none; border: none; padding: 0; font-size: 12px; font-weight: 800; color: var(--accent-mid); }
+.report-picker-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border); cursor: pointer; }
+.report-picker-row:first-of-type { border-top: none; }
+.report-picker-row input { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
+.report-picker-name { font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.report-picker-meta { margin-inline-start: auto; font-size: 11px; color: var(--text-muted-2); white-space: nowrap; flex-shrink: 0; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .report-table th { text-align: start; font-weight: 800; padding: 7px 6px; border-bottom: 1.5px solid #232a3b; font-size: 11px; }
 .report-table td { padding: 6px; border-bottom: 1px solid #eceef2; vertical-align: top; line-height: 1.45; }
