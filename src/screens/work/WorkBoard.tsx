@@ -160,6 +160,27 @@ function accentOf(task: TaskItem): string {
 }
 
 function StatusChip({ task }: { task: TaskItem }) {
+  // "טרם נצפתה" was shown for both "sent but not opened yet" and "never sent at
+  // all" — the second one is the actionable fact for a manager scanning the board
+  // (nobody handed the worker this job), and it read as identical to the ordinary,
+  // expected wait for a worker to check their phone. Same distinction, and same
+  // solid treatment, as the chip on the task's own detail page.
+  if (
+    task.status !== "completed" &&
+    task.status !== "pending_approval" &&
+    task.status !== "in_progress" &&
+    !task.acknowledgedAt &&
+    !task.seenAt &&
+    !(task.activity ?? []).some((a) => a.action === "sent")
+  ) {
+    return (
+      <span
+        style={{ display: "inline-flex", alignItems: "center", borderRadius: 999, padding: "4px 10px", fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0, marginTop: 2, background: work.alert, color: "#ffffff" }}
+      >
+        טרם נשלחה
+      </span>
+    );
+  }
   const text =
     task.status === "completed"
       ? "הושלמה"
@@ -169,9 +190,7 @@ function StatusChip({ task }: { task: TaskItem }) {
           ? "בביצוע"
           : task.acknowledgedAt
             ? "אישר קבלה"
-            : task.seenAt
-              ? "נצפתה"
-              : "טרם נצפתה";
+            : "נצפתה";
   return (
     <span className="pill" style={{ "--tint": accentOf(task), flexShrink: 0, marginTop: 2 } as React.CSSProperties}>
       {text}
