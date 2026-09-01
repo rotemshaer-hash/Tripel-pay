@@ -34,8 +34,11 @@ export function WorkBoard() {
   const company = state.family.companyName || state.family.parentName;
   const actor = state.family.parentName || V.admin;
 
+  // Archived tasks stay in the record — the journal and any report still read them —
+  // but the board is exactly the list of jobs still worth a manager's attention, so
+  // this is the one place that stops listing them.
   const all: { worker: Child; task: TaskItem }[] = [];
-  for (const worker of workers) for (const task of worker.tasks) all.push({ worker, task });
+  for (const worker of workers) for (const task of worker.tasks) if (!task.archivedAt) all.push({ worker, task });
 
   const open = all.filter(({ task }) => task.status !== "completed");
   const done = all.filter(({ task }) => task.status === "completed");

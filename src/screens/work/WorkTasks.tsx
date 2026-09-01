@@ -27,8 +27,10 @@ export function WorkTasks() {
   const scope = isManager ? childrenList(state.family) : childrenList(state.family).filter((c) => c.id === state.activeChildId);
 
   const rows = useMemo(() => {
+    // Archived jobs stay in the record for the journal and any report — this list is
+    // the working view, so it is the one place that stops showing them.
     const all: { task: TaskItem; worker: Child }[] = [];
-    for (const worker of scope) for (const task of worker.tasks) all.push({ task, worker });
+    for (const worker of scope) for (const task of worker.tasks) if (!task.archivedAt) all.push({ task, worker });
     const matches = all.filter(({ task }) => {
       if (filter === "awaiting") return task.status === "pending_approval";
       if (filter === "done") return task.status === "completed";

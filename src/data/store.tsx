@@ -94,7 +94,7 @@ type Action =
   | { type: "APPROVE_TASK"; childId: string; taskId: string; by?: string; at?: string }
   | { type: "UPDATE_TASK"; childId: string; taskId: string; title: string; brief?: string; dueAt?: string; priority?: TaskPriority; site?: string; by?: string; at?: string }
   | { type: "REASSIGN_TASK"; fromChildId: string; toChildId: string; taskId: string; by?: string; at?: string }
-  | { type: "DELETE_TASK"; childId: string; taskId: string }
+  | { type: "ARCHIVE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ADD_CHECKLIST_ITEM"; childId: string; taskId: string; text: string }
   | { type: "REMOVE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string }
   | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
@@ -441,24 +441,23 @@ function reducer(state: AppState, action: Action): AppState {
         },
       };
     }
-    case "DELETE_TASK": {
+    case "ARCHIVE_TASK": {
       // A job sent to the wrong person, or cancelled by the customer before anyone
-      // moved, is a real and ordinary event, and refusing to delete it left the board
-      // carrying work nobody would ever do. So deleting is allowed at any stage — but
-      // never made easy: the screen states what record is about to go with it, because
-      // destroying a record is still the thing this product exists not to do.
-      const child = state.family.children[action.childId];
-      const task = child?.tasks.find((t) => t.id === action.taskId);
-      if (!task) return state;
-      // Every photo a job accumulates now lives in Storage, not inline — a round at
-      // twenty stops is fifty objects in the bucket, and REMOVE_DOCUMENT already
-      // proved what happens to a record's files when nobody frees them: they keep
-      // paying rent forever. Fire-and-forget, same as there: a cleanup that failed
-      // must never be the reason a delete the user asked for did not happen.
-      for (const a of [...(task.proofs ?? []), ...(task.briefAttachments ?? [])]) {
-        if (a.path) void deleteStoredFile(a.path);
-      }
-      return { ...state, family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: c.tasks.filter((t) => t.id !== action.taskId) })) };
+      // moved, is a real and ordinary event, and refusing to remove it left the board
+      // carrying work nobody would ever do. But the board is not the record: the
+      // journal and any report built from it are, and a manager clearing the board
+      // does not mean the proof of what happened should go with it. So this only ever
+      // marks the task archived — the task, its proofs, comments and whole activity
+      // trail are untouched, Storage files included, and the journal keeps reading
+      // them exactly like any other job. The board is the only place that stops
+      // listing it (see the archivedAt filter in WorkBoard).
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => logActivity({ ...t, archivedAt: at }, { by: action.by, action: "archived" }, at))
+        ),
+      };
     }
     case "ADD_CHECKLIST_ITEM": {
       const text = action.text.trim();
@@ -1338,7 +1337,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const company = state.family.companyName || state.family.parentName;
     for (const worker of childrenList(state.family)) {
       for (const task of worker.tasks) {
-        if (!task.linkToken || task.status === "completed") continue;
+        if (!task.linkToken || task.status === "completed" || task.archivedAt) continue;
         const signature = [
           task.title,
           task.brief ?? "",
@@ -1386,7 +1385,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     const company = state.family.companyName || state.family.parentName;
     for (const worker of childrenList(state.family)) {
-      const open = worker.tasks.filter((t) => t.status !== "completed");
+      const open = worker.tasks.filter((t) => t.status !== "completed" && !t.archivedAt);
       const signature =
         open
           .map(

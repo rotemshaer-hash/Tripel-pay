@@ -31,7 +31,7 @@ export interface ActivityEntry {
   id: string;
   at: string;
   by: string;
-  action: "created" | "assigned" | "started" | "submitted" | "approved" | "reopened" | "commented" | "attached" | "edited" | "reassigned" | "sent" | "seen" | "acknowledged";
+  action: "created" | "assigned" | "started" | "submitted" | "approved" | "reopened" | "commented" | "attached" | "edited" | "reassigned" | "sent" | "seen" | "acknowledged" | "archived";
   detail?: string;
 }
 
@@ -86,6 +86,10 @@ export interface TaskItem {
    * stamps are the half of that claim the old journal could not answer. */
   seenAt?: string;
   acknowledgedAt?: string;
+  /** Set when a manager removes this job from the board. The task, its proofs and
+   * its whole activity trail are kept exactly as they were — only the board stops
+   * listing it; the journal and any report keep reading it like any other job. */
+  archivedAt?: string;
   /** Unguessable id that lets the assigned worker open and report on this one task from
    * a WhatsApp message, with no account. Absent on tasks written before it existed. */
   linkToken?: string;

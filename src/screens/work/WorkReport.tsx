@@ -222,29 +222,30 @@ ${printCss}
           ))}
           {/* The same ticks that build the document also answer "get these out of my
               app". This is the only multi-select in the product, which is where anyone
-              wanting to clear finished work ends up — so the action lives here rather
-              than in a second list built to hold the same names. It is separated,
-              coloured as the destruction it is, and it counts out loud what goes. */}
+              wanting to clear finished work off the board ends up — so the action
+              lives here rather than in a second list built to hold the same names. */}
         </div>
       )}
 
       {/* Detached from the list on purpose. Sitting inside that card, directly under a
-          row, the most destructive control in the product read as one more line of the
-          selection — a tick and a permanent delete an inch apart, in the same box. */}
+          row, this read as one more line of the selection — a tick and a board-level
+          action an inch apart, in the same box. Archiving, not deleting: this clears
+          the board and the task lists, but every one of these jobs keeps its full
+          record in the journal and in this very report — nothing here is destroyed,
+          so the warning says so rather than counting out a loss that isn't real. */}
       {jobs.length > 0 && chosen.length > 0 && (
         <div className="report-danger no-print">
           <ConfirmButton
             className="report-picker-delete"
-            label={`מחיקת ${chosen.length} העבודות המסומנות לצמיתות`}
+            label={`הסרת ${chosen.length} העבודות המסומנות מהלוח`}
             warning={(() => {
-              const proofs = chosen.reduce((n, job) => n + (job.task.proofs ?? []).length, 0);
-              const events = chosen.reduce((n, job) => n + (job.task.activity ?? []).length, 0);
               const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
               const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
-              return `למחוק לצמיתות ${chosen.length} עבודות — ${names}${more}? יימחקו איתן ${events} רשומות ביומן ו-${proofs} אסמכתאות, ואי אפשר לשחזר.`;
+              return `להסיר ${chosen.length} עבודות מהלוח — ${names}${more}? הן ייעלמו מרשימות המשימות, אבל התיעוד שלהן יישאר ביומן וגם כאן בדוח.`;
             })()}
+            confirmLabel="כן, להסיר"
             onConfirm={() => {
-              for (const job of chosen) dispatch({ type: "DELETE_TASK", childId: job.worker.id, taskId: job.task.id });
+              for (const job of chosen) dispatch({ type: "ARCHIVE_TASK", childId: job.worker.id, taskId: job.task.id, by: state.family.parentName || V.admin });
               setDropped(new Set());
             }}
           />

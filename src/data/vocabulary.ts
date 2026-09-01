@@ -146,6 +146,7 @@ export const activityLabels: Record<string, string> = {
   sent: "נשלחה בוואטסאפ",
   seen: "נצפתה",
   acknowledged: "אושרה קבלה",
+  archived: "הוסרה מלוח המשימות",
 };
 
 /** How a task's state reads and colours everywhere it's shown — the list, the detail

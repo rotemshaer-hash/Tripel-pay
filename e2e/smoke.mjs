@@ -380,29 +380,32 @@ const trimmed = await m.locator(".report-sheet").innerText();
 check("unticking a job takes it out of the document", !trimmed.includes("ניקיון מחסן"));
 check("and leaves the others in", trimmed.includes("בדיקת מזגנים"));
 
-// The same ticks answer "get these out of my app". A delete offered here has to be a
-// real one — gone from the record, and still gone after the server is read again.
-// The confirmation is in the page now, not a browser popup: arm, read what goes,
-// then confirm.
-await m.getByText(/מחיקת 1 העבודות המסומנות לצמיתות/).click();
+// The same ticks answer "get these out of my app" — but out of the BOARD, not out of
+// the record. Real archiving: gone from the active lists, still in the journal, and
+// still there after the server is read again. The confirmation is in the page now,
+// not a browser popup: arm, read what happens, then confirm.
+await m.getByText(/הסרת 1 העבודות המסומנות מהלוח/).click();
 await m.waitForTimeout(600);
-check("the delete says what it destroys before it does it", (await m.getByText(/רשומות ביומן/).count()) > 0);
-await m.getByRole("button", { name: "כן, למחוק" }).click();
+check("the removal says the record stays in the journal", (await m.getByText(/יישאר ביומן/).count()) > 0);
+await m.getByRole("button", { name: "כן, להסיר" }).click();
 await m.waitForTimeout(3000);
+await m.goto(`${BASE}/work/board`);
+await m.waitForTimeout(1500);
+check("removing the ticked job takes it off the board", !(await m.locator("body").innerText()).includes("בדיקת מזגנים"));
 await m.goto(`${BASE}/work/journal?range=month`);
 await m.waitForTimeout(2500);
-check("deleting the ticked jobs removes them for good", !(await m.locator("body").innerText()).includes("בדיקת מזגנים"));
+check("but its record is still in the journal", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
 await m.reload();
 await m.waitForTimeout(4500);
-check("and they stay gone once the record is re-read", !(await m.locator("body").innerText()).includes("בדיקת מזגנים"));
+check("and stays there once the record is re-read", (await m.locator("body").innerText()).includes("בדיקת מזגנים"));
 
-console.log("11. a completed job can still be deleted from its own page");
+console.log("11. removing a completed job from the board keeps it in the journal");
 // This control used to live inside the "עריכה" editor, which the board only offers
 // before a job is completed — so a finished job, the one a manager is most likely to
-// be clearing out, had no way to reach its own delete button at all. "ניקיון מחסן"
+// be clearing out, had no way to reach its own removal control at all. "ניקיון מחסן"
 // is the one survivor left in the record; approving it closes the loop this bug
-// opened, and deleting it here (rather than through the report's bulk picker) proves
-// the fix on the path that was actually broken.
+// opened. Removing (not deleting) it here proves both halves: it leaves the board's
+// own lists, and its record — the whole reason a journal exists — survives that.
 await m.goto(`${BASE}/work/board`);
 await m.waitForTimeout(1500);
 await m.getByRole("button", { name: "אישור וסגירה" }).first().click();
@@ -415,14 +418,17 @@ await m.getByText("פתיחת המשימה ›").first().click();
 await m.waitForURL("**/work/task/**", { timeout: 15000 });
 await m.waitForTimeout(1200);
 check("a completed job offers no way to edit it", (await m.getByText("עריכה", { exact: true }).count()) === 0);
-check("but deleting it is reachable without opening an editor", (await m.getByText("מחיקת המשימה").count()) > 0);
-await m.getByText("מחיקת המשימה").click();
+check("but removing it from the board is reachable without opening an editor", (await m.getByText("הסרת המשימה מהלוח").count()) > 0);
+await m.getByText("הסרת המשימה מהלוח").click();
 await m.waitForTimeout(600);
-await m.getByRole("button", { name: "כן, למחוק" }).click();
+await m.getByRole("button", { name: "כן, להסיר" }).click();
 await m.waitForURL("**/work/tasks", { timeout: 15000 });
+await m.goto(`${BASE}/work/board`);
+await m.waitForTimeout(1500);
+check("the removed job is off the board", !(await m.locator("body").innerText()).includes("ניקיון מחסן"));
 await m.goto(`${BASE}/work/journal?range=month`);
 await m.waitForTimeout(2000);
-check("the completed job is actually gone", !(await m.locator("body").innerText()).includes("ניקיון מחסן"));
+check("but its record still shows in the journal", (await m.locator("body").innerText()).includes("ניקיון מחסן"));
 
 await managerCtx.close();
 await workerCtx.close();

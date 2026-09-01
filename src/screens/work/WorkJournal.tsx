@@ -25,6 +25,7 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   sent: work.action,
   seen: work.idle,
   acknowledged: work.done,
+  archived: work.alert,
 };
 
 interface FeedRow {
