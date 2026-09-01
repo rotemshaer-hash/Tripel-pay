@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../../data/store";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { childrenList } from "../../data/family";
 import { V, taskStatusLabels } from "../../data/vocabulary";
 import { formatDateExact, formatTime, isOverdue, rangeLabels, rangeStart, withinRange, type JournalRange } from "../../utils/datetime";
@@ -147,26 +148,21 @@ export function WorkReport() {
               than in a second list built to hold the same names. It is separated,
               coloured as the destruction it is, and it counts out loud what goes. */}
           {chosen.length > 0 && (
-            <button
-              type="button"
+            <ConfirmButton
               className="report-picker-delete"
-              onClick={() => {
+              label={`מחיקת ${chosen.length} העבודות המסומנות לצמיתות`}
+              warning={(() => {
                 const proofs = chosen.reduce((n, job) => n + (job.task.proofs ?? []).length, 0);
                 const events = chosen.reduce((n, job) => n + (job.task.activity ?? []).length, 0);
                 const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
                 const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
-                if (
-                  !window.confirm(
-                    `למחוק לצמיתות ${chosen.length} עבודות?\n\n${names}${more}\n\nיימחקו גם ${events} רשומות ביומן ו-${proofs} אסמכתאות. אי אפשר לשחזר.`
-                  )
-                )
-                  return;
+                return `למחוק לצמיתות ${chosen.length} עבודות — ${names}${more}? יימחקו איתן ${events} רשומות ביומן ו-${proofs} אסמכתאות, ואי אפשר לשחזר.`;
+              })()}
+              onConfirm={() => {
                 for (const job of chosen) dispatch({ type: "DELETE_TASK", childId: job.worker.id, taskId: job.task.id });
                 setDropped(new Set());
               }}
-            >
-              {`מחיקת ${chosen.length} העבודות המסומנות לצמיתות`}
-            </button>
+            />
           )}
         </div>
       )}

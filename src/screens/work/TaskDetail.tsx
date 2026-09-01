@@ -6,6 +6,7 @@ import { childrenList } from "../../data/family";
 import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, taskStatusColor, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { taskLink, taskShareLink } from "../../data/routes";
 import { updateMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
@@ -627,22 +628,22 @@ function TaskEditor({
           removable — a board that cannot forget fills up with work nobody will do.
           What it must not be is casual, so the confirmation counts out loud what is
           about to be destroyed instead of asking a generic "are you sure". */}
-      <button
-        onClick={() => {
+      <ConfirmButton
+        style={{ background: "none", border: "none", color: work.alert, fontSize: 12.5, fontWeight: 700, padding: "6px 0", textAlign: "start" }}
+        label="מחיקת המשימה"
+        warning={(() => {
           const proofs = (task.proofs ?? []).length;
           const events = (task.activity ?? []).length;
           const carries = task.status !== "available" || proofs > 0 || events > 1;
-          const warning = carries
-            ? `\n\nלמשימה הזו יש תיעוד: ${events} רשומות ביומן ו-${proofs} אסמכתאות. הכל יימחק לצמיתות ולא ניתן לשחזר.`
-            : "\n\nהמשימה טרם התחילה, אז אין לה תיעוד לאבד.";
-          if (!window.confirm(`למחוק את "${task.title}"?${warning}`)) return;
+          return carries
+            ? `למחוק את "${task.title}"? יש לה תיעוד: ${events} רשומות ביומן ו-${proofs} אסמכתאות. הכל יימחק לצמיתות ואי אפשר לשחזר.`
+            : `למחוק את "${task.title}"? המשימה טרם התחילה, אז אין לה תיעוד לאבד.`;
+        })()}
+        onConfirm={() => {
           dispatch({ type: "DELETE_TASK", childId: worker.id, taskId: task.id });
           navigate("/work/tasks", { replace: true });
         }}
-        style={{ background: "none", border: "none", color: work.alert, fontSize: 12.5, fontWeight: 700, padding: "6px 0", textAlign: "start" }}
-      >
-        מחיקת המשימה
-      </button>
+      />
     </div>
   );
 }

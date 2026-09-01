@@ -5,6 +5,7 @@ import { Toast, useToast } from "../../components/Toast";
 import { useStore, useWorkView } from "../../data/store";
 import { V, work } from "../../data/vocabulary";
 import { formatDate } from "../../utils/datetime";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { fileIcon, formatBytes } from "../../utils/files";
 import { resizeImageToDataUrl } from "../../utils/resizeImage";
 import type { CompanyDoc, Supplier } from "../../data/types";
@@ -97,17 +98,17 @@ function Suppliers({ isManager, showToast }: { isManager: boolean; showToast: (m
                   <button onClick={() => setEditing(sp)} aria-label={`עריכת ${sp.name}`} style={iconBtn}>
                     ✎
                   </button>
-                  <button
-                    onClick={() => {
-                      if (!window.confirm(`למחוק את ${sp.name} מרשימת הספקים?`)) return;
+                  <ConfirmButton
+                    compact
+                    label="×"
+                    confirmLabel="למחוק?"
+                    warning={`למחוק את ${sp.name} מרשימת הספקים?`}
+                    style={{ ...iconBtn, color: work.alert }}
+                    onConfirm={() => {
                       dispatch({ type: "REMOVE_SUPPLIER", supplierId: sp.id });
                       showToast("הספק נמחק");
                     }}
-                    aria-label={`מחיקת ${sp.name}`}
-                    style={{ ...iconBtn, color: work.alert }}
-                  >
-                    ×
-                  </button>
+                  />
                 </div>
               )}
             </div>
@@ -258,17 +259,17 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
               </div>
             </div>
             {isManager && (
-              <button
-                onClick={() => {
-                  if (!window.confirm(`למחוק את "${d.title}"?`)) return;
+              <ConfirmButton
+                compact
+                label="×"
+                confirmLabel="למחוק?"
+                warning={`למחוק את "${d.title}"?`}
+                style={{ ...iconBtn, color: work.alert }}
+                onConfirm={() => {
                   dispatch({ type: "REMOVE_DOCUMENT", docId: d.id });
                   showToast("המסמך נמחק");
                 }}
-                aria-label={`מחיקת ${d.title}`}
-                style={{ ...iconBtn, color: work.alert }}
-              >
-                ×
-              </button>
+              />
             )}
           </div>
 

@@ -331,8 +331,12 @@ check("and leaves the others in", trimmed.includes("בדיקת מזגנים"));
 
 // The same ticks answer "get these out of my app". A delete offered here has to be a
 // real one — gone from the record, and still gone after the server is read again.
-m.on("dialog", (d) => d.accept());
+// The confirmation is in the page now, not a browser popup: arm, read what goes,
+// then confirm.
 await m.getByText(/מחיקת 1 העבודות המסומנות לצמיתות/).click();
+await m.waitForTimeout(600);
+check("the delete says what it destroys before it does it", (await m.getByText(/רשומות ביומן/).count()) > 0);
+await m.getByRole("button", { name: "כן, למחוק" }).click();
 await m.waitForTimeout(3000);
 await m.goto(`${BASE}/work/journal?range=month`);
 await m.waitForTimeout(2500);
