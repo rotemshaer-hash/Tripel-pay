@@ -329,6 +329,29 @@ const trimmed = await m.locator(".report-sheet").innerText();
 check("unticking a job takes it out of the document", !trimmed.includes("ניקיון מחסן"));
 check("and leaves the others in", trimmed.includes("בדיקת מזגנים"));
 
+console.log("11. a deleted job stays deleted");
+// Reported: deleting a job appears to work and then it comes back. A delete that only
+// holds until the next read from the server is not a delete, so this asserts it twice —
+// once on the spot, and once after a reload that re-reads the record from Firebase.
+m.on("dialog", (d) => d.accept());
+await m.goto(`${BASE}/work/journal?range=month`);
+await m.waitForTimeout(2500);
+await m.getByText("ניקיון מחסן").first().click();
+await m.waitForTimeout(700);
+await m.getByText("פתיחת המשימה ›").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1200);
+await m.getByText("עריכה", { exact: true }).click();
+await m.waitForTimeout(600);
+await m.getByText("מחיקת המשימה").click();
+await m.waitForTimeout(2500);
+await m.goto(`${BASE}/work/journal?range=month`);
+await m.waitForTimeout(2500);
+check("the job is gone from the list", !(await m.locator("body").innerText()).includes("ניקיון מחסן"));
+await m.reload();
+await m.waitForTimeout(4500);
+check("and is still gone after the record is re-read from the server", !(await m.locator("body").innerText()).includes("ניקיון מחסן"));
+
 await managerCtx.close();
 await workerCtx.close();
 await browser.close();
