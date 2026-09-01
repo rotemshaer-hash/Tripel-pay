@@ -1,57 +1,50 @@
+/* ===========================================================================
+   "Deep gold" — the approved palette, defined once.
+
+   The names on the right of each alias are the ones every screen already asks
+   for, so the whole app re-skins from this block rather than from ten files of
+   hand-mixed hex. Success and alert are deliberately NOT part of the brand:
+   they carry meaning, so they stay put whatever the palette does.
+   =========================================================================== */
 :root {
-  /* --- "GoHenry Ledger": matched directly against real GoHenry app screenshots —
-     signature coral-red + deep purple + mint, soft white cards on a light grey page,
-     soft blurred elevation (not hard offset), thin/no borders, generous rounding.
-     Variable NAMES are kept as-is — every screen already references them — only what
-     they resolve to has changed, so the whole app re-skins from this one file. --- */
-  /* teal-900 is the "text-safe" dark shade of the coral family — teal-700 is the bright
-     signature red used as a background FILL (buttons, banners); teal-900 is the shade
-     used anywhere the color needs to double as legible text on the light --paper bg. */
-  --teal-900: #a9142c;
-  --teal-800: #ff6f7d;
-  --teal-700: #ff4a5c;
-  --teal-500: #ff8a93;
-  --teal-200: rgba(255, 74, 92, 0.16);
-  --teal-100: rgba(255, 74, 92, 0.08);
-  --violet-700: #4b2e83;
-  --violet-500: #8a6bc4;
-  --violet-200: rgba(75, 46, 131, 0.1);
-  --amber-600: #ffc933;
-  --amber-100: rgba(255, 201, 51, 0.18);
-  --coral-600: #23c1ab;
-  --coral-100: rgba(35, 193, 171, 0.14);
-  --ink: #17181f;
-  --ink-soft: #5c5f6b;
-  --ink-faint: #9a9ca6;
-  --paper: #f6f6fa;
+  --accent: #b8901f;
+  --accent-text-on-dark: #f3e2b8;
+  --accent-text: #8a6a12;
+  --tint-1: #faf1dc;
+  --tint-2: #f5e6ba;
+  --page-bg: #f1efe9;
+  --border: #eae4d6;
+  --muted-bg: #f0ece1;
+  --text-muted: #96897a;
+  --text-muted-2: #8c7f6c;
+  --text-body: #47403a;
+  --success: #3f7a4a;
+  --success-bg: #ddebd8;
+  --alert: #b0281c;
+  --alert-bg: #fbe3df;
+
+  /* The names the screens use. */
+  --ink: #201a12;
+  --ink-soft: var(--text-body);
+  --ink-faint: var(--text-muted);
+  --paper: var(--page-bg);
   --card: #ffffff;
   --card-solid: #ffffff;
-  --line: #e7e7ef;
-  /* The one card-tint palette — a glossy "mirror" sheen layered over each color, used by
-     .glass cycling AND by list components (MissionTrail, recommended, switcher) so every
-     colored card across the app shares the same luxe glass finish. */
-  --gloss: linear-gradient(145deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.1) 22%, rgba(255, 255, 255, 0) 46%);
-  --tint-1: var(--gloss), linear-gradient(150deg, #f0e6ff 0%, #dcc6f7 100%);
-  --tint-2: var(--gloss), linear-gradient(150deg, #d7f6ec 0%, #a9ecd6 100%);
-  --tint-3: var(--gloss), linear-gradient(150deg, #ffe7c7 0%, #ffce97 100%);
-  --tint-4: var(--gloss), linear-gradient(150deg, #ffdfe6 0%, #ffbecd 100%);
-  --tint-5: var(--gloss), linear-gradient(150deg, #dcecfc 0%, #b3d8f6 100%);
-  --line-soft: rgba(23, 24, 31, 0.08);
-  --header-gradient: #ff4a5c;
-  --grad-teal: linear-gradient(135deg, #ff7a67 0%, #ff4a5c 60%, #e0224a 100%);
-  --grad-violet: linear-gradient(135deg, #8a6bc4 0%, #4b2e83 65%, #351f5e 100%);
-  --grad-amber: linear-gradient(135deg, #ffe08a 0%, #ffc933 60%, #ff9d3d 100%);
-  --glow-teal: 0 10px 22px -8px rgba(255, 74, 92, 0.45);
-  --glow-violet: 0 10px 22px -8px rgba(75, 46, 131, 0.4);
-  /* Glass shadows: a bright inner top edge + soft inner base glow (the "glass" body)
-     over layered ambient + contact depth, for a polished mirror-like finish. */
-  --shadow-card: inset 0 1px 1px rgba(255, 255, 255, 0.85), inset 0 -9px 18px -6px rgba(255, 255, 255, 0.35), 0 10px 22px -10px rgba(60, 40, 110, 0.26), 0 2px 6px -3px rgba(60, 40, 110, 0.14);
-  --shadow-card-solid: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 16px 32px -12px rgba(60, 40, 110, 0.42), 0 3px 8px -3px rgba(60, 40, 110, 0.2);
-  --radius-lg: 62px 22px 46px 26px / 46px 26px 62px 22px;
-  --radius-md: 42px 16px 32px 18px / 30px 20px 40px 16px;
-  --radius-sm: 30px 12px 24px 14px / 22px 16px 28px 12px;
+  --line: var(--border);
+  --line-soft: var(--border);
+  --header-gradient: var(--accent);
+  --shadow-card: 0 1px 2px rgba(32, 26, 18, 0.05);
+  --shadow-card-solid: 0 6px 18px -10px rgba(32, 26, 18, 0.3);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 11px;
   --shell-w: 430px;
-  --font-heb: "Rubik", "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  /* Suez One is a display face with an actual voice and real Hebrew at one
+     weight; Alef carries body text at 400/700. Hierarchy comes from the pairing
+     rather than from leaning on synthesised bold, which is what smeared at small
+     sizes before. */
+  --font-display: "Suez One", "Arial Hebrew", "Noto Sans Hebrew", Georgia, serif;
+  --font-heb: "Alef", "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
   color-scheme: light;
 }
@@ -372,101 +365,60 @@ button.glass:active, .glass button:active {
    forty slightly different cards.
    =========================================================================== */
 :root {
-  --w-ink: #232a3b;
-  --w-done: #1f9e8a;
-  --w-wait: #4756b3;
-  --w-active: #f2761b;
-  --w-alert: #e0224a;
-  --w-action: #f5a524;
+  --w-ink: var(--ink);
+  --w-done: var(--success);
+  --w-wait: var(--accent);
+  --w-active: var(--accent-text);
+  --w-alert: var(--alert);
+  --w-action: var(--accent);
   /* The light itself: a low diagonal sheen reused by every pane. */
   --w-gloss: linear-gradient(150deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.55) 34%, rgba(255, 255, 255, 0.2) 62%, rgba(255, 255, 255, 0.55) 100%);
   --w-pane-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 14px 30px -18px rgba(20, 26, 45, 0.45), 0 2px 6px -3px rgba(20, 26, 45, 0.12);
 }
 
-/* The ground the glass sits on: three wide, low-opacity washes that give the
-   panes something to refract. Fixed, so scrolling moves the content over the
-   light rather than dragging the light along with it. */
+/* The page itself: one quiet warm ground. The washes and blur that used to sit
+   here were doing the work a clear hierarchy should do, and on a phone in
+   daylight they mostly cost contrast. */
 .work-ground {
-  position: relative;
-  background:
-    radial-gradient(120% 60% at 85% -5%, rgba(71, 86, 179, 0.16) 0%, rgba(71, 86, 179, 0) 60%),
-    radial-gradient(90% 50% at 5% 8%, rgba(31, 158, 138, 0.14) 0%, rgba(31, 158, 138, 0) 62%),
-    radial-gradient(120% 60% at 50% 105%, rgba(245, 165, 36, 0.14) 0%, rgba(245, 165, 36, 0) 60%),
-    #f3f5fa;
-  background-attachment: fixed;
+  background: var(--page-bg);
 }
 
+/* A card. Flat, white, one hairline border — so what stands out on the screen is
+   the content, and colour is left free to mean something. */
 .pane {
   position: relative;
-  background: linear-gradient(158deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: var(--w-pane-shadow);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
-@supports (backdrop-filter: blur(1px)) {
-  .pane {
-    background: linear-gradient(158deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.6) 100%);
-    backdrop-filter: blur(18px) saturate(1.5);
-  }
-}
-/* The catch of light across the top edge — the thing that makes it read as
-   glass rather than as a rounded rectangle. */
-.pane::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 46%;
-  background: var(--w-gloss);
-  opacity: 0.5;
-  pointer-events: none;
-}
-.pane > * { position: relative; }
 
-/* A pane that carries meaning: the accent bleeds in from the leading edge. */
-.pane-tint { border-inline-start: 3px solid var(--tint, var(--w-ink)); }
-.pane-tint::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(275deg, transparent 55%, var(--tint, var(--w-ink)) 190%);
-  opacity: 0.09;
-  pointer-events: none;
-}
+/* A card that wants attention: the accent states it on the leading edge, and a
+   job actually waiting on somebody gets the full 2px the spec calls for. */
+.pane-tint { border-inline-start: 3px solid var(--tint, var(--accent)); }
 
-/* The dark bar at the top of every screen: not flat navy, but a night sky with
-   two coloured lights behind it. */
+/* The bar at the top of every screen: solid gold, the one place the brand
+   speaks. Its title is the display face; everything under it steps down. */
 .hero {
   position: relative;
-  background:
-    radial-gradient(80% 120% at 88% 0%, rgba(143, 160, 255, 0.34) 0%, rgba(143, 160, 255, 0) 58%),
-    radial-gradient(70% 120% at 2% 100%, rgba(31, 158, 138, 0.32) 0%, rgba(31, 158, 138, 0) 60%),
-    linear-gradient(168deg, #2b3450 0%, #1b2130 62%, #161b28 100%);
+  background: var(--accent);
+  border-end-start-radius: 20px;
+  border-end-end-radius: 20px;
   overflow: hidden;
-}
-.hero::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0) 100%);
 }
 .hero > * { position: relative; }
 
-/* The bottom navigation, frosted so the content scrolls under it. */
+/* The bottom navigation. Solid, because a translucent bar over a warm ground
+   turns every icon behind it into noise. */
 .glass-bar {
-  background: rgba(255, 255, 255, 0.82);
-  border-top: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 -10px 26px -18px rgba(20, 26, 45, 0.5);
-}
-@supports (backdrop-filter: blur(1px)) {
-  .glass-bar {
-    background: rgba(255, 255, 255, 0.62);
-    backdrop-filter: blur(20px) saturate(1.6);
-  }
+  background: var(--card);
+  border-top: 1px solid var(--border);
 }
 
-/* A status pill: the colour arrives as a gradient with its own inner light. */
+/* A status pill. Meaning first: the neutral, waiting, done and late variants are
+   the four the product actually has, and each is a tint with its own text
+   colour rather than white-on-saturated. */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -474,30 +426,43 @@ button.glass:active, .glass button:active {
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 10.5px;
-  font-weight: 800;
-  color: #ffffff;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tint, var(--w-ink)) 78%, white 22%) 0%, var(--tint, var(--w-ink)) 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 4px 10px -6px var(--tint, var(--w-ink));
+  font-weight: 700;
   white-space: nowrap;
+  background: var(--muted-bg);
+  color: var(--text-muted-2);
 }
+.pill-wait { background: var(--tint-2); color: var(--accent-text); }
+.pill-done { background: var(--success-bg); color: var(--success); }
+.pill-late { background: var(--alert-bg); color: var(--alert); }
 
 /* The one button on a screen that exists to be pressed. */
 .press {
   border: none;
-  border-radius: 14px;
-  color: #241a05;
-  font-weight: 900;
-  background: linear-gradient(150deg, #ffc95c 0%, var(--w-action) 55%, #e08c12 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 12px 24px -14px rgba(224, 140, 18, 0.9);
+  border-radius: 13px;
+  padding: 16px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 400;
+  background: var(--ink);
 }
 .press:active { transform: translateY(1px); }
 
+/* Sending is a different act from confirming, and green here is WhatsApp's, not
+   the product's success colour. */
 .press-send {
   border: none;
-  border-radius: 14px;
+  border-radius: 13px;
   color: #ffffff;
-  font-weight: 900;
-  background: linear-gradient(150deg, #4ade80 0%, #25d366 52%, #17a54a 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 12px 24px -14px rgba(23, 165, 74, 0.9);
+  font-family: var(--font-display);
+  font-weight: 400;
+  background: #1f8f4d;
 }
 .press-send:active { transform: translateY(1px); }
+
+/* Headings carry the display face wherever they are, so a screen cannot end up
+   with a heading that is merely bold body text. */
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0;
+}

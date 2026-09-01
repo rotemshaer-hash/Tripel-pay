@@ -24,12 +24,14 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   acknowledged: work.done,
 };
 
-function statusTone(status: TaskItem["status"], late: boolean): string {
-  if (status === "completed") return work.done;
-  if (late) return work.alert;
-  if (status === "pending_approval") return work.waiting;
-  if (status === "in_progress") return work.active;
-  return work.idle;
+/** Which of the four pills the design system defines this job wears. The colours
+ * live in the stylesheet; mixing them here is how a system becomes forty slightly
+ * different chips. */
+function pillClass(status: TaskItem["status"], late: boolean): string {
+  if (status === "completed") return "pill pill-done";
+  if (late) return "pill pill-late";
+  if (status === "pending_approval") return "pill pill-wait";
+  return "pill";
 }
 
 interface FeedRow {
@@ -249,17 +251,7 @@ export function WorkJournal() {
                     >
                       {job.task.title}
                     </span>
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: 10.5,
-                        fontWeight: 800,
-                        borderRadius: 999,
-                        padding: "2px 8px",
-                        color: statusTone(job.task.status, late),
-                        background: `${statusTone(job.task.status, late)}1a`,
-                      }}
-                    >
+                    <span className={pillClass(job.task.status, late)} style={{ flexShrink: 0 }}>
                       {late && job.task.status !== "completed" ? "באיחור" : taskStatusLabels[job.task.status]}
                     </span>
                   </span>

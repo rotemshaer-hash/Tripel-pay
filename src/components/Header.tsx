@@ -125,10 +125,11 @@ export function Header({
           )}
           <div style={{ minWidth: 0 }}>
             <div
+              className={pro ? "display" : undefined}
               style={{
-                fontSize: 20,
-                fontWeight: 800,
-                letterSpacing: "-0.01em",
+                fontSize: pro ? 21 : 20,
+                fontWeight: pro ? 400 : 800,
+                letterSpacing: pro ? 0 : "-0.01em",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -141,7 +142,21 @@ export function Header({
             </div>
             {subtitle && (
               // A subtitle that wraps to four lines is never what was intended.
-              <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtitle}</div>
+              <div
+                style={{
+                  fontSize: 12.5,
+                  // On the gold bar the subtitle has its own colour rather than a
+                  // faded white, which on this ground reads as washed out.
+                  color: pro ? work.onDark : undefined,
+                  opacity: pro ? 1 : 0.8,
+                  marginTop: 3,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {subtitle}
+              </div>
             )}
           </div>
         </div>
