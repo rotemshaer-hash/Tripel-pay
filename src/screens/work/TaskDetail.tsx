@@ -8,7 +8,7 @@ import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/d
 import { AttachButton, AttachmentList } from "../../components/Attachments";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { taskLink, taskShareLink } from "../../data/routes";
-import { updateMessage } from "../../data/messages";
+import { correctionMessage, updateMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
 import type { Child, TaskItem, TaskPriority } from "../../data/types";
 
@@ -27,6 +27,11 @@ export function TaskDetail() {
   const [editing, setEditing] = useState(false);
   // What the last edit changed, so the offer to tell the worker can say what moved.
   const [justChanged, setJustChanged] = useState<string[] | null>(null);
+  // The comment reaches the worker's link the moment it is written, but reaching the
+  // link is not the same as the worker knowing to look — someone up a ladder mid-job
+  // has no reason to reopen a link they already used today. This is what a manager can
+  // still do about it: push the same note out the channel the worker actually reads.
+  const [justCommented, setJustCommented] = useState<string | null>(null);
 
   const worker = state.family.children[workerId];
   const task = worker?.tasks.find((t) => t.id === taskId);
@@ -86,7 +91,11 @@ export function TaskDetail() {
 
   function addComment() {
     if (!comment.trim()) return;
-    dispatch({ type: "ADD_TASK_COMMENT", childId: activeWorker.id, taskId: activeTask.id, text: comment.trim(), by: actor });
+    const text = comment.trim();
+    dispatch({ type: "ADD_TASK_COMMENT", childId: activeWorker.id, taskId: activeTask.id, text, by: actor });
+    // Only worth offering to a manager writing to an open task — a worker's own
+    // comment has nowhere to be pushed, and a closed task's link is already frozen.
+    if (isManager && activeTask.status !== "completed") setJustCommented(text);
     setComment("");
   }
 
@@ -407,6 +416,40 @@ export function TaskDetail() {
               </div>
             ))}
           </div>
+          {/* Reaching the worker's link is not the same as the worker knowing to look
+              at it — someone mid-job, up a ladder, has no reason to reopen a link
+              they already used this morning. WhatsApp is the channel they actually
+              read, so this is the same note pushed there instead of left waiting. */}
+          {isManager && justCommented && (
+            <div style={{ background: "var(--tint-2)", border: "1px solid var(--tint-2)", borderRadius: 11, padding: "12px 13px", marginTop: 10 }}>
+              <div style={{ fontSize: 12.5, color: "var(--accent-text)", lineHeight: 1.55, marginBottom: 9 }}>
+                {`ההערה נשמרה ותופיע לעובד אם ייכנס לקישור שלו. הוא לא בהכרח יידע להיכנס — אם זה דחוף, כדאי לשלוח לו גם בוואטסאפ.`}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <a
+                  href={whatsAppLink(
+                    activeWorker.phone,
+                    correctionMessage(state.family.companyName || state.family.parentName, activeWorker, activeTask, justCommented)
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    dispatch({ type: "MARK_TASK_SENT", childId: activeWorker.id, taskId: activeTask.id, by: actor });
+                    setJustCommented(null);
+                  }}
+                  style={{ flex: 1, textAlign: "center", background: work.action, color: "#06301a", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}
+                >
+                  שליחה בוואטסאפ
+                </a>
+                <button
+                  onClick={() => setJustCommented(null)}
+                  style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 9, padding: "11px 14px", fontSize: 12.5, fontWeight: 700 }}
+                >
+                  לא צריך
+                </button>
+              </div>
+            </div>
+          )}
           {task.status !== "completed" ? (
             <>
               {/* The worker's link stops being republished the moment the task closes

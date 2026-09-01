@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../../data/store";
 import { ConfirmButton } from "../../components/ConfirmButton";
@@ -52,6 +52,13 @@ function groupPhotosByName(photos: Attachment[]): { name: string; items: Attachm
  *
  * The page is a plain document: the app's chrome is dropped at print time so what
  * lands on paper is the report, not a screenshot of a phone.
+ *
+ * "Save as PDF" still needs the print dialog, which is a few extra taps and, inside
+ * some in-app browsers (opened straight off a WhatsApp link), unreliable or missing
+ * outright. The download button is the same sheet markup with the print styles
+ * inlined, saved directly as a file — no dialog, and for the same reason as the print
+ * choice above: an .html file, not a PDF library, so the Hebrew stays exactly what the
+ * browser already renders correctly.
  */
 export function WorkReport() {
   const { state, dispatch } = useStore();
@@ -135,6 +142,41 @@ export function WorkReport() {
   const from = formatDateExact(rangeStart(range).toISOString());
   const to = formatDateExact(new Date().toISOString());
 
+  // Print/"Save as PDF" needs a dialog every time, and on some in-app browsers
+  // (opened straight from a WhatsApp link, say) it is unreliable or missing
+  // outright. A direct download is one tap and always works the same way: the
+  // sheet's own markup, wrapped as a standalone document with its print styles
+  // inlined — same reasoning as the print path above about not touching a PDF
+  // library, just landing as a file instead of a dialog.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  function downloadHtml() {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    const doc = `<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${`דוח עבודה — ${company}`}</title>
+<style>
+body { margin: 0; background: #f2f3f7; font-family: "Alef","Segoe UI","Arial Hebrew","Noto Sans Hebrew",-apple-system,BlinkMacSystemFont,Arial,sans-serif; }
+${printCss}
+</style>
+</head>
+<body>${sheet.outerHTML}</body>
+</html>`;
+    const blob = new Blob([doc], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const safeCompany = (company || "עסק").replace(/[\\/:*?"<>|]/g, "");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `דוח עבודה - ${safeCompany} - ${to}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="report-page">
       <style>{printCss}</style>
@@ -144,7 +186,10 @@ export function WorkReport() {
           חזרה
         </button>
         <button onClick={() => window.print()} className="report-bar-btn report-bar-primary">
-          הדפסה / שמירה כ-PDF
+          הדפסה / PDF
+        </button>
+        <button onClick={downloadHtml} className="report-bar-btn">
+          הורדה כקובץ
         </button>
       </div>
 
@@ -206,7 +251,7 @@ export function WorkReport() {
         </div>
       )}
 
-      <div className="report-sheet">
+      <div className="report-sheet" ref={sheetRef}>
         <header className="report-head">
           <div>
             <div className="report-company">{company}</div>
@@ -375,9 +420,9 @@ const printCss = `
    everything else on screen moved to the header teal. The sheet below it keeps its
    own fixed ink-on-paper palette on purpose (a printed report should not reflow its
    colours every time the app is restyled); this bar is not the sheet. */
-.report-bar { display: flex; gap: 8px; padding: 14px 18px; position: sticky; top: 0; background: var(--accent); }
-.report-bar-btn { flex: 1; padding: 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.3);
-  background: transparent; color: #fff; font-size: 13.5px; font-weight: 700; }
+.report-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 18px; position: sticky; top: 0; background: var(--accent); }
+.report-bar-btn { flex: 1 1 100px; padding: 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.3);
+  background: transparent; color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .report-bar-primary { background: #fff; color: var(--accent); border: none; font-weight: 800; }
 .report-sheet { background: #fff; margin: 16px auto; padding: 26px 24px; max-width: 820px;
   box-shadow: 0 1px 4px rgba(16,24,40,0.10); color: #1a1d26; }

@@ -100,7 +100,12 @@ export function Header({
           width for all of it, and flex correctly gave the title whatever was left —
           which was nothing. A floor on the title's width is what forces the wrap. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, rowGap: 10, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: "1 1 190px" }}>
+        {/* minWidth is a real floor, not 0: a flex item with the default overflow
+            (hidden, via textOverflow below) has no automatic minimum size, so with
+            minWidth:0 this block would rather shrink itself to nothing than let
+            RoleSwitcher wrap to its own line — the title silently disappearing on a
+            narrow phone instead of just truncating. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 110, flex: "1 1 190px" }}>
           {back && (
             <button
               onClick={() => navigate(-1)}

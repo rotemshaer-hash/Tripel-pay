@@ -1,5 +1,5 @@
 import type { Child, TaskItem } from "./types";
-import { workerDayLink } from "./routes";
+import { taskLink, taskShareLink, workerDayLink } from "./routes";
 import { formatDate } from "../utils/datetime";
 
 /**
@@ -56,6 +56,22 @@ export function updateMessage(company: string, worker: Child, task: TaskItem, ch
     .join("\n");
 }
 
+
+/** A comment landing in the app is invisible to a worker who is mid-job and has no
+ * reason to reopen a link they already used today — this is what actually tells them.
+ * Links to the one task the note is about rather than the day list, since that is what
+ * a correction is: about this job, not a reason to re-read the whole plate. */
+export function correctionMessage(company: string, worker: Child, task: TaskItem, text: string): string {
+  return [
+    `${worker.name}, הערה למשימה מ${company}:`,
+    `• ${task.title}`,
+    text,
+    "",
+    task.linkToken ? taskShareLink(task.linkToken) : taskLink(worker.id, task.id),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 /** A job just written, sent the moment it exists. Leads with the new task, and carries
  * the person's one link — the same link they already know, not a second one. */

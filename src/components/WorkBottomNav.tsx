@@ -55,6 +55,15 @@ export function WorkBottomNav() {
     <nav
       className="glass-bar"
       style={{
+        // marginTop:auto alone only reaches the bottom of .screen's own box, which
+        // is right after this nav on a short page but is content, not viewport —
+        // .screen scrolls (overflow-y:auto) on a longer one, and margin without a
+        // position drags this bar along with everything above it. sticky+bottom:0
+        // pins it to the scrollport itself, so a short page still ends with it here
+        // (marginTop:auto keeps that case unchanged) and a long one keeps it in
+        // view instead of scrolling it away with the rest of the feed.
+        position: "sticky",
+        bottom: 0,
         marginTop: "auto",
         display: "flex",
         justifyContent: "space-around",
