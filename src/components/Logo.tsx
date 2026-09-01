@@ -1,24 +1,19 @@
 import { V } from "../data/vocabulary";
 
+/**
+ * The mark: a message bubble holding a checkmark in the app's own "sent" green —
+ * the pitch in one shape, a job reported the way a WhatsApp message gets sent. Teal
+ * for the bubble rather than WhatsApp's own green keeps it a wink at WhatsApp, not a
+ * copy of its icon.
+ */
 export function Logo({ size = 64 }: { size?: number }) {
-  const u = size / 24;
-  const marker = (x: number, y: number) => (
-    <g key={`${x}-${y}`}>
-      <rect x={x} y={y} width={9 * u} height={9 * u} rx={2 * u} fill="var(--violet-700)" />
-      <rect x={x + 2 * u} y={y + 2 * u} width={5 * u} height={5 * u} rx={1 * u} fill="#fff" />
-      <rect x={x + 3.5 * u} y={y + 3.5 * u} width={2 * u} height={2 * u} fill="#1a1a1a" />
-    </g>
-  );
-
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={V.appName}>
-      {marker(0, 0)}
-      {marker(11 * u, 0)}
-      {marker(0, 11 * u)}
-      {/* teal pixel "P" mark, bottom-right cell */}
-      <rect x={11 * u} y={11 * u} width={3.5 * u} height={9 * u} rx={1 * u} fill="var(--teal-700)" />
-      <rect x={14.5 * u} y={11 * u} width={5.5 * u} height={3.5 * u} rx={1 * u} fill="var(--teal-700)" />
-      <rect x={16.5 * u} y={16.5 * u} width={3.5 * u} height={3.5 * u} rx={1 * u} fill="var(--teal-700)" />
+    <svg width={size} height={size} viewBox="0 0 46 46" role="img" aria-label={V.appName}>
+      <path
+        d="M23 4c11.05 0 20 8.06 20 18s-8.95 18-20 18c-2.55 0-4.98-.43-7.22-1.22L6 42l3.1-8.9C6.9 30.1 6 27.2 6 24 6 12.06 12.95 4 23 4z"
+        fill="var(--accent)"
+      />
+      <path d="M14 22l5.5 6L33 14" stroke="var(--send)" strokeWidth="4.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

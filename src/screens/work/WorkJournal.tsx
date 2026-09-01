@@ -150,22 +150,21 @@ export function WorkJournal() {
       {/* "באיזה יום בדיוק תיקנו אצל X" is usually asked about a job outside today's
           tab, so search looks past whichever range button is pressed rather than
           respecting it — see the note on `effectiveRange` above. */}
-      {/* Wraps rather than holding both fields on one line: at 132px fixed for the
-          date, the text field had nothing left to shrink into on a real phone width
-          and its placeholder was clipped mid-word — a minWidth:0 flex item will take
-          that squeeze silently instead of asking for a second line. */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "16px 20px 0" }}>
+      {/* Both fields stay on one row always, not just on a wide phone: a short
+          placeholder needs no room to grow into, so there is nothing forcing a
+          second line the way the longer wording used to. */}
+      <div style={{ display: "flex", gap: 6, padding: "16px 20px 0" }}>
         <input
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          placeholder="חיפוש לפי שם משימה או עובד…"
-          style={{ flex: "1 1 200px", minWidth: 170, padding: "10px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 13.5, color: "var(--ink)" }}
+          placeholder="חיפוש…"
+          style={{ flex: 1, minWidth: 0, padding: "10px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 13.5, color: "var(--ink)" }}
         />
         <input
           type="date"
           value={searchDate}
           onChange={(e) => setSearchDate(e.target.value)}
-          style={{ flex: "0 0 132px", padding: "10px 8px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 12.5, color: searchDate ? "var(--ink)" : "var(--text-muted)" }}
+          style={{ flexShrink: 0, width: 132, padding: "10px 8px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 12.5, color: searchDate ? "var(--ink)" : "var(--text-muted)" }}
         />
         {searching && (
           <button
