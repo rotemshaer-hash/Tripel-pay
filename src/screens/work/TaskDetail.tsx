@@ -407,18 +407,37 @@ export function TaskDetail() {
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <input
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addComment()}
-              placeholder={isManager ? "הערה — תופיע לעובד בקישור שלו…" : "כתיבת הערה…"}
-              style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13 }}
-            />
-            <button onClick={addComment} disabled={!comment.trim()} style={btnStyle(!comment.trim())}>
-              שליחה
-            </button>
-          </div>
+          {task.status !== "completed" ? (
+            <>
+              {/* The worker's link stops being republished the moment the task closes
+                  (see the "task.status === completed" skip where task links are
+                  published), so this box is the only channel that reaches an open
+                  job's link at all — including a correction mid-work, before there is
+                  anything to reopen for approval. Saying so here is cheaper than
+                  leaving a manager to discover it by trial. */}
+              {isManager && (
+                <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.5 }}>
+                  {`ההערה נשלחת לעובד ומופיעה בקישור שלו — זו גם הדרך לבקש תיקון במשימה שעדיין בביצוע.`}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: isManager ? 6 : 10 }}>
+                <input
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addComment()}
+                  placeholder={isManager ? "הערה — תופיע לעובד בקישור שלו…" : "כתיבת הערה…"}
+                  style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 13 }}
+                />
+                <button onClick={addComment} disabled={!comment.trim()} style={btnStyle(!comment.trim())}>
+                  שליחה
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 10 }}>
+              המשימה אושרה וסגורה — הקישור של העובד כבר לא מתעדכן, אז הערה חדשה לא תגיע אליו.
+            </div>
+          )}
         </Panel>
 
         {/* audit trail */}
