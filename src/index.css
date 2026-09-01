@@ -442,11 +442,15 @@ button.glass:active, .glass button:active {
 }
 .hero > * { position: relative; }
 
-/* The bottom navigation. Solid, because a translucent bar over a warm ground
-   turns every icon behind it into noise. */
+/* The bottom navigation, matched to the bar at the top: the screen is held between
+   two bands of the same colour, and the content sits in the light between them. A
+   white bar here left the app looking like it had a header and then simply stopped.
+   Mirrored, so the corners curve towards the content from both ends. */
 .glass-bar {
-  background: var(--card);
-  border-top: 1px solid var(--border);
+  background: var(--accent);
+  border-top: none;
+  border-start-start-radius: 20px;
+  border-start-end-radius: 20px;
 }
 
 /* A status pill. Meaning first: the neutral, waiting, done and late variants are

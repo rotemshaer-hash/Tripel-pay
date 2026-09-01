@@ -78,7 +78,9 @@ export function WorkBottomNav() {
               alignItems: "center",
               gap: 3,
               padding: "4px 2px",
-              color: active ? work.ink : "#9a9ca6",
+              // On the teal band the resting state is the header's own secondary
+              // colour, not a grey that was chosen against white.
+              color: active ? "#ffffff" : work.onDark,
             }}
           >
             <span style={{ position: "relative", display: "inline-flex" }}>
@@ -106,7 +108,7 @@ export function WorkBottomNav() {
                 </span>
               )}
             </span>
-            <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600 }}>{item.label}</span>
+            <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600, opacity: active ? 1 : 0.85 }}>{item.label}</span>
           </button>
         );
       })}
