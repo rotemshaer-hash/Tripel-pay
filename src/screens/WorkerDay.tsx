@@ -207,13 +207,13 @@ export function WorkerDay() {
     <Frame company={day.company} workerName={day.workerName} done={finishedCount} total={day.tasks.length}>
       <div style={{ padding: "14px 16px 34px", display: "flex", flexDirection: "column", gap: 11 }}>
         {pending.length > 0 && (
-          <div style={{ background: "#fff6e5", border: "1px solid #f0d9a8", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "#7a5a12", lineHeight: 1.55 }}>
+          <div style={{ background: "var(--tint-2)", border: "1px solid var(--tint-2)", borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: "var(--accent-text)", lineHeight: 1.55 }}>
             {`${pending.length} דיווחים ממתינים לשליחה — יישלחו לבד ברגע שתהיה רשת. אפשר להמשיך לעבוד.`}
           </div>
         )}
 
         {allDone && (
-          <div style={{ background: `linear-gradient(150deg, #35c0a8 0%, ${work.done} 55%, #14806f 100%)`, color: "#ffffff", borderRadius: 16, padding: "20px 16px", textAlign: "center", boxShadow: "0 1px 0 rgba(255,255,255,0.4) inset, 0 16px 30px -18px rgba(20,128,111,0.9)" }}>
+          <div style={{ background: work.done, color: "#ffffff", borderRadius: 16, padding: "20px 16px", textAlign: "center" }}>
             <div style={{ fontSize: 26 }}>🎉</div>
             <div style={{ fontSize: 16.5, fontWeight: 900, marginTop: 4 }}>סיימת הכל להיום</div>
             <div style={{ fontSize: 12.5, opacity: 0.9, marginTop: 4, lineHeight: 1.5 }}>הכל נשלח למנהל. אם תיפתח משימה חדשה — היא תופיע כאן באותו קישור.</div>
@@ -331,7 +331,7 @@ export function WorkerDay() {
                   )}
 
                   {(task.steps ?? []).length > 0 && (
-                    <div style={{ background: "rgba(35,42,59,0.045)", borderRadius: 11, padding: "11px 13px", border: "1px solid rgba(255,255,255,0.7)" }}>
+                    <div style={{ background: "var(--muted-bg)", borderRadius: 11, padding: "11px 13px", border: "1px solid var(--border)" }}>
                       <div style={{ fontSize: 11.5, fontWeight: 800, color: "var(--ink-soft)", marginBottom: 6 }}>שלבי ביצוע</div>
                       {(task.steps ?? []).map((step) => (
                         <div key={step.id} style={{ fontSize: 13.5, padding: "3px 0", lineHeight: 1.5 }}>{`• ${step.text}`}</div>
@@ -343,7 +343,7 @@ export function WorkerDay() {
                     <>
                       {primary.tone === "done" && needsProof ? (
                         <>
-                          <div style={{ background: "#fff6e5", border: "1px solid #f0d9a8", borderRadius: 11, padding: "12px 13px", fontSize: 12.5, color: "#7a5a12", lineHeight: 1.55 }}>
+                          <div style={{ background: "var(--tint-2)", border: "1px solid var(--tint-2)", borderRadius: 11, padding: "12px 13px", fontSize: 12.5, color: "var(--accent-text)", lineHeight: 1.55 }}>
                             לפני סגירה צריך לצרף תמונה או הערה — זה מה שנשמר ליומן ולתיק שנשלח ללקוח.
                           </div>
                           <BigButton label="🏁 סיימתי" tone="done" disabled onClick={() => {}} />
@@ -353,7 +353,7 @@ export function WorkerDay() {
                       )}
 
                       {pendingPhoto?.taskId === task.taskId ? (
-                        <div style={{ background: "rgba(255,255,255,0.9)", border: "1px solid rgba(255,255,255,0.95)", borderRadius: 13, padding: 11, display: "flex", flexDirection: "column", gap: 9 }}>
+                        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 13, padding: 11, display: "flex", flexDirection: "column", gap: 9 }}>
                           <img src={pendingPhoto.dataUrl} alt="" style={{ width: "100%", maxHeight: 190, objectFit: "cover", borderRadius: 9, display: "block" }} />
                           <input
                             value={photoName}
@@ -489,16 +489,15 @@ function Frame({
   const percent = total && total > 0 ? Math.round(((done ?? 0) / total) * 100) : 0;
   return (
     <div className="screen work-ground">
-      <div className="hero" style={{ padding: "22px 18px 20px", flexShrink: 0 }}>
+      <div className="hero" style={{ padding: "13px 18px 14px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <span
             style={{
               width: 40,
               height: 40,
               borderRadius: 11,
-              background: "linear-gradient(150deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.1) 100%)",
+              background: "rgba(255,255,255,0.16)",
               border: "1px solid rgba(255,255,255,0.22)",
-              boxShadow: "0 1px 0 rgba(255,255,255,0.35) inset",
               color: "#ffffff",
               display: "flex",
               alignItems: "center",
@@ -511,16 +510,19 @@ function Frame({
             {(company ?? "W").trim().charAt(0)}
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: "block", fontSize: 17, fontWeight: 800, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span
+              className="display"
+              style={{ display: "block", fontSize: 19, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
               {company ?? V.appName}
             </span>
-            {workerName && <span style={{ display: "block", fontSize: 12.5, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{`המשימות של ${workerName}`}</span>}
+            {workerName && <span style={{ display: "block", fontSize: 12.5, color: work.onDark, marginTop: 2 }}>{`המשימות של ${workerName}`}</span>}
           </span>
         </div>
 
         {!!total && total > 0 && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginBottom: 5 }}>
+          <div style={{ marginTop: 11 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: work.onDark, marginBottom: 5 }}>
               <span>{`${done} מתוך ${total} הושלמו`}</span>
               <span>{`${percent}%`}</span>
             </div>
@@ -536,31 +538,27 @@ function Frame({
 }
 
 function BigButton({ label, tone, onClick, disabled }: { label: string; tone: "ink" | "active" | "done" | "plain"; onClick: () => void; disabled?: boolean }) {
-  // Each action carries its own light so the one to press is obvious at arm's length,
-  // in the sun, through a phone case.
+  // The most important button in the product, and it was still painted in the retired
+  // glass gradients — three of them, one carrying a navy that no longer exists in the
+  // palette. Flat and solid reads further at arm's length on a site than a gradient
+  // does: what makes it obvious is its size and its colour against a quiet card, not
+  // the light baked into it.
   const background =
-    tone === "active"
-      ? `linear-gradient(150deg, #ff9a4d 0%, ${work.active} 55%, #cf5c0a 100%)`
-      : tone === "done"
-        ? `linear-gradient(150deg, #35c0a8 0%, ${work.done} 55%, #14806f 100%)`
-        : tone === "ink"
-          ? "linear-gradient(150deg, #3b4664 0%, #232a3b 100%)"
-          : "rgba(255,255,255,0.8)";
+    tone === "active" ? work.active : tone === "done" ? work.done : tone === "ink" ? work.ink : "var(--card)";
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      className="display"
       style={{
         width: "100%",
         background,
         color: tone === "plain" ? "var(--ink)" : "#ffffff",
-        border: tone === "plain" ? "1px solid rgba(255,255,255,0.9)" : "none",
+        border: tone === "plain" ? "1px solid var(--border)" : "none",
         borderRadius: 15,
         padding: "19px",
         fontSize: 17.5,
-        fontWeight: 900,
         opacity: disabled ? 0.45 : 1,
-        boxShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.45) inset, 0 14px 26px -16px rgba(20,26,45,0.8)",
       }}
     >
       {label}
@@ -613,15 +611,14 @@ function ProofButtons({ busy, onPicked }: { busy: boolean; onPicked: (file: File
             onClick={() => source.ref.current?.click()}
             style={{
               flex: 1,
-              background: "rgba(255,255,255,0.85)",
-              border: "1px solid rgba(255,255,255,0.9)",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: 13,
               padding: "15px 6px",
               fontSize: 14,
               fontWeight: 800,
               color: "var(--ink)",
               opacity: busy ? 0.5 : 1,
-              boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 20px -16px rgba(20,26,45,0.6)",
             }}
           >
             {busy ? "שולח…" : source.label}

@@ -82,11 +82,11 @@ export function Header({
                 ? "var(--violet-700)"
                 : "var(--header-gradient)",
         color: "#fff",
-        padding: tall ? "20px 20px 34px" : playful ? "16px 20px 32px" : "16px 20px 20px",
+        padding: tall ? "20px 20px 34px" : playful ? "16px 20px 32px" : pro ? "11px 20px 13px" : "16px 20px 20px",
         borderRadius: 0,
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: pro ? 9 : 12,
         flexShrink: 0,
         position: "relative",
         overflow: playful ? "hidden" : undefined,
@@ -137,7 +137,17 @@ export function Header({
             >
               {title}
               {titleNote && (
-                <span style={{ color: pro ? work.onDark : "rgba(255,255,255,0.75)", fontWeight: 700, fontSize: 15, marginInlineStart: 8 }}>{titleNote}</span>
+                <span
+                  className={pro ? "display" : undefined}
+                  style={{
+                    color: pro ? work.onDark : "rgba(255,255,255,0.75)",
+                    fontWeight: pro ? 400 : 700,
+                    fontSize: pro ? 18 : 15,
+                    marginInlineStart: 8,
+                  }}
+                >
+                  {titleNote}
+                </span>
               )}
             </div>
             {subtitle && (

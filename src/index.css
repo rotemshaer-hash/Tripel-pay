@@ -57,6 +57,29 @@
   --font-heb: "Alef", "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
   color-scheme: light;
+
+  /* Names retired with the old palette that the family build still draws with.
+     An undefined custom property does not fail loudly: it paints nothing, or
+     silently inherits the colour of whatever is behind it. That is how the
+     manager label ended up as white text on a white pill. Mapped, not deleted. */
+  --teal-900: var(--accent);
+  --teal-800: var(--accent-mid);
+  --teal-700: var(--accent-mid);
+  --teal-500: var(--send);
+  --teal-200: rgba(18, 140, 126, 0.16);
+  --teal-100: rgba(18, 140, 126, 0.08);
+  --violet-700: var(--accent);
+  --violet-500: var(--accent-mid);
+  --violet-200: rgba(7, 94, 84, 0.1);
+  --amber-600: #e8a33d;
+  --amber-100: rgba(232, 163, 61, 0.18);
+  --coral-600: var(--send);
+  --coral-100: rgba(37, 211, 102, 0.14);
+  --tint-3: #e7f4ef;
+  --tint-4: #fdf0d2;
+  --tint-5: #eef1f0;
+  --glow-teal: 0 10px 22px -8px rgba(7, 94, 84, 0.35);
+  --glow-violet: 0 10px 22px -8px rgba(7, 94, 84, 0.3);
 }
 
 * { box-sizing: border-box; }
@@ -76,7 +99,7 @@ button:active { transform: scale(0.97) translateY(1px); }
 button:disabled { cursor: not-allowed; }
 
 button:focus-visible, input:focus-visible, a:focus-visible {
-  outline: 2px solid var(--teal-700);
+  outline: 2px solid var(--accent-mid);
   outline-offset: 2px;
 }
 
@@ -84,7 +107,7 @@ input {
   background: #ffffff;
   border: 1px solid var(--line);
   color: var(--ink);
-  caret-color: var(--teal-700);
+  caret-color: var(--accent);
 }
 input::placeholder { color: var(--ink-faint); }
 
@@ -351,14 +374,14 @@ button.glass:active, .glass button:active {
 }
 .role-switcher button.active {
   background: #ffffff;
-  color: var(--teal-900);
+  color: var(--accent);
   font-weight: 700;
 }
 
 .card-carousel-track { scrollbar-width: none; -ms-overflow-style: none; }
 .card-carousel-track::-webkit-scrollbar { display: none; }
 
-::selection { background: var(--violet-500); color: #ffffff; }
+::selection { background: var(--accent-mid); color: #ffffff; }
 
 /* ===========================================================================
    Work It — the mirror surface.
