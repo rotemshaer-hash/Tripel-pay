@@ -20,7 +20,7 @@ import type { ActivityEntry, Child, TaskItem } from "../../data/types";
  * lands on paper is the report, not a screenshot of a phone.
  */
 export function WorkReport() {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const range = (params.get("range") as JournalRange) || "month";
@@ -141,6 +141,33 @@ export function WorkReport() {
               </span>
             </label>
           ))}
+          {/* The same ticks that build the document also answer "get these out of my
+              app". This is the only multi-select in the product, which is where anyone
+              wanting to clear finished work ends up — so the action lives here rather
+              than in a second list built to hold the same names. It is separated,
+              coloured as the destruction it is, and it counts out loud what goes. */}
+          {chosen.length > 0 && (
+            <button
+              type="button"
+              className="report-picker-delete"
+              onClick={() => {
+                const proofs = chosen.reduce((n, job) => n + (job.task.proofs ?? []).length, 0);
+                const events = chosen.reduce((n, job) => n + (job.task.activity ?? []).length, 0);
+                const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
+                const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
+                if (
+                  !window.confirm(
+                    `למחוק לצמיתות ${chosen.length} עבודות?\n\n${names}${more}\n\nיימחקו גם ${events} רשומות ביומן ו-${proofs} אסמכתאות. אי אפשר לשחזר.`
+                  )
+                )
+                  return;
+                for (const job of chosen) dispatch({ type: "DELETE_TASK", childId: job.worker.id, taskId: job.task.id });
+                setDropped(new Set());
+              }}
+            >
+              {`מחיקת ${chosen.length} העבודות המסומנות לצמיתות`}
+            </button>
+          )}
         </div>
       )}
 
@@ -349,6 +376,7 @@ const printCss = `
 .report-picker-row input { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
 .report-picker-name { font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .report-picker-meta { margin-inline-start: auto; font-size: 11px; color: var(--text-muted-2); white-space: nowrap; flex-shrink: 0; }
+.report-picker-delete { display: block; width: 100%; background: none; border: none; border-top: 1px solid var(--border); padding: 12px 14px; font-size: 12.5px; font-weight: 800; color: var(--alert); text-align: start; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .report-table th { text-align: start; font-weight: 800; padding: 7px 6px; border-bottom: 1.5px solid #232a3b; font-size: 11px; }
 .report-table td { padding: 6px; border-bottom: 1px solid #eceef2; vertical-align: top; line-height: 1.45; }
