@@ -340,11 +340,11 @@ check("a yearly range is offered alongside day/week/month", (await m.getByText("
 check("and an all-time one", (await m.getByText("הכל", { exact: true }).count()) > 0);
 
 console.log("9.5 searching the journal by name and by date");
-await m.getByPlaceholder("חיפוש לפי שם משימה או עובד…").fill("ניקיון");
+await m.getByPlaceholder("חיפוש…").fill("ניקיון");
 await m.waitForTimeout(600);
 check("a name search finds the matching job", (await m.getByText("ניקיון מחסן").count()) > 0);
 check("and hides the one that doesn't match", (await m.getByText("בדיקת מזגנים").count()) === 0);
-await m.getByPlaceholder("חיפוש לפי שם משימה או עובד…").fill("");
+await m.getByPlaceholder("חיפוש…").fill("");
 await m.waitForTimeout(400);
 // The date field searches across all history rather than the selected range tab —
 // today's date has to find both jobs even though the range buttons default to "day".
