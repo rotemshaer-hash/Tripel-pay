@@ -100,7 +100,7 @@ export function WorkSettings() {
         {/* Sync is either working or it is not, and the person holding the phone is the
             one who needs to know which. Silent failure is what cost this product days. */}
         {(connection.error || connection.unsaved) && (
-          <section style={{ ...card, borderColor: "#f3c0c9" }}>
+          <section style={{ ...card, borderColor: work.alert }}>
             <div style={{ ...cardTitle, color: work.alert }}>
               {connection.sessionLost ? "החיבור לחשבון אבד" : "יש שינויים שלא נשמרו לשרת"}
             </div>
@@ -397,12 +397,12 @@ function Row({ label, value, ltr }: { label: string; value: string; ltr?: boolea
 
 const card: React.CSSProperties = {
   // Kept as a style object rather than the .pane class because these sections carry
-  // their own accent colours on top of it.
-  background: "linear-gradient(158deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.72) 100%)",
-  border: "1px solid rgba(255,255,255,0.9)",
+  // their own accent colours on top of it — the finish is the same one .pane paints.
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 16,
   padding: "15px 16px",
-  boxShadow: "0 1px 0 rgba(255,255,255,0.85) inset, 0 14px 30px -20px rgba(20,26,45,0.45)",
+  boxShadow: "var(--shadow-card)",
 };
 
 const cardTitle: React.CSSProperties = {

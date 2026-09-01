@@ -159,6 +159,20 @@ export const taskStatusLabels: Record<string, string> = {
 };
 
 
+/**
+ * Which of the four status pills a job wears.
+ *
+ * The colours themselves live in the stylesheet, once. Screens that mixed their own
+ * from a hex plus an alpha suffix are how a design system quietly becomes forty
+ * slightly different chips, so the decision is made here and every screen asks.
+ */
+export function statusPillClass(status: string, late = false): string {
+  if (status === "completed") return "pill pill-done";
+  if (late) return "pill pill-late";
+  if (status === "pending_approval") return "pill pill-wait";
+  return "pill";
+}
+
 export const taskStatusColor: Record<string, string> = {
   available: work.idle,
   in_progress: work.active,

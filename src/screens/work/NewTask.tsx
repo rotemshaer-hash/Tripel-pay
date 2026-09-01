@@ -220,10 +220,9 @@ function Chip({ label, active, onClick, activeColor }: { label: string; active: 
     <button
       onClick={onClick}
       style={{
-        background: active ? `linear-gradient(150deg, color-mix(in srgb, ${activeColor} 76%, white 24%) 0%, ${activeColor} 100%)` : "rgba(255,255,255,0.82)",
+        background: active ? activeColor : "var(--card)",
         color: active ? "#ffffff" : "var(--ink)",
-        border: `1px solid ${active ? "transparent" : "rgba(255,255,255,0.9)"}`,
-        boxShadow: active ? `0 1px 0 rgba(255,255,255,0.45) inset, 0 10px 20px -14px ${activeColor}` : "0 1px 0 rgba(255,255,255,0.8) inset",
+        border: `1px solid ${active ? activeColor : "var(--border)"}`,
         borderRadius: 999,
         padding: "10px 15px",
         fontSize: 13,
@@ -235,33 +234,36 @@ function Chip({ label, active, onClick, activeColor }: { label: string; active: 
   );
 }
 
+// The three controls this form is made of, on the system rather than on the glass
+// layer that used to sit under it. Translucent white with an inner glow read as an
+// edge only because there was a blurred ground behind it; on a flat page it is a
+// white box with no visible boundary, which is a form field a person cannot find.
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "13px 14px",
-  borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.9)",
-  background: "rgba(255,255,255,0.85)",
-  boxShadow: "0 1px 0 rgba(255,255,255,0.8) inset, 0 6px 16px -14px rgba(20,26,45,0.6)",
+  borderRadius: 13,
+  border: "1px solid var(--border)",
+  background: "var(--card)",
   fontSize: 14.5,
+  color: "var(--ink)",
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: "linear-gradient(150deg, #3b4664 0%, #232a3b 100%)",
+  background: work.ink,
   color: "#ffffff",
   border: "none",
   borderRadius: 13,
-  boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 14px 26px -18px rgba(20,26,45,0.9)",
-  padding: "15px",
+  padding: "16px",
   fontSize: 15,
-  fontWeight: 800,
+  fontFamily: "var(--font-display)",
+  fontWeight: 400,
 };
 
 const secondaryBtn: React.CSSProperties = {
-  background: "rgba(255,255,255,0.82)",
+  background: "var(--card)",
   color: "var(--ink)",
-  border: "1px solid rgba(255,255,255,0.9)",
+  border: "1px solid var(--border)",
   borderRadius: 13,
-  boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
   padding: "15px 16px",
   fontSize: 13.5,
   fontWeight: 700,

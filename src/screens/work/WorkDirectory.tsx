@@ -88,7 +88,7 @@ function Suppliers({ isManager, showToast }: { isManager: boolean; showToast: (m
           <div key={sp.id} style={cardStyle}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 700 }}>{sp.name}</div>
+                <div className="display" style={{ fontSize: 16 }}>{sp.name}</div>
                 {sp.category && <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>{sp.category}</div>}
                 {sp.note && <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 4, lineHeight: 1.5 }}>{sp.note}</div>}
               </div>
@@ -252,7 +252,7 @@ function Documents({ isManager, showToast }: { isManager: boolean; showToast: (m
               {d.kind === "image" ? "🖼" : d.kind === "link" ? "🔗" : d.kind === "file" ? fileIcon(d.mime) : "📄"}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>{d.title}</div>
+              <div className="display" style={{ fontSize: 15.5 }}>{d.title}</div>
               <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>
                 {d.addedBy} · {formatDate(d.addedAt)}
               </div>

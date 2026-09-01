@@ -112,7 +112,7 @@ export function TaskDetail() {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <Chip text={taskStatusLabels[task.status]} color={taskStatusColor[task.status]} solid />
           {task.priority && <Chip text={priorityLabels[task.priority]} color={priorityColor[task.priority]} />}
-          {task.recurrence && task.recurrence !== "none" && <Chip text={recurrenceLabels[task.recurrence]} color="#2f7fd1" />}
+          {task.recurrence && task.recurrence !== "none" && <Chip text={recurrenceLabels[task.recurrence]} color={work.active} />}
           {task.dueAt && <Chip text={`יעד: ${formatDate(task.dueAt)}`} color={overdue ? work.alert : work.idle} solid={overdue} />}
           {task.acknowledgedAt ? (
             <Chip text={`אישר/ה קבלה · ${formatDateTime(task.acknowledgedAt)}`} color={work.done} />
@@ -158,8 +158,8 @@ export function TaskDetail() {
               doing yesterday's version of the work. The link already shows the new
               text; this is what tells them to look. */}
           {isManager && justChanged && (
-            <div style={{ background: "#fff6e5", border: "1px solid #f0d9a8", borderRadius: 11, padding: "12px 13px", marginTop: 10 }}>
-              <div style={{ fontSize: 12.5, color: "#7a5a12", lineHeight: 1.55, marginBottom: 9 }}>
+            <div style={{ background: "var(--tint-2)", border: "1px solid var(--tint-2)", borderRadius: 11, padding: "12px 13px", marginTop: 10 }}>
+              <div style={{ fontSize: 12.5, color: "var(--accent-text)", lineHeight: 1.55, marginBottom: 9 }}>
                 {`המשימה עודכנה (${justChanged.join(", ")}). ${activeWorker.name} רואה את הגרסה החדשה בקישור שלו — כדאי להודיע.`}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -171,7 +171,7 @@ export function TaskDetail() {
                     dispatch({ type: "MARK_TASK_SENT", childId: activeWorker.id, taskId: activeTask.id, by: actor });
                     setJustChanged(null);
                   }}
-                  style={{ flex: 1, textAlign: "center", background: "#25D366", color: "#ffffff", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}
+                  style={{ flex: 1, textAlign: "center", background: work.action, color: "#06301a", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}
                 >
                   שליחת עדכון בוואטסאפ
                 </a>
@@ -206,7 +206,7 @@ export function TaskDetail() {
                   marginTop: 8,
                   textAlign: "center",
                   textDecoration: "none",
-                  background: "#25D366",
+                  background: work.action,
                   color: "#ffffff",
                   borderRadius: 10,
                   padding: "12px",

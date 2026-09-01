@@ -4,7 +4,7 @@ import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, activityLabels, taskStatusLabels, work } from "../../data/vocabulary";
+import { V, activityLabels, statusPillClass, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, formatTime, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
@@ -26,16 +26,6 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   seen: work.idle,
   acknowledged: work.done,
 };
-
-/** Which of the four pills the design system defines this job wears. The colours
- * live in the stylesheet; mixing them here is how a system becomes forty slightly
- * different chips. */
-function pillClass(status: TaskItem["status"], late: boolean): string {
-  if (status === "completed") return "pill pill-done";
-  if (late) return "pill pill-late";
-  if (status === "pending_approval") return "pill pill-wait";
-  return "pill";
-}
 
 interface FeedRow {
   entry: ActivityEntry;
@@ -254,7 +244,7 @@ export function WorkJournal() {
                     >
                       {job.task.title}
                     </span>
-                    <span className={pillClass(job.task.status, late)} style={{ flexShrink: 0 }}>
+                    <span className={statusPillClass(job.task.status, late)} style={{ flexShrink: 0 }}>
                       {late && job.task.status !== "completed" ? "באיחור" : taskStatusLabels[job.task.status]}
                     </span>
                   </span>

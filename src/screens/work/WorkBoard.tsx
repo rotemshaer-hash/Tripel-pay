@@ -180,10 +180,9 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
       onClick={onClick}
       style={{
         flex: 1,
-        background: active ? "linear-gradient(150deg, #3b4664 0%, #232a3b 100%)" : "rgba(255,255,255,0.72)",
-        color: active ? "#ffffff" : "var(--ink-soft)",
-        border: `1px solid ${active ? "transparent" : "rgba(255,255,255,0.9)"}`,
-        boxShadow: active ? "0 10px 20px -14px rgba(20,26,45,0.9)" : "0 1px 0 rgba(255,255,255,0.8) inset",
+        background: active ? work.ink : "var(--card)",
+        color: active ? "#ffffff" : "var(--text-muted-2)",
+        border: `1px solid ${active ? work.ink : "var(--border)"}`,
         borderRadius: 12,
         padding: "10px",
         fontSize: 13,

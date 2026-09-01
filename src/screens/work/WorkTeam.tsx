@@ -58,8 +58,8 @@ export function WorkTeam() {
                   {w.initial}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14.5, fontWeight: 700 }}>{w.name}</div>
-                  <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
+                  <div className="display" style={{ fontSize: 16 }}>{w.name}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted-2)", marginTop: 2 }}>
                     {open} פתוחות · {awaiting} לאישור
                     {late > 0 && <span style={{ color: work.alert, fontWeight: 700 }}> · {late} באיחור</span>}
                   </div>
@@ -93,7 +93,7 @@ export function WorkTeam() {
                   href={whatsAppLink(w.phone, dayMessage(state.family.companyName || state.family.parentName, w))}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ background: "#25D366", color: "#ffffff", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap", alignSelf: "stretch", display: "flex", alignItems: "center" }}
+                  style={{ background: work.action, color: "#06301a", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap", alignSelf: "stretch", display: "flex", alignItems: "center" }}
                 >
                   שליחת המשימות
                 </a>

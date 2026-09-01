@@ -469,9 +469,14 @@ button.glass:active, .glass button:active {
 }
 .press-send:active { transform: translateY(1px); }
 
-/* Headings carry the display face wherever they are, so a screen cannot end up
-   with a heading that is merely bold body text. */
-h1, h2, h3, .display {
+/* The display face, applied on purpose.
+
+   This was briefly a blanket rule on h1/h2/h3, which caught every 12.5px eyebrow
+   label in the app and set it in a display face at weight 800 — a face with one
+   weight, so the browser synthesised the bold and smeared it, which is the exact
+   thing this pairing exists to avoid. A heading is a heading because of its size
+   and its job, not because of its tag, so the face is opt-in. */
+.display {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: 0;

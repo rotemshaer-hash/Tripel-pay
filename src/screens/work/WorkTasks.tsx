@@ -4,7 +4,7 @@ import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore, useWorkView } from "../../data/store";
 import { childrenList } from "../../data/family";
-import { V, priorityColor, priorityLabels, recurrenceLabels, taskStatusLabels, work } from "../../data/vocabulary";
+import { V, priorityColor, priorityLabels, recurrenceLabels, statusPillClass, taskStatusLabels, work } from "../../data/vocabulary";
 import { formatDate, isOverdue } from "../../utils/datetime";
 import type { Child, TaskItem } from "../../data/types";
 
@@ -59,7 +59,7 @@ export function WorkTasks() {
               onClick={() => navigate("/work/new")}
               style={{
                 background: work.action,
-                color: "#1b2130",
+                color: "var(--ink)",
                 border: "none",
                 borderRadius: 999,
                 padding: "9px 16px",
@@ -106,25 +106,33 @@ export function WorkTasks() {
           return (
             <button
               key={task.id}
+              className="pane"
               onClick={() => navigate(`/work/task/${worker.id}/${task.id}`)}
               style={{
-                background: "#ffffff",
-                border: `1px solid ${overdue ? "#f3c0c9" : "var(--line)"}`,
-                borderRadius: 12,
-                padding: "12px 14px",
+                // A job that has run late is the one thing on this screen that wants
+                // catching, so it states it on the border as well as in the pill.
+                border: overdue ? `2px solid ${work.alert}` : undefined,
+                padding: "13px 14px",
                 textAlign: "start",
-                boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: priorityColor[task.priority ?? "normal"], flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
-                {overdue && <span style={{ fontSize: 10.5, fontWeight: 800, color: "#ffffff", background: work.alert, borderRadius: 999, padding: "3px 8px" }}>באיחור</span>}
+                <span
+                  className="display"
+                  style={{ flex: 1, fontSize: 16, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
+                  {task.title}
+                </span>
+                {/* The status was plain grey text in the meta line while "late" got a
+                    chip of its own, so the two states a manager sorts by did not look
+                    like the same kind of fact. Both are pills now. */}
+                <span className={statusPillClass(task.status, overdue)} style={{ flexShrink: 0 }}>
+                  {overdue ? "באיחור" : taskStatusLabels[task.status]}
+                </span>
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 5, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 11.5, color: "var(--text-muted-2)", marginTop: 5, display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <span>{worker.name}</span>
-                <span>·</span>
-                <span>{taskStatusLabels[task.status]}</span>
                 {task.dueAt && (
                   <>
                     <span>·</span>
