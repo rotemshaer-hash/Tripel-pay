@@ -45,9 +45,13 @@ export function WorkBottomNav() {
         { to: "/work/settings", label: "הגדרות", icon: <IconParentUser size={21} />, match: (p) => p === "/work/settings" },
       ]
     : [
+        // No journal tab: /work/journal is the company-wide trail across every
+        // worker, gated to managers by RequireParent in App.tsx — a worker landing
+        // on it got bounced straight back here with nothing shown, silently, which
+        // reads as a dead button. Their own history is the "הושלמו" filter right on
+        // this list, so nothing is actually missing by dropping the tab.
         { to: "/work/tasks", label: "המשימות שלי", icon: <IconMountain size={21} />, match: (p) => p === "/work/tasks", badge: open },
         { to: "/work/directory", label: "ספקים", icon: <IconCardCheck size={21} />, match: (p) => p === "/work/directory" },
-        { to: "/work/journal", label: "יומן", icon: <IconReceipt size={21} />, match: (p) => p === "/work/journal" },
         { to: "/work/settings", label: "הגדרות", icon: <IconParentUser size={21} />, match: (p) => p === "/work/settings" },
       ];
 

@@ -398,17 +398,6 @@ ${printCss}
           })}
           {chosen.length === 0 && <div className="report-empty">לא סומנה אף עבודה. סמן למעלה מה ייכנס לדוח.</div>}
         </section>
-
-        <footer className="report-foot">
-          <div className="report-sign">
-            <div className="report-sign-line" />
-            <div>חתימת {V.admin}</div>
-          </div>
-          <div className="report-sign">
-            <div className="report-sign-line" />
-            <div>חתימת לקוח</div>
-          </div>
-        </footer>
       </div>
     </div>
   );
@@ -474,9 +463,6 @@ const printCss = `
 .report-late { color: #e0224a; font-weight: 700; }
 .report-open { margin-top: 22px; }
 .report-section-title { font-size: 12.5px; font-weight: 800; margin-bottom: 8px; }
-.report-foot { display: flex; gap: 40px; margin-top: 34px; }
-.report-sign { flex: 1; font-size: 11px; color: #5c5f6b; }
-.report-sign-line { border-bottom: 1px solid #9a9ca6; height: 30px; margin-bottom: 5px; }
 
 @media print {
   /* What goes on paper is the report, not a screenshot of the app. */
@@ -485,7 +471,7 @@ const printCss = `
   .report-sheet { box-shadow: none; margin: 0; max-width: none; padding: 0; }
   .report-table { font-size: 10px; }
   /* A row split across a page break is a row nobody can read. */
-  tr, .report-stat, .report-foot { break-inside: avoid; }
+  tr, .report-stat { break-inside: avoid; }
   thead { display: table-header-group; }
   @page { size: A4; margin: 14mm; }
 }
