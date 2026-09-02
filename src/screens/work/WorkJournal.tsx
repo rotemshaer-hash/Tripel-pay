@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "../../components/Header";
+import { IconCalendar } from "../../components/Icons";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
@@ -183,12 +184,30 @@ export function WorkJournal() {
           placeholder="חיפוש…"
           style={{ flex: 1, minWidth: 0, padding: "10px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 13.5, color: "var(--ink)" }}
         />
-        <input
-          type="date"
-          value={searchDate}
-          onChange={(e) => setSearchDate(e.target.value)}
-          style={{ flexShrink: 0, width: 132, padding: "10px 8px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", fontSize: 12.5, color: searchDate ? "var(--ink)" : "var(--text-muted)" }}
-        />
+        {/* A bare native date input carries no visible hint of what it's for — this
+            search row's other field is a text box, so an empty box next to it read
+            as one more of the same. The icon is the only thing that says "date". */}
+        <div style={{ position: "relative", flexShrink: 0, width: 140 }}>
+          <span style={{ position: "absolute", insetInlineStart: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", color: "var(--text-muted)" }}>
+            <IconCalendar size={14} strokeWidth={2} />
+          </span>
+          <input
+            type="date"
+            value={searchDate}
+            onChange={(e) => setSearchDate(e.target.value)}
+            style={{
+              width: "100%",
+              paddingBlock: 10,
+              paddingInlineStart: 28,
+              paddingInlineEnd: 8,
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              background: "var(--card)",
+              fontSize: 12.5,
+              color: searchDate ? "var(--ink)" : "var(--text-muted)",
+            }}
+          />
+        </div>
         {searching && (
           <button
             type="button"

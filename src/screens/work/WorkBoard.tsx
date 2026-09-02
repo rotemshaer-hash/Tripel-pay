@@ -11,25 +11,23 @@ import { formatDate, formatDateTime, isOverdue } from "../../utils/datetime";
 import type { Child, TaskItem } from "../../data/types";
 
 /**
- * Every job this business has, and what happened to it.
+ * The work still worth a manager's attention.
  *
  * The manager's home is a tracker, not a dashboard: one button to write a job, and
- * below it the jobs themselves — open ones with whether they reached the person, and
- * finished ones with the evidence attached to them. Nothing else. Sending lives where
- * sending is decided (on the job that was just written, on the person in the team
- * screen), and the record lives here.
+ * below it the open jobs themselves, each with whether it reached the person yet.
+ * Nothing else. A job that's done has nothing left to track — its whole record moves
+ * to the journal the moment it's approved, so the board never holds it. Sending lives
+ * where sending is decided (on the job that was just written, on the person in the
+ * team screen), and the open-work list lives here.
  *
  * Order is by what needs a human: work waiting for the manager's approval first, then
  * what is late, then everything else by its due date. A list sorted by creation time
  * makes the manager do the triage the app should have done.
  */
-type Filter = "open" | "done";
-
 export function WorkBoard() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
-  const [filter, setFilter] = useState<Filter>("open");
   // A job the manager hasn't reviewed yet — "אישור וסגירה" used to close it in one
   // tap straight from this list, with only a count of "אסמכתאות" to go on. This
   // opens the actual evidence on this same card first; the real approve button
@@ -49,14 +47,14 @@ export function WorkBoard() {
     for (const task of worker.tasks) if (!task.archivedAt) all.push({ worker, task });
   }
 
-  const open = all.filter(({ task }) => task.status !== "completed");
-  const done = all.filter(({ task }) => task.status === "completed");
-
-  const rows = (filter === "open" ? open : done).sort((a, b) => weight(a.task) - weight(b.task));
+  // A completed job moves to the journal — that is its whole record from here on —
+  // so the board itself only ever holds what's still open. Nothing left to filter,
+  // so there is nothing left to switch between either.
+  const rows = all.filter(({ task }) => task.status !== "completed").sort((a, b) => weight(a.task) - weight(b.task));
 
   return (
     <div className="screen work-ground">
-      <Header title="משימות" titleNote={company} subtitle={`${open.length} פתוחות · ${done.length} הושלמו`} tint="pro" />
+      <Header title="משימות" titleNote={company} tint="pro" />
 
       <div style={{ padding: "14px 18px 20px", display: "flex", flexDirection: "column", gap: 11 }}>
         {/* .press's default is plain --ink black; this is the one primary button that
@@ -66,20 +64,11 @@ export function WorkBoard() {
           + {V.task} חדשה
         </button>
 
-        <div style={{ display: "flex", gap: 6 }}>
-          <Tab label={`פתוחות · ${open.length}`} active={filter === "open"} onClick={() => setFilter("open")} />
-          <Tab label={`הושלמו · ${done.length}`} active={filter === "done"} onClick={() => setFilter("done")} />
-        </div>
-
         {rows.length === 0 && (
           <div className="pane" style={{ padding: "22px 16px" }}>
-            <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 6 }}>
-              {filter === "open" ? "אין משימות פתוחות" : "עוד לא הושלמה אף משימה"}
-            </div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 6 }}>אין משימות פתוחות</div>
             <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.65 }}>
-              {filter === "open"
-                ? `כל משימה שתכתוב תופיע כאן, ולידה מה קרה איתה: נשלחה, נצפתה, אושרה, בביצוע או הוגשה.`
-                : `כשמשימה מאושרת היא עוברת לכאן עם כל מה שנצבר עליה — מי ביצע, מתי, והתמונות שצורפו.`}
+              {`כל משימה שתכתוב תופיע כאן, ולידה מה קרה איתה: נשלחה, נצפתה, אושרה, בביצוע או הוגשה. משימה שהושלמה עוברת ליומן.`}
             </div>
           </div>
         )}
@@ -225,25 +214,5 @@ function StatusChip({ task }: { task: TaskItem }) {
     <span className="pill" style={{ "--tint": accentOf(task), flexShrink: 0, marginTop: 2 } as React.CSSProperties}>
       {text}
     </span>
-  );
-}
-
-function Tab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1,
-        background: active ? work.ink : "var(--card)",
-        color: active ? "#ffffff" : "var(--text-muted-2)",
-        border: `1px solid ${active ? work.ink : "var(--border)"}`,
-        borderRadius: 12,
-        padding: "10px",
-        fontSize: 13,
-        fontWeight: 800,
-      }}
-    >
-      {label}
-    </button>
   );
 }

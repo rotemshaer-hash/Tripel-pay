@@ -7,6 +7,15 @@ const base = (size: number) => ({
   fill: "none" as const,
 });
 
+export function IconCalendar({ size = 22, color = "currentColor", strokeWidth = 2 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" stroke={color} strokeWidth={strokeWidth} />
+      <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconHome({ size = 22, color = "currentColor", strokeWidth = 2 }: IconProps) {
   return (
     <svg {...base(size)}>
