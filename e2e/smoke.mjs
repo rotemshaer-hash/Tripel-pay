@@ -380,6 +380,9 @@ check("photos sharing a name are grouped under one heading", report.includes("ה
   const csvContent = csvPath ? readFileSync(csvPath, "utf8") : "";
   check("it carries the UTF-8 BOM Excel needs for Hebrew", csvContent.charCodeAt(0) === 0xfeff);
   check("and lists the jobs by name", csvContent.includes("ניקיון מחסן") && csvContent.includes("בדיקת מזגנים"));
+  // The point of this column is a link someone can actually open — a real Storage
+  // URL for the photo uploaded earlier, not just a photo count.
+  check("its photo-links column carries a real Storage URL", csvContent.includes("before.png") && csvContent.includes("firebasestorage.googleapis.com"));
 }
 
 // A downloaded report that still points at a Storage URL for its photos only half

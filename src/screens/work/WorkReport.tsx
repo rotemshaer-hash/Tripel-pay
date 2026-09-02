@@ -243,22 +243,33 @@ ${printCss}
   // has nowhere to keep) that buy little over this for a table this simple.
   function downloadCsv() {
     const cell = (v: string | number | undefined) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const headers = ["משימה", "עובד", "אתר", "סטטוס", "יעד", "נשלחה", "נצפתה", "אישרה קבלה", "הוגשה", "אושרה", "תמונות", "קבצים", "הערות"];
-    const rows = chosen.map(({ task, worker }) => [
-      task.title,
-      worker.name,
-      task.site ?? "",
-      taskStatusLabels[task.status],
-      task.dueAt ? formatDateExact(task.dueAt) : "",
-      task.createdAt ? formatDateExact(task.createdAt) : "",
-      task.seenAt ? formatDateExact(task.seenAt) : "",
-      task.acknowledgedAt ? formatDateExact(task.acknowledgedAt) : "",
-      task.submittedAt ? formatDateExact(task.submittedAt) : "",
-      task.approvedAt ? formatDateExact(task.approvedAt) : "",
-      (task.proofs ?? []).filter((a) => a.kind === "image").length,
-      (task.proofs ?? []).filter((a) => a.kind === "file").length,
-      (task.comments ?? []).length,
-    ]);
+    const headers = ["משימה", "עובד", "אתר", "סטטוס", "יעד", "נשלחה", "נצפתה", "אישרה קבלה", "הוגשה", "אושרה", "תמונות", "קישורי תמונות", "קבצים", "הערות"];
+    const rows = chosen.map(({ task, worker }) => {
+      const photos = (task.proofs ?? []).filter((a) => a.kind === "image");
+      // Only a real Storage URL is a usable link in a spreadsheet cell — an older
+      // photo saved inline as a data: URI has no address to hand anyone, so it's
+      // left out of this column rather than dumping a base64 blob into the cell.
+      const photoLinks = photos
+        .filter((a) => a.content.startsWith("http"))
+        .map((a) => `${a.name && a.name !== "צילום מהשטח" ? a.name : "תמונה"}: ${a.content}`)
+        .join("\n");
+      return [
+        task.title,
+        worker.name,
+        task.site ?? "",
+        taskStatusLabels[task.status],
+        task.dueAt ? formatDateExact(task.dueAt) : "",
+        task.createdAt ? formatDateExact(task.createdAt) : "",
+        task.seenAt ? formatDateExact(task.seenAt) : "",
+        task.acknowledgedAt ? formatDateExact(task.acknowledgedAt) : "",
+        task.submittedAt ? formatDateExact(task.submittedAt) : "",
+        task.approvedAt ? formatDateExact(task.approvedAt) : "",
+        photos.length,
+        photoLinks,
+        (task.proofs ?? []).filter((a) => a.kind === "file").length,
+        (task.comments ?? []).length,
+      ];
+    });
     const csv = [headers, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
     // The BOM is not decorative: without it, Excel guesses a legacy Windows encoding
     // for a .csv with no declared charset and renders every Hebrew cell as garbage —
