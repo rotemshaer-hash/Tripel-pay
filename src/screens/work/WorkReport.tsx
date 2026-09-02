@@ -243,34 +243,40 @@ ${printCss}
   // has nowhere to keep) that buy little over this for a table this simple.
   function downloadCsv() {
     const cell = (v: string | number | undefined) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const headers = ["משימה", "עובד", "אתר", "סטטוס", "יעד", "נשלחה", "נצפתה", "אישרה קבלה", "הוגשה", "אושרה", "תמונות", "קישורי תמונות", "קבצים", "הערות"];
-    const rows = chosen.map(({ task, worker }) => {
-      const photos = (task.proofs ?? []).filter((a) => a.kind === "image");
-      // Only a real Storage URL is a usable link in a spreadsheet cell — an older
-      // photo saved inline as a data: URI has no address to hand anyone, so it's
-      // left out of this column rather than dumping a base64 blob into the cell.
-      const photoLinks = photos
-        .filter((a) => a.content.startsWith("http"))
-        .map((a) => `${a.name && a.name !== "צילום מהשטח" ? a.name : "תמונה"}: ${a.content}`)
-        .join("\n");
-      return [
-        task.title,
-        worker.name,
-        task.site ?? "",
-        taskStatusLabels[task.status],
-        task.dueAt ? formatDateExact(task.dueAt) : "",
-        task.createdAt ? formatDateExact(task.createdAt) : "",
-        task.seenAt ? formatDateExact(task.seenAt) : "",
-        task.acknowledgedAt ? formatDateExact(task.acknowledgedAt) : "",
-        task.submittedAt ? formatDateExact(task.submittedAt) : "",
-        task.approvedAt ? formatDateExact(task.approvedAt) : "",
-        photos.length,
-        photoLinks,
-        (task.proofs ?? []).filter((a) => a.kind === "file").length,
-        (task.comments ?? []).length,
-      ];
-    });
-    const csv = [headers, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+    const headers = ["משימה", "עובד", "אתר", "סטטוס", "יעד", "נשלחה", "נצפתה", "אישרה קבלה", "הוגשה", "אושרה", "תמונות", "קבצים", "הערות"];
+    const rows = chosen.map(({ task, worker }) => [
+      task.title,
+      worker.name,
+      task.site ?? "",
+      taskStatusLabels[task.status],
+      task.dueAt ? formatDateExact(task.dueAt) : "",
+      task.createdAt ? formatDateExact(task.createdAt) : "",
+      task.seenAt ? formatDateExact(task.seenAt) : "",
+      task.acknowledgedAt ? formatDateExact(task.acknowledgedAt) : "",
+      task.submittedAt ? formatDateExact(task.submittedAt) : "",
+      task.approvedAt ? formatDateExact(task.approvedAt) : "",
+      (task.proofs ?? []).filter((a) => a.kind === "image").length,
+      (task.proofs ?? []).filter((a) => a.kind === "file").length,
+      (task.comments ?? []).length,
+    ]);
+    const table = [headers, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+
+    // Every photo's link on its own row — cramming several into one cell (joined by
+    // a newline) opened in Sheets as a single tall, wrapped cell nobody could read
+    // at a glance or click through cleanly. A second table, one row per photo, is
+    // the shape a spreadsheet actually wants for a list like this. Only a real
+    // Storage URL is a usable link — an older photo saved inline as a data: URI has
+    // no address to hand anyone, so it's left out rather than dumping a base64 blob
+    // into a cell.
+    const photoHeaders = ["משימה", "אתר", "שם התמונה", "קישור"];
+    const photoRows = chosen.flatMap(({ task }) =>
+      (task.proofs ?? [])
+        .filter((a) => a.kind === "image" && a.content.startsWith("http"))
+        .map((a) => [task.title, task.site ?? "", a.name && a.name !== "צילום מהשטח" ? a.name : "תמונה", a.content]),
+    );
+    const photoTable = [["תמונות מצורפות"], photoHeaders, ...photoRows].map((r) => r.map(cell).join(",")).join("\r\n");
+
+    const csv = photoRows.length > 0 ? `${table}\r\n\r\n${photoTable}` : table;
     // The BOM is not decorative: without it, Excel guesses a legacy Windows encoding
     // for a .csv with no declared charset and renders every Hebrew cell as garbage —
     // this one byte sequence is what tells it the file is UTF-8.

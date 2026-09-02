@@ -380,11 +380,17 @@ check("photos sharing a name are grouped under one heading", report.includes("ה
   const csvContent = csvPath ? readFileSync(csvPath, "utf8") : "";
   check("it carries the UTF-8 BOM Excel needs for Hebrew", csvContent.charCodeAt(0) === 0xfeff);
   check("and lists the jobs by name", csvContent.includes("ניקיון מחסן") && csvContent.includes("בדיקת מזגנים"));
-  // The point of this column is a link someone can actually open — a real Storage
-  // download URL for the photo uploaded earlier, not just a photo count. This runs
-  // against the Storage emulator, so the host is 127.0.0.1:9199, not the production
-  // firebasestorage.googleapis.com — check the download-URL shape both share instead.
-  check("its photo-links column carries a real Storage URL", csvContent.includes("before.png") && csvContent.includes("/o/") && csvContent.includes("alt=media"));
+  // The photo links live in their own table, one photo per row, appended after the
+  // job table — not crammed multiple-to-a-cell, which is unreadable once opened in
+  // Sheets. This runs against the Storage emulator, so the host is 127.0.0.1:9199,
+  // not the production firebasestorage.googleapis.com — check the download-URL
+  // shape both share instead of a specific host.
+  check("the CSV carries a second table for photo links", csvContent.includes("תמונות מצורפות"));
+  const photoRow = csvContent.split("\r\n").find((line) => line.includes("alt=media"));
+  check(
+    "each photo gets its own row, naming the job and carrying a real Storage URL",
+    !!photoRow && photoRow.includes("בדיקת מזגנים") && photoRow.includes("before.png") && photoRow.includes("/o/"),
+  );
 }
 
 // A downloaded report that still points at a Storage URL for its photos only half
