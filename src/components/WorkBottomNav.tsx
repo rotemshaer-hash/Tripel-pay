@@ -59,21 +59,32 @@ export function WorkBottomNav() {
     <nav
       className="glass-bar"
       style={{
-        // marginTop:auto alone only reaches the bottom of .screen's own box, which
-        // is right after this nav on a short page but is content, not viewport —
-        // .screen scrolls (overflow-y:auto) on a longer one, and margin without a
-        // position drags this bar along with everything above it. sticky+bottom:0
-        // pins it to the scrollport itself, so a short page still ends with it here
-        // (marginTop:auto keeps that case unchanged) and a long one keeps it in
-        // view instead of scrolling it away with the rest of the feed.
-        position: "sticky",
+        // sticky only pins to the bottom of whichever box actually scrolls, and on
+        // a real phone that box is the document, not .screen — .phone-shell has no
+        // height cap below the 560px breakpoint (only min-height:100vh), so .screen
+        // never overflows its own border and .screen's overflow-y:auto never
+        // engages. The page itself scrolls instead, and a sticky nav sitting in
+        // content that never scrolls just rides along with everything above it,
+        // off the bottom of the screen. Fixed to the viewport sidesteps which
+        // element ends up as the scroller; centering it to the same width as
+        // .phone-shell keeps it aligned with the app's frame on a wide desktop
+        // preview instead of spanning the full browser window.
+        // Plain left/translateX, not the inline-start logical property: centering
+        // is direction-agnostic, and translateX always moves along the physical
+        // x-axis regardless of dir, so mixing it with a logical inset would
+        // double up in RTL instead of cancelling out.
+        position: "fixed",
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: "var(--shell-w)",
         bottom: 0,
-        marginTop: "auto",
         display: "flex",
         justifyContent: "space-around",
         alignItems: "stretch",
         padding: "8px 4px calc(8px + env(safe-area-inset-bottom))",
         flexShrink: 0,
+        zIndex: 20,
       }}
     >
       {items.map((item) => {

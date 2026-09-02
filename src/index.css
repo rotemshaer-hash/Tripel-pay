@@ -15,7 +15,11 @@
    hand-mixed hex.
    =========================================================================== */
 :root {
-  --accent: #075e54;
+  /* Lightened a step from the original #075e54 — same hue, +5% lightness — since
+     it's the one colour behind almost every header and bar in the app and read as
+     too heavy at full depth. Still 5.5:1 against white, comfortably past the 4.5:1
+     floor everything painted on it (titles, nav labels, icons) needs. */
+  --accent: #097669;
   --accent-mid: #128c7e;
   --send: #25d366;
   --accent-text-on-dark: #a7d7cf;

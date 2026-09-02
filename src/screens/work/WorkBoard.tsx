@@ -53,7 +53,10 @@ export function WorkBoard() {
       <Header title="משימות" titleNote={company} subtitle={`${open.length} פתוחות · ${done.length} הושלמו`} tint="pro" />
 
       <div style={{ padding: "14px 18px 20px", display: "flex", flexDirection: "column", gap: 11 }}>
-        <button className="press" onClick={() => navigate("/work/new")} style={{ padding: "16px", fontSize: 15.5 }}>
+        {/* .press's default is plain --ink black; this is the one primary button that
+            leads the whole screen, so it gets its own dark grey-green instead of
+            blending with every other confirm/save button in the app. */}
+        <button className="press" onClick={() => navigate("/work/new")} style={{ padding: "16px", fontSize: 15.5, background: "#37453f" }}>
           + {V.task} חדשה
         </button>
 
