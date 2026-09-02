@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../../data/store";
 import { ConfirmButton } from "../../components/ConfirmButton";
+import { Toast, useToast } from "../../components/Toast";
 import { childrenList } from "../../data/family";
 import { V, taskStatusLabels } from "../../data/vocabulary";
 import { formatDateExact, formatTime, isOverdue, rangeLabels, rangeStart, withinRange, type JournalRange } from "../../utils/datetime";
@@ -63,6 +64,7 @@ function groupPhotosByName(photos: Attachment[]): { name: string; items: Attachm
 export function WorkReport() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
+  const { toastMessage, showToast } = useToast();
   const [params] = useSearchParams();
   const range = (params.get("range") as JournalRange) || "month";
   const workerId = params.get("worker") || "all";
@@ -168,9 +170,15 @@ ${printCss}
     const blob = new Blob([doc], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const safeCompany = (company || "עסק").replace(/[\\/:*?"<>|]/g, "");
+    // `to` is fixed for the component's whole lifetime, so a second download the same
+    // day landed on the exact same filename — the browser saw it as a repeat of the
+    // last download and asked "download again?" instead of just saving it. A fresh,
+    // second-granular stamp captured right here makes every click its own file.
+    const now = new Date();
+    const stamp = [now.getHours(), now.getMinutes(), now.getSeconds()].map((n) => String(n).padStart(2, "0")).join("-");
     const a = document.createElement("a");
     a.href = url;
-    a.download = `דוח עבודה - ${safeCompany} - ${to}.html`;
+    a.download = `דוח עבודה - ${safeCompany} - ${to} ${stamp}.html`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -217,6 +225,13 @@ ${printCss}
               <span className="report-picker-name">{job.task.title}</span>
               <span className="report-picker-meta">
                 {[job.worker.name, job.task.site, taskStatusLabels[job.task.status]].filter(Boolean).join(" · ")}
+                {/* A job already off the board still belongs in this list — its record
+                    is still fair game for the document — but looking identical to an
+                    active one is exactly why removing it here read as broken: the tick
+                    box resets to "everything in" after every removal, so a job that
+                    was just removed came right back looking untouched. This is the
+                    only visible difference between the two. */}
+                {job.task.archivedAt && " · הוסרה מהלוח"}
               </span>
             </label>
           ))}
@@ -232,25 +247,40 @@ ${printCss}
           action an inch apart, in the same box. Archiving, not deleting: this clears
           the board and the task lists, but every one of these jobs keeps its full
           record in the journal and in this very report — nothing here is destroyed,
-          so the warning says so rather than counting out a loss that isn't real. */}
-      {jobs.length > 0 && chosen.length > 0 && (
-        <div className="report-danger no-print">
-          <ConfirmButton
-            className="report-picker-delete"
-            label={`הסרת ${chosen.length} העבודות המסומנות מהלוח`}
-            warning={(() => {
-              const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
-              const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
-              return `להסיר ${chosen.length} עבודות מהלוח — ${names}${more}? הן ייעלמו מרשימות המשימות, אבל התיעוד שלהן יישאר ביומן וגם כאן בדוח.`;
-            })()}
-            confirmLabel="כן, להסיר"
-            onConfirm={() => {
-              for (const job of chosen) dispatch({ type: "ARCHIVE_TASK", childId: job.worker.id, taskId: job.task.id, by: state.family.parentName || V.admin });
-              setDropped(new Set());
-            }}
-          />
-        </div>
-      )}
+          so the warning says so rather than counting out a loss that isn't real.
+          Scoped to the ticked jobs NOT already off the board — an already-archived
+          job ticked for the document is not something to "remove" again, and mixing
+          it into the count made a real removal look like it silently did nothing. */}
+      {(() => {
+        const removable = chosen.filter((job) => !job.task.archivedAt);
+        if (jobs.length === 0 || removable.length === 0) return null;
+        return (
+          <div className="report-danger no-print">
+            <ConfirmButton
+              className="report-picker-delete"
+              label={`הסרת ${removable.length} העבודות המסומנות מהלוח`}
+              warning={(() => {
+                const names = removable.slice(0, 4).map((job) => job.task.title).join(", ");
+                const more = removable.length > 4 ? ` ועוד ${removable.length - 4}` : "";
+                return `להסיר ${removable.length} עבודות מהלוח — ${names}${more}? הן ייעלמו מרשימות המשימות, אבל התיעוד שלהן יישאר ביומן וגם כאן בדוח.`;
+              })()}
+              confirmLabel="כן, להסיר"
+              onConfirm={() => {
+                for (const job of removable) dispatch({ type: "ARCHIVE_TASK", childId: job.worker.id, taskId: job.task.id, by: state.family.parentName || V.admin });
+                // Uncheck exactly the jobs that just left the board — the visible sign
+                // that something happened — instead of resetting to "everything ticked",
+                // which brought them right back looking untouched.
+                setDropped((current) => {
+                  const next = new Set(current);
+                  for (const job of removable) next.add(job.key);
+                  return next;
+                });
+                showToast(removable.length === 1 ? "העבודה הוסרה מהלוח" : `${removable.length} עבודות הוסרו מהלוח`);
+              }}
+            />
+          </div>
+        );
+      })()}
 
       <div className="report-sheet" ref={sheetRef}>
         <header className="report-head">
@@ -400,6 +430,7 @@ ${printCss}
           {chosen.length === 0 && <div className="report-empty">לא סומנה אף עבודה. סמן למעלה מה ייכנס לדוח.</div>}
         </section>
       </div>
+      <Toast message={toastMessage} />
     </div>
   );
 }
