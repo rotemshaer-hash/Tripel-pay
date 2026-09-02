@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
+import { AttachmentList } from "../../components/Attachments";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, taskStatusColor, work } from "../../data/vocabulary";
@@ -29,6 +30,11 @@ export function WorkBoard() {
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const [filter, setFilter] = useState<Filter>("open");
+  // A job the manager hasn't reviewed yet — "אישור וסגירה" used to close it in one
+  // tap straight from this list, with only a count of "אסמכתאות" to go on. This
+  // opens the actual evidence on this same card first; the real approve button
+  // only appears once it's been looked at.
+  const [reviewOpen, setReviewOpen] = useState<Set<string>>(new Set());
 
   const workers = childrenList(state.family);
   const company = state.family.companyName || state.family.parentName;
@@ -122,17 +128,29 @@ export function WorkBoard() {
             </button>
 
             {task.status === "pending_approval" && (
-              <button
-                onClick={() => {
-                  dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor });
-                  showToast("אושר ונסגר");
-                }}
-                // The last of the retired glass gradients — flat now, like the rest
-                // of the board's controls.
-                style={{ width: "100%", background: work.done, color: "#ffffff", border: "none", padding: "12px", fontSize: 13.5, fontWeight: 800 }}
-              >
-                אישור וסגירה
-              </button>
+              reviewOpen.has(`${worker.id}-${task.id}`) ? (
+                <div style={{ padding: "0 15px 13px" }}>
+                  <AttachmentList items={task.proofs ?? []} empty="טרם צורפו אסמכתאות." />
+                  <button
+                    onClick={() => {
+                      dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor });
+                      showToast("אושר ונסגר");
+                    }}
+                    style={{ width: "100%", background: work.done, color: "#ffffff", border: "none", borderRadius: 9, padding: "12px", fontSize: 13.5, fontWeight: 800, marginTop: 10 }}
+                  >
+                    אישור וסגירה
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setReviewOpen((s) => new Set(s).add(`${worker.id}-${task.id}`))}
+                  // The last of the retired glass gradients — flat now, like the rest
+                  // of the board's controls.
+                  style={{ width: "100%", background: work.done, color: "#ffffff", border: "none", padding: "12px", fontSize: 13.5, fontWeight: 800 }}
+                >
+                  בדיקה ואישור
+                </button>
+              )
             )}
           </div>
         ))}

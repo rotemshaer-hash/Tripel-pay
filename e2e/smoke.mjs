@@ -449,6 +449,10 @@ console.log("11. removing a completed job from the board keeps it in the journal
 // own lists, and its record — the whole reason a journal exists — survives that.
 await m.goto(`${BASE}/work/board`);
 await m.waitForTimeout(1500);
+// Approving from the board now opens the evidence on the card first — a manager
+// must see the work before "אישור וסגירה" closes it, not just a count of it.
+await m.getByRole("button", { name: "בדיקה ואישור" }).first().click();
+await m.waitForTimeout(600);
 await m.getByRole("button", { name: "אישור וסגירה" }).first().click();
 await m.waitForTimeout(1200);
 await m.goto(`${BASE}/work/journal?range=month`);

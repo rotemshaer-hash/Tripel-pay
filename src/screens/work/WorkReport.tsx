@@ -429,84 +429,95 @@ ${printCss}
                   </span>
                 </div>
 
-                <div className="report-block-title">מה התבקש</div>
-                {task.brief ? <div className="report-proof-brief">{task.brief}</div> : <div className="report-quiet">לא נכתב פירוט.</div>}
-                {(task.checklist ?? []).length > 0 && (
-                  <ul className="report-proof-steps">
-                    {(task.checklist ?? []).map((step) => (
-                      <li key={step.id}>{`${step.done ? "✓" : "—"} ${step.text}`}</li>
-                    ))}
-                  </ul>
-                )}
-                {briefFiles.length > 0 && (
-                  <div className="report-proof-shots">
-                    {briefFiles
-                      .filter((a) => a.kind === "image")
-                      .map((a) => (
-                        <figure key={a.id}>
-                          <img src={a.content} alt={a.name} />
-                          <figcaption>{a.name}</figcaption>
-                        </figure>
+                <div className="report-requested">
+                  <div className="report-block-title">מה התבקש</div>
+                  {task.brief ? <div className="report-proof-brief">{task.brief}</div> : <div className="report-quiet">לא נכתב פירוט.</div>}
+                  {(task.checklist ?? []).length > 0 && (
+                    <ul className="report-proof-steps">
+                      {(task.checklist ?? []).map((step) => (
+                        <li key={step.id}>{`${step.done ? "✓" : "—"} ${step.text}`}</li>
                       ))}
-                  </div>
-                )}
-                {briefFiles.filter((a) => a.kind !== "image").length > 0 && (
-                  <div className="report-proof-notes">
-                    {briefFiles
-                      .filter((a) => a.kind !== "image")
-                      .map((a) => (
-                        <div key={a.id}>{`• ${a.kind === "note" ? a.content : a.name}`}</div>
-                      ))}
-                  </div>
-                )}
-
-                <div className="report-block-title">מה בוצע</div>
-                <div className="report-stamps">
-                  {stamps
-                    .filter(([, at]) => !!at)
-                    .map(([label, at]) => (
-                      <span key={label}>{`${label}: ${formatDateExact(at)} ${formatTime(at)}`}</span>
-                    ))}
-                </div>
-                {photos.length === 0 && files.length === 0 && notes.length === 0 && (
-                  <div className="report-quiet">לא צורפו אסמכתאות.</div>
-                )}
-                {photos.length > 0 &&
-                  groupPhotosByName(photos).map((group, gi) => (
-                    // A job photographed at twenty stops is twenty names repeated across
-                    // fifty shots, not fifty captions to read one at a time. Same name,
-                    // wherever it recurs in the pile, becomes one heading over its photos
-                    // — the branch is the heading now, not a line under every picture of it.
-                    <div key={group.name || `_${gi}`} className="report-shot-group">
-                      {group.name && <div className="report-shot-group-name">{`${group.name} · ${group.items.length}`}</div>}
-                      <div className="report-proof-shots">
-                        {group.items.map((a) => (
+                    </ul>
+                  )}
+                  {briefFiles.length > 0 && (
+                    <div className="report-proof-shots">
+                      {briefFiles
+                        .filter((a) => a.kind === "image")
+                        .map((a) => (
                           <figure key={a.id}>
                             <img src={a.content} alt={a.name} />
-                            {!group.name && a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
-                            <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
+                            <figcaption>{a.name}</figcaption>
                           </figure>
                         ))}
-                      </div>
                     </div>
-                  ))}
-                {(files.length > 0 || notes.length > 0) && (
-                  <div className="report-proof-notes">
-                    {files.map((a) => (
-                      <div key={a.id}>{`• ${a.name} (${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)})`}</div>
-                    ))}
-                    {notes.map((a) => (
-                      <div key={a.id}>{`• ${a.content} (${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)})`}</div>
-                    ))}
+                  )}
+                  {briefFiles.filter((a) => a.kind !== "image").length > 0 && (
+                    <div className="report-proof-notes">
+                      {briefFiles
+                        .filter((a) => a.kind !== "image")
+                        .map((a) => (
+                          <div key={a.id}>{`• ${a.kind === "note" ? a.content : a.name}`}</div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="report-done">
+                  <div className="report-block-title">מה בוצע</div>
+                  <div className="report-stamps">
+                    {stamps
+                      .filter(([, at]) => !!at)
+                      .map(([label, at]) => (
+                        <span key={label}>{`${label}: ${formatDateExact(at)} ${formatTime(at)}`}</span>
+                      ))}
                   </div>
-                )}
-                {(task.comments ?? []).length > 0 && (
-                  <div className="report-proof-notes">
-                    {(task.comments ?? []).map((c) => (
-                      <div key={c.at}>{`• ${c.by}: ${c.text}`}</div>
+                  {photos.length === 0 && files.length === 0 && notes.length === 0 && (
+                    <div className="report-quiet">לא צורפו אסמכתאות.</div>
+                  )}
+                  {/* The worker's own general note on what was done is the headline of this
+                      section, so it leads — a photo's caption names what's in that one
+                      picture, this names the job. Reading order should match that. */}
+                  {notes.length > 0 && (
+                    <div className="report-proof-notes">
+                      {notes.map((a) => (
+                        <div key={a.id}>{`• ${a.content} (${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)})`}</div>
+                      ))}
+                    </div>
+                  )}
+                  {photos.length > 0 &&
+                    groupPhotosByName(photos).map((group, gi) => (
+                      // A job photographed at twenty stops is twenty names repeated across
+                      // fifty shots, not fifty captions to read one at a time. Same name,
+                      // wherever it recurs in the pile, becomes one heading over its photos
+                      // — the branch is the heading now, not a line under every picture of it.
+                      <div key={group.name || `_${gi}`} className="report-shot-group">
+                        {group.name && <div className="report-shot-group-name">{`${group.name} · ${group.items.length}`}</div>}
+                        <div className="report-proof-shots">
+                          {group.items.map((a) => (
+                            <figure key={a.id}>
+                              <img src={a.content} alt={a.name} />
+                              {!group.name && a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
+                              <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
+                            </figure>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                  </div>
-                )}
+                  {files.length > 0 && (
+                    <div className="report-proof-notes">
+                      {files.map((a) => (
+                        <div key={a.id}>{`• ${a.name} (${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)})`}</div>
+                      ))}
+                    </div>
+                  )}
+                  {(task.comments ?? []).length > 0 && (
+                    <div className="report-proof-notes">
+                      {(task.comments ?? []).map((c) => (
+                        <div key={c.at}>{`• ${c.by}: ${c.text}`}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </article>
             );
           })}
@@ -545,15 +556,20 @@ const printCss = `
 .report-proof-meta { font-size: 10.5px; color: #5c5f6b; }
 .report-proof-brief { font-size: 11.5px; color: #3a3d47; margin-top: 6px; line-height: 1.5; }
 .report-proof-steps { margin: 7px 0 0; padding-inline-start: 16px; font-size: 11px; color: #3a3d47; line-height: 1.7; }
-.report-proof-notes { font-size: 11px; color: #3a3d47; margin-top: 7px; line-height: 1.6; }
+.report-proof-notes { font-size: 10.5px; color: #3a3d47; margin-top: 7px; line-height: 1.6; }
 .report-proof-shots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
 .report-proof-shots figure { margin: 0; width: 30%; min-width: 150px; }
 .report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
-.report-proof-shots figcaption { font-size: 9.5px; color: #5c5f6b; margin-top: 3px; }
-.report-proof-shots figcaption.report-proof-name { font-size: 11px; font-weight: 700; color: #232a3b; margin-top: 5px; }
+.report-proof-shots figcaption { font-size: 9px; color: #5c5f6b; margin-top: 3px; }
+.report-proof-shots figcaption.report-proof-name { font-size: 10.5px; font-weight: 700; color: #232a3b; margin-top: 5px; }
 .report-shot-group + .report-shot-group { margin-top: 12px; }
 .report-shot-group-name { font-size: 12.5px; font-weight: 700; color: #232a3b; border-bottom: 1px solid #e3e5ea; padding-bottom: 4px; margin-top: 9px; }
-.report-block-title { font-size: 10px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
+.report-block-title { font-size: 9.5px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
+/* "מה התבקש" and "מה בוצע" used to read as one continuous block with two small
+   labels dropped in — easy to blur together when scanning. The done half now
+   opens past its own rule, so the eye has an actual line to land on between what
+   was asked for and what came back. */
+.report-done { border-top: 1.5px solid #d8dae0; margin-top: 13px; padding-top: 10px; }
 .report-stamps { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 10.5px; color: #232a3b; }
 .report-quiet { font-size: 10.5px; color: #8b8e99; }
 

@@ -50,9 +50,25 @@ function writeQueue(items: PendingReport[]) {
   }
 }
 
+/** One photo or note reported this sitting — kept locally so the review strip under
+ * "צורפו X אסמכתאות" has something to show and edit. The link is one-way (see
+ * pushLinkUpdate in firebase/db.ts: it only ever appends to the manager's inbox,
+ * never lets an anonymous session reach in and rewrite something already sent), so
+ * "editing" a photo or a note here sends a fresh, corrected report rather than
+ * silently rewriting history — the same append-a-correction shape every other edit
+ * in this product already uses, and it means the manager's own trail still shows
+ * both the original and the fix instead of one disappearing. */
+interface LocalProofItem {
+  id: string;
+  kind: "photo" | "note";
+  url?: string;
+  name?: string;
+  text?: string;
+}
+
 /** What this person has already reported in this sitting, so the page can move on to
  * the next action without waiting for the manager's app to write anything back. */
-type LocalState = Record<string, { ack?: boolean; started?: boolean; done?: boolean; proofs: number }>;
+type LocalState = Record<string, { ack?: boolean; started?: boolean; done?: boolean; proofs: number; items?: LocalProofItem[] }>;
 
 export function WorkerDay() {
   const { token = "" } = useParams();
@@ -64,6 +80,9 @@ export function WorkerDay() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [local, setLocal] = useState<LocalState>({});
+  // Which task's "what I've uploaded" strip is expanded into the larger, editable
+  // view. Collapsed (the default) shows small thumbnails and note snippets only.
+  const [proofEditorOpen, setProofEditorOpen] = useState<Record<string, boolean>>({});
   /** A photo waits here for its caption instead of going straight out. The customer's
    * pack is the point of the photo, and a pack of twelve shots all called "צילום
    * מהשטח" cannot be read — but a person on a site will not fill in a form either, so
@@ -180,6 +199,20 @@ export function WorkerDay() {
 
   function noteLocal(taskId: string, patch: Partial<LocalState[string]>) {
     setLocal((l) => ({ ...l, [taskId]: { ...(l[taskId] ?? { proofs: 0 }), ...patch } }));
+  }
+
+  function addLocalItem(taskId: string, item: LocalProofItem) {
+    setLocal((l) => {
+      const current = l[taskId] ?? { proofs: 0 };
+      return { ...l, [taskId]: { ...current, items: [...(current.items ?? []), item] } };
+    });
+  }
+
+  function replaceLocalItem(taskId: string, itemId: string, updates: Partial<LocalProofItem>) {
+    setLocal((l) => {
+      const current = l[taskId] ?? { proofs: 0 };
+      return { ...l, [taskId]: { ...current, items: (current.items ?? []).map((it) => (it.id === itemId ? { ...it, ...updates } : it)) } };
+    });
   }
 
   async function report(taskId: string, update: LinkUpdate, patch: Partial<LocalState[string]>) {
@@ -409,6 +442,7 @@ export function WorkerDay() {
                                     },
                                     { proofs: state(task.taskId).proofs + 1 }
                                   );
+                                  addLocalItem(task.taskId, { id: crypto.randomUUID(), kind: "photo", url: stored.url, name: name || undefined });
                                 } catch (err) {
                                   console.error("Uploading the photo failed:", err);
                                   setError(describeUploadFailure(err));
@@ -492,7 +526,11 @@ export function WorkerDay() {
                           style={{ flex: 1, padding: "13px 14px", borderRadius: 11, border: "1px solid var(--line)", fontSize: 14 }}
                         />
                         <button
-                          onClick={() => report(task.taskId, { kind: "note", at: now(), note: note.trim() }, { proofs: state(task.taskId).proofs + 1 })}
+                          onClick={() => {
+                            const text = note.trim();
+                            addLocalItem(task.taskId, { id: crypto.randomUUID(), kind: "note", text });
+                            report(task.taskId, { kind: "note", at: now(), note: text }, { proofs: state(task.taskId).proofs + 1 });
+                          }}
                           disabled={busy || !note.trim()}
                           style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 11, padding: "0 18px", fontSize: 13.5, fontWeight: 800, opacity: busy || !note.trim() ? 0.4 : 1 }}
                         >
@@ -504,7 +542,94 @@ export function WorkerDay() {
                   )}
 
                   {mine.proofs > 0 && (
-                    <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{`צורפו ${mine.proofs} אסמכתאות למשימה הזו.`}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{`צורפו ${mine.proofs} אסמכתאות למשימה הזו.`}</span>
+                        {/* Editing only while the job is still open — once it's sent for
+                            approval the point of the record is that it stopped moving. */}
+                        {!finished && (mine.items ?? []).length > 0 && (
+                          <button
+                            onClick={() => setProofEditorOpen((p) => ({ ...p, [task.taskId]: !p[task.taskId] }))}
+                            style={{ background: "none", border: "none", color: work.waiting, fontSize: 11.5, fontWeight: 800, padding: 0, flexShrink: 0 }}
+                          >
+                            {proofEditorOpen[task.taskId] ? "אישור" : "עריכה"}
+                          </button>
+                        )}
+                      </div>
+
+                      {!proofEditorOpen[task.taskId] && (mine.items ?? []).length > 0 && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {(mine.items ?? []).map((it) =>
+                            it.kind === "photo" ? (
+                              <img
+                                key={it.id}
+                                src={it.url}
+                                alt={it.name || "תמונה"}
+                                style={{ width: 40, height: 40, borderRadius: 7, objectFit: "cover", border: "1px solid var(--line)" }}
+                              />
+                            ) : (
+                              <span
+                                key={it.id}
+                                style={{
+                                  fontSize: 11,
+                                  color: "var(--ink-soft)",
+                                  background: "var(--paper)",
+                                  border: "1px solid var(--line)",
+                                  borderRadius: 7,
+                                  padding: "5px 9px",
+                                  maxWidth: 150,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {it.text}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      )}
+
+                      {proofEditorOpen[task.taskId] && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 11, padding: "11px 12px" }}>
+                          {(mine.items ?? []).map((it) => (
+                            <ProofItemEditor
+                              key={it.id}
+                              item={it}
+                              busy={busy}
+                              onChangePhoto={async (file) => {
+                                setBusy(true);
+                                setError("");
+                                try {
+                                  const blob = await resizeImageToBlob(file);
+                                  const stored = await uploadAttachment(`day/${task.taskId}`, new File([blob], file.name || "photo.jpg", { type: blob.type }));
+                                  await report(
+                                    task.taskId,
+                                    { kind: "photo", at: now(), ...(it.name ? { name: it.name } : {}), file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size } },
+                                    {}
+                                  );
+                                  replaceLocalItem(task.taskId, it.id, { url: stored.url });
+                                } catch (err) {
+                                  console.error("Replacing the photo failed:", err);
+                                  setError(describeUploadFailure(err));
+                                  setBusy(false);
+                                }
+                              }}
+                              onEditText={(text) => {
+                                replaceLocalItem(task.taskId, it.id, { text });
+                                report(task.taskId, { kind: "note", at: now(), note: text }, {});
+                              }}
+                            />
+                          ))}
+                          <button
+                            onClick={() => setProofEditorOpen((p) => ({ ...p, [task.taskId]: false }))}
+                            style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 9, padding: "10px", fontSize: 12.5, fontWeight: 800 }}
+                          >
+                            אישור
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -612,6 +737,102 @@ function BigButton({ label, tone, onClick, disabled }: { label: string; tone: "i
     >
       {label}
     </button>
+  );
+}
+
+/** One already-sent photo or note, shown large inside the "עריכה" panel with the one
+ * correction that applies to its kind — swap the photo, or fix the wording. */
+function ProofItemEditor({
+  item,
+  busy,
+  onChangePhoto,
+  onEditText,
+}: {
+  item: LocalProofItem;
+  busy: boolean;
+  onChangePhoto: (file: File) => void;
+  onEditText: (text: string) => void;
+}) {
+  const [editingText, setEditingText] = useState(false);
+  const [draft, setDraft] = useState(item.text ?? "");
+  const inputId = `proof-photo-${item.id}`;
+
+  if (item.kind === "photo") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <img src={item.url} alt={item.name || "תמונה"} style={{ width: 64, height: 64, borderRadius: 9, objectFit: "cover", border: "1px solid var(--line)", flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {item.name || "תמונה"}
+        </div>
+        <input
+          id={inputId}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) onChangePhoto(file);
+          }}
+        />
+        <label
+          htmlFor={inputId}
+          style={{
+            background: "#ffffff",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            color: "var(--ink)",
+            flexShrink: 0,
+            opacity: busy ? 0.5 : 1,
+            pointerEvents: busy ? "none" : "auto",
+          }}
+        >
+          שינוי תמונה
+        </label>
+      </div>
+    );
+  }
+
+  if (editingText) {
+    return (
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          autoFocus
+          style={{ flex: 1, padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 13 }}
+        />
+        <button
+          onClick={() => {
+            const text = draft.trim();
+            if (text) onEditText(text);
+            setEditingText(false);
+          }}
+          disabled={!draft.trim() || busy}
+          style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, opacity: !draft.trim() || busy ? 0.5 : 1 }}
+        >
+          שמירה
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--ink)" }}>{item.text}</div>
+      <button
+        onClick={() => {
+          setDraft(item.text ?? "");
+          setEditingText(true);
+        }}
+        style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "var(--ink)", flexShrink: 0 }}
+      >
+        עריכת טקסט
+      </button>
+    </div>
   );
 }
 
