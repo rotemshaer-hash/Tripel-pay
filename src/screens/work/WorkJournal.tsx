@@ -6,7 +6,7 @@ import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, activityLabels, statusPillClass, taskStatusLabels, work } from "../../data/vocabulary";
-import { formatDate, formatTime, isOnDate, isOverdue, rangeLabels, withinRange, type JournalRange } from "../../utils/datetime";
+import { formatDate, formatDateExact, formatTime, isOnDate, isOverdue, rangeLabels, rangeStart, withinRange, type JournalRange } from "../../utils/datetime";
 import type { ActivityEntry, Child, TaskItem } from "../../data/types";
 
 // Every dot on the timeline comes from the palette. The three literals that used to
@@ -247,6 +247,15 @@ export function WorkJournal() {
           </button>
         ))}
       </div>
+
+      {/* The tab says "שבועי" — this says which actual week, so the number below it
+          and the report reached from it are never read against two different periods
+          by mistake, the way a bare tab name invites. */}
+      {!searching && (
+        <div style={{ fontSize: 11, color: "var(--text-muted)", padding: "6px 20px 0" }}>
+          {`${formatDateExact(rangeStart(range).toISOString())} – ${formatDateExact(new Date().toISOString())}`}
+        </div>
+      )}
 
       {/* worker filter */}
       {workers.length > 1 && (
