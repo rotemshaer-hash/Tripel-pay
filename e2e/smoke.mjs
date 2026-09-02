@@ -382,6 +382,17 @@ check("photos sharing a name are grouped under one heading", report.includes("ה
   check("and lists the jobs by name", csvContent.includes("ניקיון מחסן") && csvContent.includes("בדיקת מזגנים"));
 }
 
+// A downloaded report that still points at a Storage URL for its photos only half
+// survives being saved — no signal, months later, forwarded to someone signed into
+// nothing. The point of downloading it is that it stops needing any of that.
+{
+  const [download] = await Promise.all([m.waitForEvent("download", { timeout: 20000 }), m.getByRole("button", { name: /הורדה כקובץ|מכין/ }).click()]);
+  check("the report download waits for photos before saving", download.suggestedFilename().endsWith(".html"));
+  const htmlPath = await download.path();
+  const htmlContent = htmlPath ? readFileSync(htmlPath, "utf8") : "";
+  check("its photos are embedded as data, not linked to Storage", htmlContent.includes("data:image") && !htmlContent.includes("firebasestorage.googleapis.com"));
+}
+
 // A period is a blunt way to choose what a customer's document covers, so the jobs in
 // it are ticked individually. Unticking one has to actually remove it from the sheet —
 // a picker that changes a count and nothing else is worse than no picker.

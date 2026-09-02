@@ -181,10 +181,41 @@ export function WorkReport() {
   // inlined — same reasoning as the print path above about not touching a PDF
   // library, just landing as a file instead of a dialog.
   const sheetRef = useRef<HTMLDivElement>(null);
-  function downloadHtml() {
+  const [preparingHtml, setPreparingHtml] = useState(false);
+  async function downloadHtml() {
     const sheet = sheetRef.current;
-    if (!sheet) return;
-    const doc = `<!doctype html>
+    if (!sheet || preparingHtml) return;
+    setPreparingHtml(true);
+    try {
+      // A photo's <img src> here is a Storage download URL — real while the app is
+      // open, but the whole point of a downloaded file is to survive without it: on
+      // a phone with no signal, months later, forwarded to someone with no account.
+      // Fetching each one and swapping in a data: URI is what makes this a real,
+      // self-contained file instead of a page that only half-works once saved. Runs
+      // on a clone, never the live DOM, and a photo that fails to fetch is left on
+      // its remote URL rather than losing the whole export over one bad fetch.
+      const clone = sheet.cloneNode(true) as HTMLElement;
+      const images = Array.from(clone.querySelectorAll("img"));
+      await Promise.all(
+        images.map(async (img) => {
+          const src = img.getAttribute("src");
+          if (!src || src.startsWith("data:")) return;
+          try {
+            const res = await fetch(src);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(blob);
+            });
+            img.setAttribute("src", dataUrl);
+          } catch (err) {
+            console.error("Embedding a photo into the downloaded report failed:", err);
+          }
+        })
+      );
+      const doc = `<!doctype html>
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8" />
@@ -195,9 +226,12 @@ body { margin: 0; background: #f2f3f7; font-family: "Alef","Segoe UI","Arial Heb
 ${printCss}
 </style>
 </head>
-<body>${sheet.outerHTML}</body>
+<body>${clone.outerHTML}</body>
 </html>`;
-    downloadFile(doc, "text/html;charset=utf-8", `דוח עבודה - ${safeCompany} - ${to} ${fileStamp()}.html`);
+      downloadFile(doc, "text/html;charset=utf-8", `דוח עבודה - ${safeCompany} - ${to} ${fileStamp()}.html`);
+    } finally {
+      setPreparingHtml(false);
+    }
   }
 
   // A row per job, not a copy of the printed sheet: a spreadsheet is for totaling and
@@ -243,8 +277,8 @@ ${printCss}
         <button onClick={() => window.print()} className="report-bar-btn report-bar-primary">
           הדפסה / PDF
         </button>
-        <button onClick={downloadHtml} className="report-bar-btn">
-          הורדה כקובץ
+        <button onClick={downloadHtml} disabled={preparingHtml} className="report-bar-btn" style={{ opacity: preparingHtml ? 0.6 : 1 }}>
+          {preparingHtml ? "מכין…" : "הורדה כקובץ"}
         </button>
         <button onClick={downloadCsv} className="report-bar-btn">
           לאקסל / Sheets
