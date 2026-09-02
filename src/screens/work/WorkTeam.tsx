@@ -128,24 +128,28 @@ export function WorkTeam() {
                       הנפקת קוד הצטרפות חדש
                     </button>
                   </div>
-                  {/* Same rule as removing a task from the board: this takes the
-                      person off the active roster, out of the assignment picker and
-                      off the WhatsApp link updates — every task and journal entry
-                      they ever had stays exactly as it was. */}
-                  <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>
-                    <ConfirmButton
-                      style={{ background: "none", border: "none", color: work.alert, fontSize: 12, fontWeight: 700, padding: 0, textAlign: "start" }}
-                      label="הסרה מהצוות"
-                      confirmLabel="כן, להסיר"
-                      warning={`להסיר את ${w.name} מהצוות? הוא/היא ייעלם/תיעלם מהרשימה ומבחירת אחראי למשימה חדשה, אבל כל המשימות והתיעוד שלו/שלה יישארו ביומן כרגיל. אפשר לשחזר בכל שלב.`}
-                      onConfirm={() => {
-                        dispatch({ type: "ARCHIVE_WORKER", childId: w.id });
-                        showToast(`${w.name} הוסר/ה מהצוות`);
-                      }}
-                    />
-                  </div>
                 </div>
               )}
+              {/* This used to live inside the "הזמנה"/"כניסה" panel above, reachable
+                  only after opening it — nobody looking to remove a person thinks to
+                  tap a button labelled for invites first, which is exactly what made
+                  removing someone read as broken. It's its own control now, visible
+                  on the card regardless of that panel's state. Same rule as removing
+                  a task from the board: this takes the person off the active roster,
+                  out of the assignment picker and off the WhatsApp link updates —
+                  every task and journal entry they ever had stays exactly as it was. */}
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line-soft)" }}>
+                <ConfirmButton
+                  style={{ background: "none", border: "none", color: work.alert, fontSize: 12, fontWeight: 700, padding: 0, textAlign: "start" }}
+                  label="הסרה מהצוות"
+                  confirmLabel="כן, להסיר"
+                  warning={`להסיר את ${w.name} מהצוות? הוא/היא ייעלם/תיעלם מהרשימה ומבחירת אחראי למשימה חדשה, אבל כל המשימות והתיעוד שלו/שלה יישארו ביומן כרגיל. אפשר לשחזר בכל שלב.`}
+                  onConfirm={() => {
+                    dispatch({ type: "ARCHIVE_WORKER", childId: w.id });
+                    showToast(`${w.name} הוסר/ה מהצוות`);
+                  }}
+                />
+              </div>
             </div>
           );
         })}

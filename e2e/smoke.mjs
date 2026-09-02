@@ -496,9 +496,10 @@ check("and is offered as an assignee for a new job", (await m.getByText(secondWo
 
 await m.goto(`${BASE}/work/team`);
 await m.waitForTimeout(1200);
-await m.locator(".pane", { hasText: secondWorker.name }).getByRole("button", { name: "הזמנה" }).click();
-await m.waitForTimeout(400);
-await m.getByText("הסרה מהצוות").click();
+// "הסרה מהצוות" used to be reachable only after opening the "הזמנה" panel — buried
+// behind a control that has nothing to do with removing someone. It's a standalone
+// control on the card now, so no panel needs opening first.
+await m.locator(".pane", { hasText: secondWorker.name }).getByText("הסרה מהצוות").click();
 await m.waitForTimeout(400);
 await m.getByRole("button", { name: "כן, להסיר" }).click();
 await m.waitForTimeout(800);
