@@ -60,7 +60,7 @@ function writeQueue(items: PendingReport[]) {
  * both the original and the fix instead of one disappearing. */
 interface LocalProofItem {
   id: string;
-  kind: "photo" | "note";
+  kind: "photo" | "note" | "file";
   url?: string;
   name?: string;
   text?: string;
@@ -509,6 +509,7 @@ export function WorkerDay() {
                               { kind: "file", at: now(), file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size } },
                               { proofs: state(task.taskId).proofs + 1 }
                             );
+                            addLocalItem(task.taskId, { id: crypto.randomUUID(), kind: "file", name: stored.name, url: stored.url });
                           } catch (err) {
                             console.error("Sending the evidence failed:", err);
                             setError(describeUploadFailure(err));
@@ -583,7 +584,7 @@ export function WorkerDay() {
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                {it.text}
+                                {it.kind === "file" ? `📄 ${it.name}` : it.text}
                               </span>
                             )
                           )}
@@ -756,6 +757,24 @@ function ProofItemEditor({
   const [editingText, setEditingText] = useState(false);
   const [draft, setDraft] = useState(item.text ?? "");
   const inputId = `proof-photo-${item.id}`;
+
+  // A document has nothing to swap or reword the way a photo or a note does — it's
+  // shown here so the count and the review strip agree, not as something to fix.
+  if (item.kind === "file") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 20, flexShrink: 0 }}>📄</span>
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        >
+          {item.name}
+        </a>
+      </div>
+    );
+  }
 
   if (item.kind === "photo") {
     return (

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore, useWorkView } from "../data/store";
@@ -56,35 +56,38 @@ export function WorkBottomNav() {
         { to: "/work/settings", label: "הגדרות", icon: <IconParentUser size={21} />, match: (p) => p === "/work/settings" },
       ];
 
-  return createPortal(
+  // .phone-shell only loses its height cap below the CSS's own 560px breakpoint
+  // (index.css: max-height:900px + overflow:hidden from 560px up) — that's the
+  // exact case where .screen never overflows its own box, so nothing ever scrolls
+  // inside it and a nav pinned to that box (sticky, or fixed with a containing
+  // block set by that overflow:hidden) rides off-screen with the rest of the page.
+  // Below 560px the fix is a body-level portal, unaffected by any of that. At or
+  // above it, the shell already behaves the way sticky always assumed, and a portal
+  // would instead glue the nav to the real browser window's bottom edge — visibly
+  // detached below the centered, height-capped mockup whenever the window is taller
+  // than the frame plus its padding, which is most desktop windows.
+  const [isMobile, setIsMobile] = useState(() => typeof window === "undefined" || window.innerWidth < 560);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 559.98px)");
+    const onChange = () => setIsMobile(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const nav = (
     <nav
       className="glass-bar"
       style={{
-        // sticky only pins to the bottom of whichever box actually scrolls, and on
-        // a real phone that box is the document, not .screen — .phone-shell has no
-        // height cap below the 560px breakpoint (only min-height:100vh), so .screen
-        // never overflows its own border and .screen's overflow-y:auto never
-        // engages. The page itself scrolls instead, and a sticky nav sitting in
-        // content that never scrolls just rides along with everything above it,
-        // off the bottom of the screen. position:fixed alone was still reported as
-        // scrolling away on a real phone despite testing fixed on a desktop
-        // browser — position:fixed's containing block is only the viewport when no
-        // ancestor sets a transform/filter/perspective/contain, and something in
-        // that chain (a card's own animation, a future style, or a browser-specific
-        // quirk in standalone PWA mode) can turn that into the wrong box without it
-        // being obvious from reading the CSS. Portaling straight to document.body
-        // removes every ancestor between this nav and the real page, so there is no
-        // box left that could ever hijack the containing block.
+        position: isMobile ? "fixed" : "sticky",
         // Plain left/translateX, not the inline-start logical property: centering
         // is direction-agnostic, and translateX always moves along the physical
         // x-axis regardless of dir, so mixing it with a logical inset would
-        // double up in RTL instead of cancelling out.
-        position: "fixed",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "100%",
-        maxWidth: "var(--shell-w)",
+        // double up in RTL instead of cancelling out. Only needed once this is
+        // portaled out to <body> and centering is on us instead of normal layout.
+        ...(isMobile ? { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "var(--shell-w)" } : {}),
         bottom: 0,
+        marginTop: isMobile ? undefined : "auto",
         display: "flex",
         justifyContent: "space-around",
         alignItems: "stretch",
@@ -142,7 +145,17 @@ export function WorkBottomNav() {
           </button>
         );
       })}
-    </nav>,
-    document.body,
+    </nav>
   );
+
+  // position:fixed alone was still reported as scrolling away on a real phone
+  // despite testing fixed on a desktop browser — position:fixed's containing
+  // block is only the viewport when no ancestor sets a transform/filter/
+  // perspective/contain, and something in that chain (a browser-specific quirk in
+  // standalone PWA mode, most likely) turned that into the wrong box without a
+  // matching rule to find by reading the CSS. Portaling straight to document.body
+  // removes every ancestor between this nav and the real page, so there is no box
+  // left that could ever hijack the containing block — but only below the 560px
+  // breakpoint, where that fix is actually needed (see above).
+  return isMobile ? createPortal(nav, document.body) : nav;
 }

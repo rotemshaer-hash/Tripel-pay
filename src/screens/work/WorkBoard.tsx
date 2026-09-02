@@ -127,8 +127,14 @@ export function WorkBoard() {
               <StatusChip task={task} />
             </button>
 
-            {task.status === "pending_approval" && (
-              reviewOpen.has(`${worker.id}-${task.id}`) ? (
+            {task.status === "pending_approval" && (() => {
+              // submittedAt rides along in the key so a resubmission after
+              // "החזרה לתיקון" needs its own fresh review click — the old key would
+              // otherwise still read as "already looked at" for evidence that
+              // wasn't there yet when it was opened, on a board left mounted
+              // through the round trip.
+              const reviewKey = `${worker.id}-${task.id}-${task.submittedAt ?? ""}`;
+              return reviewOpen.has(reviewKey) ? (
                 <div style={{ padding: "0 15px 13px" }}>
                   <AttachmentList items={task.proofs ?? []} empty="טרם צורפו אסמכתאות." />
                   <button
@@ -143,15 +149,15 @@ export function WorkBoard() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setReviewOpen((s) => new Set(s).add(`${worker.id}-${task.id}`))}
+                  onClick={() => setReviewOpen((s) => new Set(s).add(reviewKey))}
                   // The last of the retired glass gradients — flat now, like the rest
                   // of the board's controls.
                   style={{ width: "100%", background: work.done, color: "#ffffff", border: "none", padding: "12px", fontSize: 13.5, fontWeight: 800 }}
                 >
                   בדיקה ואישור
                 </button>
-              )
-            )}
+              );
+            })()}
           </div>
         ))}
       </div>
