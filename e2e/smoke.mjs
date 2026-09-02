@@ -491,6 +491,15 @@ check("the removed job is off the board", !(await m.locator("body").innerText())
 await m.goto(`${BASE}/work/journal?range=month`);
 await m.waitForTimeout(2000);
 check("but its record still shows in the journal", (await m.locator("body").innerText()).includes("ניקיון מחסן"));
+// It was finished and approved before it was taken off the board — that's real,
+// delivered work, so the report still offers it and still counts it as done. Only a
+// job removed while still open is the kind this report leaves out.
+await m.goto(`${BASE}/work/report?range=month&worker=all`);
+await m.waitForTimeout(2000);
+check(
+  "a finished job removed from the board afterward is still offered in the report",
+  (await m.locator(".report-picker-row", { hasText: "ניקיון מחסן" }).count()) > 0
+);
 
 console.log("12. removing a worker keeps their record and frees the assignment picker");
 // Same shape as removing a job from the board: the roster and the "new task" picker

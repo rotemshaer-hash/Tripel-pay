@@ -79,13 +79,18 @@ export function WorkReport() {
     let overdue = 0;
     for (const worker of scope) {
       for (const task of worker.tasks) {
-        // A job pulled off the board — a mistake, something cancelled, whatever the
-        // reason — is exactly the kind of thing a client-facing document should not
-        // be carrying. Removed from the board means removed from the report's own
-        // numbers too, not just hidden behind an extra click every time.
-        if (task.archivedAt) continue;
-        if (task.status === "pending_approval") awaiting++;
-        if (isOverdue(task.dueAt, task.status)) overdue++;
+        // A job pulled off the board while still open — a mistake, something
+        // cancelled, whatever the reason — was never delivered, and that is exactly
+        // the kind of thing a client-facing document should not be carrying. A job
+        // pulled off the board after it was already finished and approved is a
+        // different fact: the work happened, someone signed off on it, and taking it
+        // off the active board afterwards doesn't undo that — so it still counts as
+        // done and still belongs in the document.
+        if (task.archivedAt && task.status !== "completed") continue;
+        if (!task.archivedAt) {
+          if (task.status === "pending_approval") awaiting++;
+          if (isOverdue(task.dueAt, task.status)) overdue++;
+        }
         if (task.status === "completed" && withinRange(task.approvedAt, range)) done++;
         for (const entry of task.activity ?? []) {
           if (withinRange(entry.at, range)) all.push({ entry, task, worker });
@@ -109,10 +114,11 @@ export function WorkReport() {
     const out: { key: string; task: TaskItem; worker: Child }[] = [];
     for (const worker of scope) {
       for (const task of worker.tasks) {
-        // A removed job doesn't belong in a document meant to go clean to a client —
-        // see the same skip and the reasoning on it in the stats above. The journal
-        // is the one place that still shows it; this report isn't.
-        if (task.archivedAt) continue;
+        // A job removed while still open doesn't belong in a document meant to go
+        // clean to a client — see the same skip and the reasoning on it in the stats
+        // above. A job removed after it was finished and approved is real, delivered
+        // work, so it stays offered here even once it's off the active board.
+        if (task.archivedAt && task.status !== "completed") continue;
         // Every timestamp a job can carry, not just its trail. A job whose activity
         // was written before this record kept one, or that arrived with only an
         // approval stamp on it, was dropped from the document with nothing said —
