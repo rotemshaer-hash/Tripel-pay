@@ -269,10 +269,15 @@ ${printCss}
     // no address to hand anyone, so it's left out rather than dumping a base64 blob
     // into a cell.
     const photoHeaders = ["משימה", "אתר", "שם התמונה", "קישור"];
+    // A bare URL in a cell is plain text — double-click-to-select in Sheets stops at
+    // the first "/" or "?" it hits, so copying the whole thing takes a careful drag
+    // instead of one click. Google Sheets (and Excel) both parse a CSV cell that
+    // starts with "=" as a formula on import, so HYPERLINK(...) turns it into an
+    // actual clickable link — nothing to select or copy at all.
     const photoRows = chosen.flatMap(({ task }) =>
       (task.proofs ?? [])
         .filter((a) => a.kind === "image" && a.content.startsWith("http"))
-        .map((a) => [task.title, task.site ?? "", a.name && a.name !== "צילום מהשטח" ? a.name : "תמונה", a.content]),
+        .map((a) => [task.title, task.site ?? "", a.name && a.name !== "צילום מהשטח" ? a.name : "תמונה", `=HYPERLINK("${a.content}", "פתיחה")`]),
     );
     const photoTable = [["תמונות מצורפות"], photoHeaders, ...photoRows].map((r) => r.map(cell).join(",")).join("\r\n");
 
@@ -556,14 +561,14 @@ const printCss = `
 .report-proof-meta { font-size: 10.5px; color: #5c5f6b; }
 .report-proof-brief { font-size: 11.5px; color: #3a3d47; margin-top: 6px; line-height: 1.5; }
 .report-proof-steps { margin: 7px 0 0; padding-inline-start: 16px; font-size: 11px; color: #3a3d47; line-height: 1.7; }
-.report-proof-notes { font-size: 10.5px; color: #3a3d47; margin-top: 7px; line-height: 1.6; }
+.report-proof-notes { font-size: 12.5px; color: #3a3d47; margin-top: 7px; line-height: 1.6; }
 .report-proof-shots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
 .report-proof-shots figure { margin: 0; width: 30%; min-width: 150px; }
 .report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
 .report-proof-shots figcaption { font-size: 9px; color: #5c5f6b; margin-top: 3px; }
 .report-proof-shots figcaption.report-proof-name { font-size: 10.5px; font-weight: 700; color: #232a3b; margin-top: 5px; }
 .report-shot-group + .report-shot-group { margin-top: 12px; }
-.report-shot-group-name { font-size: 12.5px; font-weight: 700; color: #232a3b; border-bottom: 1px solid #e3e5ea; padding-bottom: 4px; margin-top: 9px; }
+.report-shot-group-name { font-size: 14px; font-weight: 700; color: #232a3b; border-bottom: 1px solid #e3e5ea; padding-bottom: 4px; margin-top: 9px; }
 .report-block-title { font-size: 9.5px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
 /* "מה התבקש" and "מה בוצע" used to read as one continuous block with two small
    labels dropped in — easy to blur together when scanning. The done half now
