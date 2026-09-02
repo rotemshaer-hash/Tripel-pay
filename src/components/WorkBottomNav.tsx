@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore, useWorkView } from "../data/store";
 import { childrenList } from "../data/family";
@@ -55,7 +56,7 @@ export function WorkBottomNav() {
         { to: "/work/settings", label: "הגדרות", icon: <IconParentUser size={21} />, match: (p) => p === "/work/settings" },
       ];
 
-  return (
+  return createPortal(
     <nav
       className="glass-bar"
       style={{
@@ -65,10 +66,15 @@ export function WorkBottomNav() {
         // never overflows its own border and .screen's overflow-y:auto never
         // engages. The page itself scrolls instead, and a sticky nav sitting in
         // content that never scrolls just rides along with everything above it,
-        // off the bottom of the screen. Fixed to the viewport sidesteps which
-        // element ends up as the scroller; centering it to the same width as
-        // .phone-shell keeps it aligned with the app's frame on a wide desktop
-        // preview instead of spanning the full browser window.
+        // off the bottom of the screen. position:fixed alone was still reported as
+        // scrolling away on a real phone despite testing fixed on a desktop
+        // browser — position:fixed's containing block is only the viewport when no
+        // ancestor sets a transform/filter/perspective/contain, and something in
+        // that chain (a card's own animation, a future style, or a browser-specific
+        // quirk in standalone PWA mode) can turn that into the wrong box without it
+        // being obvious from reading the CSS. Portaling straight to document.body
+        // removes every ancestor between this nav and the real page, so there is no
+        // box left that could ever hijack the containing block.
         // Plain left/translateX, not the inline-start logical property: centering
         // is direction-agnostic, and translateX always moves along the physical
         // x-axis regardless of dir, so mixing it with a logical inset would
@@ -136,6 +142,7 @@ export function WorkBottomNav() {
           </button>
         );
       })}
-    </nav>
+    </nav>,
+    document.body,
   );
 }

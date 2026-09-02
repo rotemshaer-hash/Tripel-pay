@@ -56,7 +56,7 @@ export function WorkBoard() {
         {/* .press's default is plain --ink black; this is the one primary button that
             leads the whole screen, so it gets its own dark grey-green instead of
             blending with every other confirm/save button in the app. */}
-        <button className="press" onClick={() => navigate("/work/new")} style={{ padding: "16px", fontSize: 15.5, background: "#37453f" }}>
+        <button className="press" onClick={() => navigate("/work/new")} style={{ padding: "16px", fontSize: 15.5, background: "#45564f" }}>
           + {V.task} חדשה
         </button>
 
