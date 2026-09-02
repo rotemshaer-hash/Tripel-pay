@@ -381,8 +381,10 @@ check("photos sharing a name are grouped under one heading", report.includes("ה
   check("it carries the UTF-8 BOM Excel needs for Hebrew", csvContent.charCodeAt(0) === 0xfeff);
   check("and lists the jobs by name", csvContent.includes("ניקיון מחסן") && csvContent.includes("בדיקת מזגנים"));
   // The point of this column is a link someone can actually open — a real Storage
-  // URL for the photo uploaded earlier, not just a photo count.
-  check("its photo-links column carries a real Storage URL", csvContent.includes("before.png") && csvContent.includes("firebasestorage.googleapis.com"));
+  // download URL for the photo uploaded earlier, not just a photo count. This runs
+  // against the Storage emulator, so the host is 127.0.0.1:9199, not the production
+  // firebasestorage.googleapis.com — check the download-URL shape both share instead.
+  check("its photo-links column carries a real Storage URL", csvContent.includes("before.png") && csvContent.includes("/o/") && csvContent.includes("alt=media"));
 }
 
 // A downloaded report that still points at a Storage URL for its photos only half
