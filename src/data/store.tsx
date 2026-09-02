@@ -447,12 +447,15 @@ function reducer(state: AppState, action: Action): AppState {
       // A job sent to the wrong person, or cancelled by the customer before anyone
       // moved, is a real and ordinary event, and refusing to remove it left the board
       // carrying work nobody would ever do. But the board is not the record: the
-      // journal and any report built from it are, and a manager clearing the board
-      // does not mean the proof of what happened should go with it. So this only ever
-      // marks the task archived — the task, its proofs, comments and whole activity
-      // trail are untouched, Storage files included, and the journal keeps reading
-      // them exactly like any other job. The board is the only place that stops
-      // listing it (see the archivedAt filter in WorkBoard).
+      // journal is, and a manager clearing the board does not mean the proof of what
+      // happened should go with it. So this only ever marks the task archived — the
+      // task, its proofs, comments and whole activity trail are untouched, Storage
+      // files included, and the journal keeps reading them exactly like any other
+      // job. The board is one place this stops listing it (see the archivedAt filter
+      // in WorkBoard); the report is deliberately the other — a mistake or a
+      // cancelled job has no business padding a document meant for a client, so
+      // WorkReport's own `jobs` list excludes an archived task outright, not just
+      // the board.
       const at = action.at ?? new Date().toISOString();
       return {
         ...state,

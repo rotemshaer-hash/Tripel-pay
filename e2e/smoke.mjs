@@ -381,9 +381,9 @@ check("unticking a job takes it out of the document", !trimmed.includes("ניק�
 check("and leaves the others in", trimmed.includes("בדיקת מזגנים"));
 
 // The same ticks answer "get these out of my app" — but out of the BOARD, not out of
-// the record. Real archiving: gone from the active lists, still in the journal, and
-// still there after the server is read again. The confirmation is in the page now,
-// not a browser popup: arm, read what happens, then confirm.
+// the record. Real archiving: gone from the active lists and from this report, still
+// in the journal, and still there after the server is read again. The confirmation
+// is in the page now, not a browser popup: arm, read what happens, then confirm.
 await m.getByText(/הסרת 1 העבודות המסומנות מהלוח/).click();
 await m.waitForTimeout(600);
 check("the removal says the record stays in the journal", (await m.getByText(/יישאר ביומן/).count()) > 0);
@@ -391,12 +391,10 @@ await m.getByRole("button", { name: "כן, להסיר" }).click();
 await m.waitForTimeout(1200);
 // The picker used to reset to "everything ticked" after a removal, which brought the
 // just-removed job right back looking untouched — the exact thing that read as "the
-// button doesn't work". It has to visibly change: unticked, and marked as removed.
-check(
-  "the removed job unticks itself instead of coming right back",
-  !(await m.locator(".report-picker-row", { hasText: "בדיקת מזגנים" }).locator("input").isChecked())
-);
-check("and is marked as already off the board", (await m.getByText("הוסרה מהלוח").count()) > 0);
+// button doesn't work". A removed job now drops out of the report's own job list
+// entirely, so the row itself is gone, not just unticked.
+check("the removed job's row disappears from the picker", (await m.locator(".report-picker-row", { hasText: "בדיקת מזגנים" }).count()) === 0);
+check("and it drops out of the printed document too", !(await m.locator(".report-sheet").innerText()).includes("בדיקת מזגנים"));
 await m.waitForTimeout(1800);
 await m.goto(`${BASE}/work/board`);
 await m.waitForTimeout(1500);

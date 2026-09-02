@@ -80,6 +80,11 @@ export function WorkReport() {
     let overdue = 0;
     for (const worker of scope) {
       for (const task of worker.tasks) {
+        // A job pulled off the board — a mistake, something cancelled, whatever the
+        // reason — is exactly the kind of thing a client-facing document should not
+        // be carrying. Removed from the board means removed from the report's own
+        // numbers too, not just hidden behind an extra click every time.
+        if (task.archivedAt) continue;
         if (task.status === "pending_approval") awaiting++;
         if (isOverdue(task.dueAt, task.status)) overdue++;
         if (task.status === "completed" && withinRange(task.approvedAt, range)) done++;
@@ -105,6 +110,10 @@ export function WorkReport() {
     const out: { key: string; task: TaskItem; worker: Child }[] = [];
     for (const worker of scope) {
       for (const task of worker.tasks) {
+        // A removed job doesn't belong in a document meant to go clean to a client —
+        // see the same skip and the reasoning on it in the stats above. The journal
+        // is the one place that still shows it; this report isn't.
+        if (task.archivedAt) continue;
         // Every timestamp a job can carry, not just its trail. A job whose activity
         // was written before this record kept one, or that arrived with only an
         // approval stamp on it, was dropped from the document with nothing said —
@@ -225,13 +234,6 @@ ${printCss}
               <span className="report-picker-name">{job.task.title}</span>
               <span className="report-picker-meta">
                 {[job.worker.name, job.task.site, taskStatusLabels[job.task.status]].filter(Boolean).join(" · ")}
-                {/* A job already off the board still belongs in this list — its record
-                    is still fair game for the document — but looking identical to an
-                    active one is exactly why removing it here read as broken: the tick
-                    box resets to "everything in" after every removal, so a job that
-                    was just removed came right back looking untouched. This is the
-                    only visible difference between the two. */}
-                {job.task.archivedAt && " · הוסרה מהלוח"}
               </span>
             </label>
           ))}
@@ -244,43 +246,32 @@ ${printCss}
 
       {/* Detached from the list on purpose. Sitting inside that card, directly under a
           row, this read as one more line of the selection — a tick and a board-level
-          action an inch apart, in the same box. Archiving, not deleting: this clears
-          the board and the task lists, but every one of these jobs keeps its full
-          record in the journal and in this very report — nothing here is destroyed,
-          so the warning says so rather than counting out a loss that isn't real.
-          Scoped to the ticked jobs NOT already off the board — an already-archived
-          job ticked for the document is not something to "remove" again, and mixing
-          it into the count made a real removal look like it silently did nothing. */}
-      {(() => {
-        const removable = chosen.filter((job) => !job.task.archivedAt);
-        if (jobs.length === 0 || removable.length === 0) return null;
-        return (
-          <div className="report-danger no-print">
-            <ConfirmButton
-              className="report-picker-delete"
-              label={`הסרת ${removable.length} העבודות המסומנות מהלוח`}
-              warning={(() => {
-                const names = removable.slice(0, 4).map((job) => job.task.title).join(", ");
-                const more = removable.length > 4 ? ` ועוד ${removable.length - 4}` : "";
-                return `להסיר ${removable.length} עבודות מהלוח — ${names}${more}? הן ייעלמו מרשימות המשימות, אבל התיעוד שלהן יישאר ביומן וגם כאן בדוח.`;
-              })()}
-              confirmLabel="כן, להסיר"
-              onConfirm={() => {
-                for (const job of removable) dispatch({ type: "ARCHIVE_TASK", childId: job.worker.id, taskId: job.task.id, by: state.family.parentName || V.admin });
-                // Uncheck exactly the jobs that just left the board — the visible sign
-                // that something happened — instead of resetting to "everything ticked",
-                // which brought them right back looking untouched.
-                setDropped((current) => {
-                  const next = new Set(current);
-                  for (const job of removable) next.add(job.key);
-                  return next;
-                });
-                showToast(removable.length === 1 ? "העבודה הוסרה מהלוח" : `${removable.length} עבודות הוסרו מהלוח`);
-              }}
-            />
-          </div>
-        );
-      })()}
+          action an inch apart, in the same box. Archiving, not deleting: the record
+          survives in the journal, which is the one place this product never forgets
+          anything — but a job pulled off the board (a mistake, something cancelled)
+          has no business padding a document meant to go clean to a client, so it also
+          drops out of THIS report and its numbers the moment it's removed. Because
+          `jobs` itself stops listing an archived task, the row disappearing here on
+          its own next render is the confirmation that it worked — no extra tag or
+          "stay ticked" bookkeeping needed to prove something happened. */}
+      {jobs.length > 0 && chosen.length > 0 && (
+        <div className="report-danger no-print">
+          <ConfirmButton
+            className="report-picker-delete"
+            label={`הסרת ${chosen.length} העבודות המסומנות מהלוח`}
+            warning={(() => {
+              const names = chosen.slice(0, 4).map((job) => job.task.title).join(", ");
+              const more = chosen.length > 4 ? ` ועוד ${chosen.length - 4}` : "";
+              return `להסיר ${chosen.length} עבודות מהלוח — ${names}${more}? הן ייעלמו מרשימות המשימות ומהדוח, אבל התיעוד שלהן יישאר ביומן.`;
+            })()}
+            confirmLabel="כן, להסיר"
+            onConfirm={() => {
+              for (const job of chosen) dispatch({ type: "ARCHIVE_TASK", childId: job.worker.id, taskId: job.task.id, by: state.family.parentName || V.admin });
+              showToast(chosen.length === 1 ? "העבודה הוסרה מהלוח ומהדוח" : `${chosen.length} עבודות הוסרו מהלוח ומהדוח`);
+            }}
+          />
+        </div>
+      )}
 
       <div className="report-sheet" ref={sheetRef}>
         <header className="report-head">
