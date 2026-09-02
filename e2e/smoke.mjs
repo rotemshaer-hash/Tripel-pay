@@ -12,6 +12,7 @@
  * rules files this repo deploys, so the rules are exercised too.
  */
 import { chromium } from "playwright";
+import { readFileSync } from "node:fs";
 
 const BASE = process.env.E2E_BASE_URL || "http://localhost:4173";
 const HEADLESS = true;
@@ -369,6 +370,17 @@ check("so is the worker's evidence, in their words", report.includes("המדף �
 // several stops — fold into one heading with a count, rather than reading as two
 // separate, identically-captioned pictures.
 check("photos sharing a name are grouped under one heading", report.includes("המדף העליון אחרי הניקוי · 2"));
+
+// A spreadsheet export nobody can open in Excel without mangled Hebrew is not a real
+// export — the UTF-8 BOM is the one byte sequence that makes Excel guess right.
+{
+  const [download] = await Promise.all([m.waitForEvent("download"), m.getByRole("button", { name: "לאקסל / Sheets" }).click()]);
+  check("the spreadsheet export downloads as a .csv", download.suggestedFilename().endsWith(".csv"));
+  const csvPath = await download.path();
+  const csvContent = csvPath ? readFileSync(csvPath, "utf8") : "";
+  check("it carries the UTF-8 BOM Excel needs for Hebrew", csvContent.charCodeAt(0) === 0xfeff);
+  check("and lists the jobs by name", csvContent.includes("ניקיון מחסן") && csvContent.includes("בדיקת מזגנים"));
+}
 
 // A period is a blunt way to choose what a customer's document covers, so the jobs in
 // it are ticked individually. Unticking one has to actually remove it from the sheet —

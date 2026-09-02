@@ -153,6 +153,27 @@ export function WorkReport() {
   const from = formatDateExact(rangeStart(range).toISOString());
   const to = formatDateExact(new Date().toISOString());
 
+  const safeCompany = (company || "עסק").replace(/[\\/:*?"<>|]/g, "");
+  // A filename fixed to the day (via `to` above) meant a second download the same day
+  // landed on the exact same name — the browser saw it as a repeat of the last
+  // download and asked "download again?" instead of just saving it. A fresh,
+  // second-granular stamp captured at click time makes every download its own file.
+  function fileStamp() {
+    const now = new Date();
+    return [now.getHours(), now.getMinutes(), now.getSeconds()].map((n) => String(n).padStart(2, "0")).join("-");
+  }
+  function downloadFile(content: BlobPart, mime: string, filename: string) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   // Print/"Save as PDF" needs a dialog every time, and on some in-app browsers
   // (opened straight from a WhatsApp link, say) it is unreliable or missing
   // outright. A direct download is one tap and always works the same way: the
@@ -176,22 +197,39 @@ ${printCss}
 </head>
 <body>${sheet.outerHTML}</body>
 </html>`;
-    const blob = new Blob([doc], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const safeCompany = (company || "עסק").replace(/[\\/:*?"<>|]/g, "");
-    // `to` is fixed for the component's whole lifetime, so a second download the same
-    // day landed on the exact same filename — the browser saw it as a repeat of the
-    // last download and asked "download again?" instead of just saving it. A fresh,
-    // second-granular stamp captured right here makes every click its own file.
-    const now = new Date();
-    const stamp = [now.getHours(), now.getMinutes(), now.getSeconds()].map((n) => String(n).padStart(2, "0")).join("-");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `דוח עבודה - ${safeCompany} - ${to} ${stamp}.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadFile(doc, "text/html;charset=utf-8", `דוח עבודה - ${safeCompany} - ${to} ${fileStamp()}.html`);
+  }
+
+  // A row per job, not a copy of the printed sheet: a spreadsheet is for totaling and
+  // filtering, which needs one clean value per column, not paragraphs of brief text
+  // and photo captions crammed into the same cell a print layout groups them into.
+  // Opens directly in Excel by double-click, and Google Sheets imports a .csv in two
+  // taps (File › Import) — a real .xlsx binary or an actual push to a live Sheet are
+  // both bigger asks (a spreadsheet library, or Google OAuth credentials this project
+  // has nowhere to keep) that buy little over this for a table this simple.
+  function downloadCsv() {
+    const cell = (v: string | number | undefined) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const headers = ["משימה", "עובד", "אתר", "סטטוס", "יעד", "נשלחה", "נצפתה", "אישרה קבלה", "הוגשה", "אושרה", "תמונות", "קבצים", "הערות"];
+    const rows = chosen.map(({ task, worker }) => [
+      task.title,
+      worker.name,
+      task.site ?? "",
+      taskStatusLabels[task.status],
+      task.dueAt ? formatDateExact(task.dueAt) : "",
+      task.createdAt ? formatDateExact(task.createdAt) : "",
+      task.seenAt ? formatDateExact(task.seenAt) : "",
+      task.acknowledgedAt ? formatDateExact(task.acknowledgedAt) : "",
+      task.submittedAt ? formatDateExact(task.submittedAt) : "",
+      task.approvedAt ? formatDateExact(task.approvedAt) : "",
+      (task.proofs ?? []).filter((a) => a.kind === "image").length,
+      (task.proofs ?? []).filter((a) => a.kind === "file").length,
+      (task.comments ?? []).length,
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+    // The BOM is not decorative: without it, Excel guesses a legacy Windows encoding
+    // for a .csv with no declared charset and renders every Hebrew cell as garbage —
+    // this one byte sequence is what tells it the file is UTF-8.
+    downloadFile("\uFEFF" + csv, "text/csv;charset=utf-8", `דוח עבודה - ${safeCompany} - ${to} ${fileStamp()}.csv`);
   }
 
   return (
@@ -207,6 +245,9 @@ ${printCss}
         </button>
         <button onClick={downloadHtml} className="report-bar-btn">
           הורדה כקובץ
+        </button>
+        <button onClick={downloadCsv} className="report-bar-btn">
+          לאקסל / Sheets
         </button>
       </div>
 
