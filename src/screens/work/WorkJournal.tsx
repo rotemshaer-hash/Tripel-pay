@@ -135,7 +135,13 @@ export function WorkJournal() {
     rows.sort((a, b) => Date.parse(b.entry.at) - Date.parse(a.entry.at));
     let grouped = groupByJob(rows);
     const q = searchText.trim().toLowerCase();
-    if (q) grouped = grouped.filter((job) => job.task.title.toLowerCase().includes(q) || job.worker.name.toLowerCase().includes(q));
+    // A repeat client is the normal case in this line of work — "everything at סניף
+    // תל אביב" is a real question a manager asks, and site was the one field on a
+    // job this search couldn't find by, even though it's shown right on the row.
+    if (q)
+      grouped = grouped.filter(
+        (job) => job.task.title.toLowerCase().includes(q) || job.worker.name.toLowerCase().includes(q) || (job.task.site ?? "").toLowerCase().includes(q)
+      );
     return { feed: rows, jobs: grouped, done, awaiting, overdue };
   }, [workers, workerId, range, searching, searchText, searchDate]);
 
