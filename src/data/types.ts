@@ -200,6 +200,11 @@ export interface Child {
    * everything on their plate, rather than a message per task. */
   dayToken?: string;
   authUid?: string;
+  /** Set when a manager removes this person from the team. Every task, transaction
+   * and the whole journal trail stay exactly as they were — the same "archive, don't
+   * erase" rule as a task removed from the board — only the active roster, the
+   * assignment picker and the WhatsApp links stop counting them. */
+  archivedAt?: string;
   tasks: TaskItem[];
   transactions: TransactionItem[];
   savingsGoals: SavingsGoal[];

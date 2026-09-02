@@ -119,6 +119,8 @@ type Action =
   | { type: "ADD_DOCUMENT"; title: string; kind: CompanyDoc["kind"]; content: string; path?: string; size?: number; mime?: string; note?: string; by: string; at?: string }
   | { type: "REMOVE_DOCUMENT"; docId: string }
   | { type: "ADD_WORKER"; name: string }
+  | { type: "ARCHIVE_WORKER"; childId: string }
+  | { type: "RESTORE_WORKER"; childId: string }
   | { type: "RESET_WORKER_ACCESS"; childId: string }
   | { type: "SET_WORKER_PHONE"; childId: string; phone: string }
   | { type: "SET_PROFESSION"; professionId: string }
@@ -858,6 +860,22 @@ function reducer(state: AppState, action: Action): AppState {
         },
       };
     }
+    case "ARCHIVE_WORKER": {
+      // Same rule as ARCHIVE_TASK, one level up: their tasks, transactions and the
+      // whole journal trail stay exactly as they were. Only the active roster, the
+      // assignment picker and the link-publish effects below stop counting them.
+      const at = new Date().toISOString();
+      return { ...state, family: mapChild(state.family, action.childId, (c) => ({ ...c, archivedAt: at })) };
+    }
+    case "RESTORE_WORKER": {
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => {
+          const { archivedAt: _archivedAt, ...rest } = c;
+          return rest as Child;
+        }),
+      };
+    }
     case "APPLY_LINK_UPDATE": {
       // What a worker reported from the WhatsApp link, folded into the record as if
       // they had done it in the app — same statuses, same trail, same evidence. The
@@ -1336,6 +1354,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!state.familyUid || state.role !== "parent") return;
     const company = state.family.companyName || state.family.parentName;
     for (const worker of childrenList(state.family)) {
+      if (worker.archivedAt) continue;
       for (const task of worker.tasks) {
         if (!task.linkToken || task.status === "completed" || task.archivedAt) continue;
         const signature = [
@@ -1385,6 +1404,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     const company = state.family.companyName || state.family.parentName;
     for (const worker of childrenList(state.family)) {
+      if (worker.archivedAt) continue;
       const open = worker.tasks.filter((t) => t.status !== "completed" && !t.archivedAt);
       const signature =
         open

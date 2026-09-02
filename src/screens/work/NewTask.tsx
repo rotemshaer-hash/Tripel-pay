@@ -28,7 +28,10 @@ export function NewTask() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
-  const workers = childrenList(state.family);
+  // Someone removed from the team can't be handed new work — their existing jobs
+  // stay untouched, but they drop out of this picker the same way an archived task
+  // drops out of the board.
+  const workers = childrenList(state.family).filter((w) => !w.archivedAt);
 
   const [title, setTitle] = useState("");
   const [brief, setBrief] = useState("");

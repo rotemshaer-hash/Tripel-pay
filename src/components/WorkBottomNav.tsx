@@ -32,7 +32,7 @@ export function WorkBottomNav() {
 
   // The manager is the bottleneck: work sits in "submitted" until they look at it.
   // A worker's own count is what they still owe, overdue first in their list.
-  const mine = childrenList(state.family).filter((c) => isManager || c.id === state.activeChildId);
+  const mine = childrenList(state.family).filter((c) => (isManager && !c.archivedAt) || c.id === state.activeChildId);
   const awaiting = mine.reduce((n, c) => n + c.tasks.filter((t) => !t.archivedAt && t.status === "pending_approval").length, 0);
   const open = mine.reduce((n, c) => n + c.tasks.filter((t) => !t.archivedAt && (t.status === "available" || t.status === "in_progress")).length, 0);
 

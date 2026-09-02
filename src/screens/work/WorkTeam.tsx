@@ -3,10 +3,11 @@ import { Header } from "../../components/Header";
 import { InviteShare } from "../../components/InviteShare";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { Toast, useToast } from "../../components/Toast";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
-import { isOverdue } from "../../utils/datetime";
+import { formatDate, isOverdue } from "../../utils/datetime";
 import { dayMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
 
@@ -15,7 +16,12 @@ import { whatsAppLink } from "../../utils/share";
 export function WorkTeam() {
   const { state, dispatch } = useStore();
   const { toastMessage, showToast } = useToast();
-  const workers = childrenList(state.family);
+  // Archived workers keep every task and journal entry they ever had — same rule as
+  // an archived task — so this list is the one place that stops counting them: the
+  // roster, the header count, and (below) the "no one on the team yet" empty state.
+  const all = childrenList(state.family);
+  const workers = all.filter((w) => !w.archivedAt);
+  const archived = all.filter((w) => w.archivedAt);
   const [openInvite, setOpenInvite] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [phoneDraft, setPhoneDraft] = useState<Record<string, string>>({});
@@ -122,6 +128,22 @@ export function WorkTeam() {
                       הנפקת קוד הצטרפות חדש
                     </button>
                   </div>
+                  {/* Same rule as removing a task from the board: this takes the
+                      person off the active roster, out of the assignment picker and
+                      off the WhatsApp link updates — every task and journal entry
+                      they ever had stays exactly as it was. */}
+                  <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>
+                    <ConfirmButton
+                      style={{ background: "none", border: "none", color: work.alert, fontSize: 12, fontWeight: 700, padding: 0, textAlign: "start" }}
+                      label="הסרה מהצוות"
+                      confirmLabel="כן, להסיר"
+                      warning={`להסיר את ${w.name} מהצוות? הוא/היא ייעלם/תיעלם מהרשימה ומבחירת אחראי למשימה חדשה, אבל כל המשימות והתיעוד שלו/שלה יישארו ביומן כרגיל. אפשר לשחזר בכל שלב.`}
+                      onConfirm={() => {
+                        dispatch({ type: "ARCHIVE_WORKER", childId: w.id });
+                        showToast(`${w.name} הוסר/ה מהצוות`);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -134,6 +156,33 @@ export function WorkTeam() {
               {`מספיק שם ומספר טלפון. מכאן שולחים לו בוואטסאפ קישור אישי שנשאר נכון כל יום: הוא לוחץ, רואה את המשימות שלו, ומדווח קבלה, התחלה, סיום, תמונה או הערה — בלי התקנה ובלי סיסמה.`}
             </div>
           </div>
+        )}
+
+        {/* Removed, not deleted — this is the way back, so removing never reads as a
+            one-way door. */}
+        {archived.length > 0 && (
+          <section className="pane" style={{ padding: "14px 15px" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink-soft)", marginBottom: 9 }}>{`הוסרו מהצוות · ${archived.length}`}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {archived.map((w) => (
+                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--paper)", borderRadius: 9, padding: "9px 11px" }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--ink-soft)" }}>
+                    {w.name}
+                    {w.archivedAt && <span style={{ color: "var(--ink-faint)" }}>{` · הוסר/ה ${formatDate(w.archivedAt)}`}</span>}
+                  </span>
+                  <button
+                    onClick={() => {
+                      dispatch({ type: "RESTORE_WORKER", childId: w.id });
+                      showToast(`${w.name} שוחזר/ה לצוות`);
+                    }}
+                    style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: 8, padding: "7px 11px", fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}
+                  >
+                    שחזור לצוות
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         <section className="pane" style={{ padding: "14px 15px", marginTop: 4 }}>

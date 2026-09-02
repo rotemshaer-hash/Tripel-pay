@@ -24,7 +24,12 @@ export function WorkTasks() {
   const [filter, setFilter] = useState<Filter>("open");
 
   const { isManager } = useWorkView();
-  const scope = isManager ? childrenList(state.family) : childrenList(state.family).filter((c) => c.id === state.activeChildId);
+  // A worker viewing their own list sees it regardless of their own archived status
+  // (their existing work doesn't vanish) — only the manager's combined view drops
+  // archived workers, same as the board.
+  const scope = isManager
+    ? childrenList(state.family).filter((c) => !c.archivedAt)
+    : childrenList(state.family).filter((c) => c.id === state.activeChildId);
 
   const rows = useMemo(() => {
     // Archived jobs stay in the record for the journal and any report — this list is

@@ -121,7 +121,11 @@ export function TaskDetail() {
         {/* status strip */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <Chip text={taskStatusLabels[task.status]} color={taskStatusColor[task.status]} solid />
-          {task.priority && <Chip text={priorityLabels[task.priority]} color={priorityColor[task.priority]} />}
+          {/* "normal" is the default every task starts at, not a fact worth a chip —
+              showing it on every ordinary job is the same "count of nothing" the
+              journal's own summary line already avoids. Only a real deviation from
+              the default (low/high/urgent) is worth naming here. */}
+          {task.priority && task.priority !== "normal" && <Chip text={priorityLabels[task.priority]} color={priorityColor[task.priority]} />}
           {task.recurrence && task.recurrence !== "none" && <Chip text={recurrenceLabels[task.recurrence]} color={work.active} />}
           {task.dueAt && <Chip text={`יעד: ${formatDate(task.dueAt)}`} color={overdue ? work.alert : work.idle} solid={overdue} />}
           {task.acknowledgedAt ? (
@@ -164,7 +168,11 @@ export function TaskDetail() {
             <TaskEditor
               task={activeTask}
               worker={activeWorker}
-              workers={childrenList(state.family)}
+              // The current assignee stays selectable even if archived since they're
+              // literally who holds this task right now — only other archived
+              // workers drop out as reassignment targets, same as the "new task"
+              // picker.
+              workers={childrenList(state.family).filter((w) => !w.archivedAt || w.id === activeWorker.id)}
               actor={actor}
               onDone={(changed) => {
                 setEditing(false);

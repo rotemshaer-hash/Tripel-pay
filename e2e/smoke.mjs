@@ -430,6 +430,45 @@ await m.goto(`${BASE}/work/journal?range=month`);
 await m.waitForTimeout(2000);
 check("but its record still shows in the journal", (await m.locator("body").innerText()).includes("ניקיון מחסן"));
 
+console.log("12. removing a worker keeps their record and frees the assignment picker");
+// Same shape as removing a job from the board: the roster and the "new task" picker
+// are working views, so they stop listing an archived worker — but nothing about
+// them is actually deleted, so restoring puts them right back.
+const secondWorker = { name: "דנה בדיקה" };
+await m.goto(`${BASE}/work/team`);
+await m.waitForTimeout(1200);
+await m.getByPlaceholder("שם מלא").fill(secondWorker.name);
+await m.getByRole("button", { name: "הוספה" }).click();
+await m.waitForTimeout(800);
+check("the new hire appears on the roster", (await m.getByText(secondWorker.name).count()) > 0);
+
+await m.goto(`${BASE}/work/new`);
+await m.waitForTimeout(800);
+check("and is offered as an assignee for a new job", (await m.getByText(secondWorker.name).count()) > 0);
+
+await m.goto(`${BASE}/work/team`);
+await m.waitForTimeout(1200);
+await m.locator(".pane", { hasText: secondWorker.name }).getByRole("button", { name: "הזמנה" }).click();
+await m.waitForTimeout(400);
+await m.getByText("הסרה מהצוות").click();
+await m.waitForTimeout(400);
+await m.getByRole("button", { name: "כן, להסיר" }).click();
+await m.waitForTimeout(800);
+// Scoped to "שליחת המשימות" (only an active row has it) rather than plain ".pane",
+// since the archived-workers section below is itself a .pane containing this name.
+check("the removed worker leaves the active roster", (await m.locator(".pane", { hasText: "שליחת המשימות" }).filter({ hasText: secondWorker.name }).count()) === 0);
+check("but is listed as removed, not gone", (await m.getByText(`הוסרו מהצוות · 1`).count()) > 0);
+
+await m.goto(`${BASE}/work/new`);
+await m.waitForTimeout(800);
+check("and drops out of the assignee picker for new work", (await m.getByText(secondWorker.name).count()) === 0);
+
+await m.goto(`${BASE}/work/team`);
+await m.waitForTimeout(1200);
+await m.getByRole("button", { name: "שחזור לצוות" }).click();
+await m.waitForTimeout(800);
+check("restoring brings them back to the active roster", (await m.locator(".pane", { hasText: secondWorker.name }).count()) > 0);
+
 await managerCtx.close();
 await workerCtx.close();
 await browser.close();
