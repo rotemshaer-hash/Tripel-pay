@@ -386,10 +386,13 @@ check("photos sharing a name are grouped under one heading", report.includes("ה
   // not the production firebasestorage.googleapis.com — check the download-URL
   // shape both share instead of a specific host.
   check("the CSV carries a second table for photo links", csvContent.includes("תמונות מצורפות"));
-  const photoRow = csvContent.split("\r\n").find((line) => line.includes("alt=media"));
+  // By this point more than one job has a real photo (this one's "before.png", and
+  // "ניקיון מחסן"'s from the daily-link flow) — find the row by its own filename
+  // rather than the first "alt=media" line, which isn't guaranteed to be this one.
+  const photoRow = csvContent.split("\r\n").find((line) => line.includes("before.png"));
   check(
     "each photo gets its own row, naming the job and carrying a real Storage URL",
-    !!photoRow && photoRow.includes("בדיקת מזגנים") && photoRow.includes("before.png") && photoRow.includes("/o/"),
+    !!photoRow && photoRow.includes("בדיקת מזגנים") && photoRow.includes("alt=media") && photoRow.includes("/o/"),
   );
 }
 
