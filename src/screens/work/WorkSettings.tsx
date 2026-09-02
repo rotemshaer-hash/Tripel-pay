@@ -9,6 +9,7 @@ import { V, work } from "../../data/vocabulary";
 import { formatDateTime } from "../../utils/datetime";
 import { adminInviteLink, entryPath } from "../../data/routes";
 import { InstallButton } from "../../components/InstallButton";
+import { shareText } from "../../utils/share";
 
 /**
  * Account settings for the business build.
@@ -156,6 +157,29 @@ export function WorkSettings() {
             {`ה${V.workerPlural} לא מתקינים כלום — הם עובדים מהקישור. למנהל דווקא כדאי אייקון במסך הבית.`}
           </div>
           <InstallButton />
+        </section>
+
+        {/* Word of mouth is how a tool like this actually spreads — one business owner
+            telling another, not an ad. The share sheet already knows every channel
+            that matters (WhatsApp included), so this just hands it the pitch. */}
+        <section style={card}>
+          <div style={cardTitle}>{`שיתוף ${V.appName}`}</div>
+          <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 10 }}>
+            מכיר/ה בעל/ת עסק עם צוות בשטח? שלח/י קישור ישיר לאפליקציה.
+          </div>
+          <button
+            onClick={async () => {
+              const link = window.location.origin;
+              const result = await shareText(
+                `${V.appName} — ניהול צוות ומשימות ישירות מוואטסאפ, בלי שהעובדים מתקינים כלום: ${link}`
+              );
+              if (result === "copied") showToast("הקישור הועתק");
+              if (result === "failed") showToast("לא ניתן להעתיק — יש להעתיק ידנית");
+            }}
+            style={{ width: "100%", background: work.ink, color: "#ffffff", border: "none", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800 }}
+          >
+            שיתוף האפליקציה
+          </button>
         </section>
 
         {/* Three switches live in the Firebase console, not in this app, and any one of
