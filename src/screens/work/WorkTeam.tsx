@@ -79,9 +79,7 @@ export function WorkTeam() {
                   </button>
                 )}
               </div>
-              {/* The team screen is where a manager stands when they think about a
-                  person — so it is where sending that person their work belongs. */}
-              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+              <div style={{ marginTop: 10 }}>
                 <input
                   dir="ltr"
                   value={phoneDraft[w.id] ?? w.phone ?? ""}
@@ -93,16 +91,8 @@ export function WorkTeam() {
                     showToast(value ? "המספר נשמר" : "המספר הוסר");
                   }}
                   placeholder="טלפון (05X…)"
-                  style={{ flex: 1, minWidth: 0, padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 12.5 }}
+                  style={{ width: "100%", padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 12.5 }}
                 />
-                <a
-                  href={whatsAppLink(w.phone, dayMessage(state.family.companyName || state.family.parentName, w))}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ background: work.action, color: "#06301a", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap", alignSelf: "stretch", display: "flex", alignItems: "center" }}
-                >
-                  שליחת המשימות
-                </a>
               </div>
               {!w.authUid && openInvite !== w.id && (
                 <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 9, background: "var(--paper)", borderRadius: 8, padding: "7px 10px" }}>
@@ -112,6 +102,23 @@ export function WorkTeam() {
               {openInvite === w.id && (
                 <div style={{ marginTop: 11, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>
                   <InviteShare workerName={w.name} code={w.inviteCode} onNotify={showToast} />
+                  {/* Same personal link a new task already carries, resent on its own —
+                      for a worker who lost the message, or has none open right now to
+                      trigger it. This is the one place that offers it apart from a task
+                      itself, so it lives here, in the panel about reaching this person. */}
+                  <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>
+                    <div style={{ fontSize: 11.5, color: "var(--ink-faint)", lineHeight: 1.55, marginBottom: 8 }}>
+                      {`שליחת כל המשימות הפתוחות של ${w.name} בקישור אחד בוואטסאפ.`}
+                    </div>
+                    <a
+                      href={whatsAppLink(w.phone, dayMessage(state.family.companyName || state.family.parentName, w))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "block", textAlign: "center", textDecoration: "none", background: work.action, color: "#06301a", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800 }}
+                    >
+                      שליחת המשימות של היום בוואטסאפ
+                    </a>
+                  </div>
                   {/* Someone who registered and then can't get in had no way back: the
                       invite disappeared the moment they signed up. This is the way back. */}
                   <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid var(--line-soft)" }}>

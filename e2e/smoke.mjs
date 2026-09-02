@@ -194,7 +194,12 @@ await m.waitForTimeout(2500);
 check("the board lists the work", (await m.getByText("בדיקת מזגנים").count()) > 0);
 await m.goto(`${BASE}/work/team`);
 await m.waitForTimeout(2000);
-const dayHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
+// Opens the invite/access panel — the day link now lives there, alongside invite and
+// reset-access, rather than always-visible on the roster card. Scoped by its own label
+// rather than "first wa.me link" since the invite-share button above it is also one.
+await m.getByRole("button", { name: /^(הזמנה|כניסה)$/ }).first().click();
+await m.waitForTimeout(600);
+const dayHref = await m.getByRole("link", { name: "שליחת המשימות של היום בוואטסאפ" }).getAttribute("href");
 const dayLink = decodeURIComponent(dayHref).match(/https?:\/\/[^\s]+\/d\/[a-f0-9]+/)?.[0] ?? "";
 check("the day message carries the worker's personal link", dayLink.length > 0);
 
