@@ -361,6 +361,16 @@ console.log("10. one work report, holding both halves of the job");
 // to sit on the same page. Three separate outputs each held one half.
 await m.goto(`${BASE}/work/report?range=month&worker=all`);
 await m.waitForTimeout(3000);
+// Nothing is picked by default — a document handed to a client or an investor
+// should never include a job just because it fell in the date range. Select all
+// once here so the rest of this section (photo grouping, the exports, the picker
+// interactions further down) has jobs to work with, the way opening the report and
+// reviewing everything actually goes.
+check("nothing is picked in the report by default", (await m.getByText("מה ייכנס לדוח · 0 מתוך 2").count()) > 0);
+check("so the document itself says nothing was picked yet", (await m.getByText("לא סומנה אף עבודה").count()) > 0);
+await m.getByText("סימון הכל").click();
+await m.waitForTimeout(600);
+check("selecting all brings every job into the document", (await m.getByText("מה ייכנס לדוח · 2 מתוך 2").count()) > 0);
 const report = await m.locator("body").innerText();
 check("the report states what was asked", report.includes("מה התבקש"));
 check("and what was done", report.includes("מה בוצע"));
@@ -407,10 +417,9 @@ check("photos sharing a name are grouped under one heading", report.includes("ה
   check("its photos are embedded as data, not linked to Storage", htmlContent.includes("data:image") && !htmlContent.includes("firebasestorage.googleapis.com"));
 }
 
-// A period is a blunt way to choose what a customer's document covers, so the jobs in
-// it are ticked individually. Unticking one has to actually remove it from the sheet —
-// a picker that changes a count and nothing else is worse than no picker.
-check("every job in the period starts in the document", (await m.getByText("מה ייכנס לדוח · 2 מתוך 2").count()) > 0);
+// Unticking one has to actually remove it from the sheet — a picker that changes a
+// count and nothing else is worse than no picker. (Everything is still selected
+// from the "סימון הכל" at the top of this section.)
 await m.locator(".report-picker-row", { hasText: "ניקיון מחסן" }).locator("input").uncheck();
 await m.waitForTimeout(600);
 const trimmed = await m.locator(".report-sheet").innerText();

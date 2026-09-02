@@ -95,6 +95,7 @@ type Action =
   | { type: "UPDATE_TASK"; childId: string; taskId: string; title: string; brief?: string; dueAt?: string; priority?: TaskPriority; site?: string; by?: string; at?: string }
   | { type: "REASSIGN_TASK"; fromChildId: string; toChildId: string; taskId: string; by?: string; at?: string }
   | { type: "ARCHIVE_TASK"; childId: string; taskId: string; by: string; at?: string }
+  | { type: "RESTORE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ADD_CHECKLIST_ITEM"; childId: string; taskId: string; text: string }
   | { type: "REMOVE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string }
   | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
@@ -461,6 +462,22 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         family: mapChild(state.family, action.childId, (c) =>
           mapTask(c, action.taskId, (t) => logActivity({ ...t, archivedAt: at }, { by: action.by, action: "archived" }, at))
+        ),
+      };
+    }
+    case "RESTORE_TASK": {
+      // The mirror of ARCHIVE_TASK — clears archivedAt so the task is back on the
+      // board, task lists and report, with the removal itself left standing in the
+      // trail (it happened) and a "restored" entry appended after it, the same way
+      // RESTORE_WORKER never erases that someone was archived.
+      const at = action.at ?? new Date().toISOString();
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) =>
+          mapTask(c, action.taskId, (t) => {
+            const { archivedAt: _archivedAt, ...rest } = t;
+            return logActivity(rest as TaskItem, { by: action.by, action: "restored" }, at);
+          })
         ),
       };
     }

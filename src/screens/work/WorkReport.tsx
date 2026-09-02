@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useStore } from "../../data/store";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { Toast, useToast } from "../../components/Toast";
@@ -63,7 +63,6 @@ function groupPhotosByName(photos: Attachment[]): { name: string; items: Attachm
  */
 export function WorkReport() {
   const { state, dispatch } = useStore();
-  const navigate = useNavigate();
   const { toastMessage, showToast } = useToast();
   const [params] = useSearchParams();
   const range = (params.get("range") as JournalRange) || "month";
@@ -135,14 +134,15 @@ export function WorkReport() {
    * Which jobs the document is being built from.
    *
    * A period is a blunt way to choose: an invoice covers the three jobs done at one
-   * customer's site, not everything that moved that week. Selection is by exception —
-   * everything in the period starts ticked — so the common case stays one tap and
-   * narrowing it down is possible without leaving the page.
+   * customer's site, not everything that moved that week. Nothing starts ticked —
+   * a document handed to a client or an investor should never include a job by
+   * default just because it happened to fall in the date range; picking what goes
+   * in is a deliberate act, not something to notice and undo after the fact.
    */
-  const [dropped, setDropped] = useState<Set<string>>(new Set());
-  const chosen = jobs.filter((job) => !dropped.has(job.key));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const chosen = jobs.filter((job) => selected.has(job.key));
   function toggle(key: string) {
-    setDropped((current) => {
+    setSelected((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -293,12 +293,6 @@ ${printCss}
       <style>{printCss}</style>
 
       <div className="report-bar no-print">
-        <button onClick={() => navigate(-1)} className="report-bar-btn">
-          חזרה
-        </button>
-        <button onClick={() => window.print()} className="report-bar-btn report-bar-primary">
-          הדפסה / PDF
-        </button>
         <button onClick={downloadHtml} disabled={preparingHtml} className="report-bar-btn" style={{ opacity: preparingHtml ? 0.6 : 1 }}>
           {preparingHtml ? "מכין…" : "הורדה כקובץ"}
         </button>
@@ -320,14 +314,14 @@ ${printCss}
                 nothing had ever been deleted. A control names the thing it does. */}
             <button
               type="button"
-              onClick={() => setDropped(chosen.length === jobs.length ? new Set(jobs.map((j) => j.key)) : new Set())}
+              onClick={() => setSelected(chosen.length === jobs.length ? new Set() : new Set(jobs.map((j) => j.key)))}
             >
               {chosen.length === jobs.length ? "ביטול הסימון" : "סימון הכל"}
             </button>
           </div>
           {jobs.map((job) => (
             <label key={job.key} className="report-picker-row">
-              <input type="checkbox" checked={!dropped.has(job.key)} onChange={() => toggle(job.key)} />
+              <input type="checkbox" checked={selected.has(job.key)} onChange={() => toggle(job.key)} />
               <span className="report-picker-name">{job.task.title}</span>
               <span className="report-picker-meta">
                 {[job.worker.name, job.task.site, taskStatusLabels[job.task.status]].filter(Boolean).join(" · ")}
@@ -469,19 +463,14 @@ ${printCss}
 
                 <div className="report-done">
                   <div className="report-block-title">מה בוצע</div>
-                  <div className="report-stamps">
-                    {stamps
-                      .filter(([, at]) => !!at)
-                      .map(([label, at]) => (
-                        <span key={label}>{`${label}: ${formatDateExact(at)} ${formatTime(at)}`}</span>
-                      ))}
-                  </div>
                   {photos.length === 0 && files.length === 0 && notes.length === 0 && (
                     <div className="report-quiet">לא צורפו אסמכתאות.</div>
                   )}
                   {/* The worker's own general note on what was done is the headline of this
                       section, so it leads — a photo's caption names what's in that one
-                      picture, this names the job. Reading order should match that. */}
+                      picture, this names the job. Reading order should match that. The
+                      timestamps are the opposite: metadata about the record, not the
+                      record itself, so they close the section instead of opening it. */}
                   {notes.length > 0 && (
                     <div className="report-proof-notes">
                       {notes.map((a) => (
@@ -522,6 +511,13 @@ ${printCss}
                       ))}
                     </div>
                   )}
+                  <div className="report-stamps">
+                    {stamps
+                      .filter(([, at]) => !!at)
+                      .map(([label, at]) => (
+                        <span key={label}>{`${label}: ${formatDateExact(at)} ${formatTime(at)}`}</span>
+                      ))}
+                  </div>
                 </div>
               </article>
             );
@@ -543,7 +539,6 @@ const printCss = `
 .report-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 18px; position: sticky; top: 0; background: var(--accent); }
 .report-bar-btn { flex: 1 1 100px; padding: 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.3);
   background: transparent; color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; }
-.report-bar-primary { background: #fff; color: var(--accent); border: none; font-weight: 800; }
 .report-sheet { background: #fff; margin: 16px auto; padding: 26px 24px; max-width: 820px;
   box-shadow: 0 1px 4px rgba(16,24,40,0.10); color: #1a1d26; }
 .report-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;
@@ -569,7 +564,7 @@ const printCss = `
 .report-proof-shots figcaption.report-proof-name { font-size: 10.5px; font-weight: 700; color: #232a3b; margin-top: 5px; }
 .report-shot-group + .report-shot-group { margin-top: 12px; }
 .report-shot-group-name { font-size: 14px; font-weight: 700; color: #232a3b; border-bottom: 1px solid #e3e5ea; padding-bottom: 4px; margin-top: 9px; }
-.report-block-title { font-size: 9.5px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
+.report-block-title { font-size: 13.5px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }
 /* "מה התבקש" and "מה בוצע" used to read as one continuous block with two small
    labels dropped in — easy to blur together when scanning. The done half now
    opens past its own rule, so the eye has an actual line to land on between what

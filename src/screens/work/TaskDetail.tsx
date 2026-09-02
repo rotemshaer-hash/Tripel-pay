@@ -545,6 +545,18 @@ export function TaskDetail() {
             }}
           />
         )}
+        {/* Workers have had this since ARCHIVE_WORKER shipped; tasks never got the
+            same way back — an archived task with no restore path was a dead end the
+            moment a removal turned out to be a mistake. No confirmation: restoring
+            isn't destructive, it's the undo. */}
+        {isManager && task.archivedAt && (
+          <button
+            onClick={() => dispatch({ type: "RESTORE_TASK", childId: activeWorker.id, taskId: activeTask.id, by: actor })}
+            style={{ background: "none", border: "none", color: work.done, fontSize: 12.5, fontWeight: 700, padding: "6px 0", textAlign: "start" }}
+          >
+            שחזור המשימה ללוח
+          </button>
+        )}
 
         <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 13, fontWeight: 700, padding: 8 }}>
           חזרה

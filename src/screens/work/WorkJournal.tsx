@@ -26,6 +26,7 @@ const actionColor: Record<ActivityEntry["action"], string> = {
   seen: work.idle,
   acknowledged: work.done,
   archived: work.alert,
+  restored: work.done,
 };
 
 interface FeedRow {
@@ -122,9 +123,18 @@ export function WorkJournal() {
     const effectiveRange: JournalRange = searching ? "all" : range;
     for (const worker of scoped) {
       for (const task of worker.tasks) {
-        if (task.status === "pending_approval") awaiting++;
-        if (isOverdue(task.dueAt, task.status)) overdue++;
-        if (task.status === "completed" && withinRange(task.approvedAt, effectiveRange)) done++;
+        // The feed below stays unconditional — that's the whole point of a journal,
+        // and an archived job's history is still real history. The three counters
+        // are a different kind of number: "how much is open/done/late right now",
+        // which is exactly what WorkReport's own stats already exclude an archived
+        // job from. Counting it here too, while the report stopped, is what made
+        // the two screens show different totals for what looked like the same
+        // question.
+        if (!task.archivedAt) {
+          if (task.status === "pending_approval") awaiting++;
+          if (isOverdue(task.dueAt, task.status)) overdue++;
+          if (task.status === "completed" && withinRange(task.approvedAt, effectiveRange)) done++;
+        }
         for (const entry of task.activity ?? []) {
           if (!withinRange(entry.at, effectiveRange)) continue;
           if (searchDate && !isOnDate(entry.at, searchDate)) continue;

@@ -31,7 +31,7 @@ export interface ActivityEntry {
   id: string;
   at: string;
   by: string;
-  action: "created" | "assigned" | "started" | "submitted" | "approved" | "reopened" | "commented" | "attached" | "edited" | "reassigned" | "sent" | "seen" | "acknowledged" | "archived";
+  action: "created" | "assigned" | "started" | "submitted" | "approved" | "reopened" | "commented" | "attached" | "edited" | "reassigned" | "sent" | "seen" | "acknowledged" | "archived" | "restored";
   detail?: string;
 }
 
