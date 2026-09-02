@@ -8,8 +8,6 @@ import { useStore } from "../../data/store";
 import { childrenList } from "../../data/family";
 import { V, work } from "../../data/vocabulary";
 import { formatDate, isOverdue } from "../../utils/datetime";
-import { dayMessage } from "../../data/messages";
-import { whatsAppLink } from "../../utils/share";
 
 /** The team roster: who's on staff, what's on their plate, and how to get a new
  * hire signed in — by code, with no work email required. */
@@ -79,9 +77,7 @@ export function WorkTeam() {
                   </button>
                 )}
               </div>
-              {/* The team screen is where a manager stands when they think about a
-                  person — so it is where sending that person their work belongs. */}
-              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+              <div style={{ marginTop: 10 }}>
                 <input
                   dir="ltr"
                   value={phoneDraft[w.id] ?? w.phone ?? ""}
@@ -93,16 +89,8 @@ export function WorkTeam() {
                     showToast(value ? "המספר נשמר" : "המספר הוסר");
                   }}
                   placeholder="טלפון (05X…)"
-                  style={{ flex: 1, minWidth: 0, padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 12.5 }}
+                  style={{ width: "100%", padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 12.5 }}
                 />
-                <a
-                  href={whatsAppLink(w.phone, dayMessage(state.family.companyName || state.family.parentName, w))}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ background: work.action, color: "#06301a", borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap", alignSelf: "stretch", display: "flex", alignItems: "center" }}
-                >
-                  שליחת המשימות
-                </a>
               </div>
               {!w.authUid && openInvite !== w.id && (
                 <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 9, background: "var(--paper)", borderRadius: 8, padding: "7px 10px" }}>

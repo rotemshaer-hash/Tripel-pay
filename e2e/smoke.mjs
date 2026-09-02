@@ -512,9 +512,9 @@ await m.locator(".pane", { hasText: secondWorker.name }).getByText("הסרה מ�
 await m.waitForTimeout(400);
 await m.getByRole("button", { name: "כן, להסיר" }).click();
 await m.waitForTimeout(800);
-// Scoped to "שליחת המשימות" (only an active row has it) rather than plain ".pane",
+// Scoped to "הסרה מהצוות" (only an active row has it) rather than plain ".pane",
 // since the archived-workers section below is itself a .pane containing this name.
-check("the removed worker leaves the active roster", (await m.locator(".pane", { hasText: "שליחת המשימות" }).filter({ hasText: secondWorker.name }).count()) === 0);
+check("the removed worker leaves the active roster", (await m.locator(".pane", { hasText: "הסרה מהצוות" }).filter({ hasText: secondWorker.name }).count()) === 0);
 check("but is listed as removed, not gone", (await m.getByText(`הוסרו מהצוות · 1`).count()) > 0);
 
 await m.goto(`${BASE}/work/new`);
