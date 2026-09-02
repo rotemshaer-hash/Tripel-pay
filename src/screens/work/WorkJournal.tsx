@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { WorkBottomNav } from "../../components/WorkBottomNav";
 import { useStore } from "../../data/store";
@@ -98,7 +98,13 @@ function groupByJob(rows: FeedRow[]): JobGroup[] {
 export function WorkJournal() {
   const { state } = useStore();
   const navigate = useNavigate();
-  const [range, setRange] = useState<JournalRange>("day");
+  // WorkReport reads its own range straight from the URL — a link into a specific
+  // period has to land on that period, not silently reset to "day" the way this
+  // screen used to regardless of what the link said. A bad or missing value falls
+  // back to "day", same as arriving here with no query at all.
+  const [searchParams] = useSearchParams();
+  const rangeParam = searchParams.get("range");
+  const [range, setRange] = useState<JournalRange>(rangeParam && rangeParam in rangeLabels ? (rangeParam as JournalRange) : "day");
   const [workerId, setWorkerId] = useState<string | "all">("all");
   /** One job open at a time. Letting several stand open rebuilds the wall of detail
    * this screen exists to put away. */
