@@ -248,7 +248,9 @@ await d.locator("input:focus").fill("הגעתי לאתר בבוקר, הכל תק
 await d.getByRole("button", { name: "שמירה" }).click();
 await d.waitForTimeout(1500);
 check("an edited note replaces itself instead of piling up", (await d.getByText("צורפו 2").count()) > 0);
-await d.getByText("אישור", { exact: true }).click();
+// Two buttons read "אישור" while the editor panel is open — the small toggle above
+// the strip and the panel's own close button below it — either closes it.
+await d.getByText("אישור", { exact: true }).first().click();
 await d.waitForTimeout(400);
 
 // A photo is the evidence the customer actually looks at, and every one used to arrive

@@ -3,6 +3,7 @@ import {
   signInAnonymously,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   signOut,
   updateProfile,
   onAuthStateChanged,
@@ -86,7 +87,13 @@ export async function registerParent(email: string, password: string, name: stri
   await updateProfile(cred.user, { displayName: name }).catch(() => {});
 
   try {
-    return await writeNewFamily(cred.user, name, email, childNames, companyName);
+    const family = await writeNewFamily(cred.user, name, email, childNames, companyName);
+    // Not a gate — nothing in the app checks emailVerified, and it never will block
+    // sign-in. This is the manager's one chance to get an address on file that a
+    // password reset can actually reach, and a timestamped record that this address
+    // registered the account. If the send fails there is nothing to roll back for.
+    sendEmailVerification(cred.user).catch(() => {});
+    return family;
   } catch (err) {
     // Roll back the auth account if the family record never saved, so registration
     // can be retried cleanly instead of leaving an orphaned Auth-only account. When
@@ -299,6 +306,7 @@ export async function registerSecondParent(code: string, email: string, password
       await set(ref(db, `families/${link.familyUid}/secondParentName`), name);
       const family = await fetchFamily(link.familyUid);
       if (!family) throw new Error("family-not-found");
+      sendEmailVerification(cred.user).catch(() => {});
       return { familyUid: link.familyUid, family };
     } catch (err) {
       lastErr = err;
