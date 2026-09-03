@@ -36,11 +36,11 @@ export function Splash() {
             minHeight: 0,
           }}
         >
-          {/* Same tile as the login screen's hero, and for the same reason: the mark's
-              dark teal needs a light ground under it or it disappears into this
-              screen's near-black one. */}
-          <div style={{ width: 46, height: 46, borderRadius: 13, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-            <Logo size={30} />
+          {/* Same treatment as the login screen's hero: a soft glow instead of a solid
+              tile, so the mark's own dark teal still separates from a dark ground
+              without boxing it in. */}
+          <div style={{ marginBottom: 12, filter: "drop-shadow(0 0 14px rgba(255,255,255,0.4))" }}>
+            <Logo size={90} />
           </div>
           <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
             {firstWord} <span style={{ color: work.onDark }}>{restOfName.join(" ")}</span>

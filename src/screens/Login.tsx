@@ -109,11 +109,11 @@ export function Login() {
 
       {isWork && (
         <div className="hero" style={{ padding: "40px 24px 30px", flexShrink: 0 }}>
-          {/* The mark's dark teal reads against a light ground, not against the
-              hero's own teal — it would vanish into it. A white tile behind it is
-              simpler than a second, colour-inverted version of the mark. */}
-          <div style={{ width: 46, height: 46, borderRadius: 13, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-            <Logo size={30} />
+          {/* A solid white tile behind the mark read as a box stuck on top of the
+              header. A soft glow gives the same separation from the hero's own
+              teal without one — the mark's silhouette, not a card holding it. */}
+          <div style={{ marginBottom: 10, filter: "drop-shadow(0 0 14px rgba(255,255,255,0.5))" }}>
+            <Logo size={90} />
           </div>
           <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff" }}>
             {V.appName.split(" ")[0]} <span style={{ color: work.onDark }}>{V.appName.split(" ").slice(1).join(" ")}</span>
