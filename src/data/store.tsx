@@ -55,7 +55,6 @@ type Action =
   | { type: "HYDRATE"; uid: string; familyUid: string; role: Role; family: Family; forcedChildId?: string }
   | { type: "SIGN_OUT" }
   | { type: "SET_ACTIVE_CHILD"; childId: string }
-  | { type: "SET_VIEW_MODE"; mode: ViewMode }
   | { type: "SET_CHILD_PHOTO"; childId: string; photoUrl: string | null }
   | { type: "COMPLETE_MISSION"; childId: string; articleId: string; articleTitle: string; reward: number }
   | {
@@ -254,9 +253,6 @@ function reducer(state: AppState, action: Action): AppState {
     case "SET_ACTIVE_CHILD":
       if (state.role === "child") return state; // a child session is locked to its own id
       return { ...state, activeChildId: action.childId };
-    case "SET_VIEW_MODE":
-      if (state.role === "child") return state; // no parent view to switch to on a real child login
-      return { ...state, viewMode: action.mode };
     case "SET_CHILD_PHOTO":
       return {
         ...state,
@@ -1709,31 +1705,22 @@ export function useActiveChild(): Child {
   return state.family.children[state.activeChildId] ?? childrenList(state.family)[0];
 }
 
+/** Who you are on a work screen. The manager has a task page of their own for seeing
+ * a worker's task — there is no separate preview mode to distinguish from a real
+ * worker login here, unlike the family app's child-preview below. */
+export function useWorkView(): { isManager: boolean; isWorker: boolean } {
+  const { state } = useStore();
+  return {
+    isManager: state.role === "parent",
+    isWorker: state.role === "child",
+  };
+}
+
 /**
  * True when a parent is previewing a child's screen (role parent + child view) rather
  * than a real child login. In this mode the child's screens are read-only: the parent
  * sees exactly what the child sees but can't perform the child's actions on their behalf.
  */
-/**
- * Who you are, and which side you are looking at — two different things that every
- * work screen was conflating.
- *
- * `role` comes from the account and cannot change; `viewMode` is the manager's toggle
- * for seeing the worker's screen. Reading only `role` meant a manager who switched to
- * the worker view got the worker's label over the manager's controls.
- *
- * Preview is deliberately look-only. This product is an audit trail: if a manager
- * could start or submit work from the worker's screen, the log would record that the
- * worker did it, and the record would be worth nothing.
- */
-export function useWorkView(): { isManager: boolean; isWorker: boolean; isPreview: boolean } {
-  const { state } = useStore();
-  return {
-    isManager: state.role === "parent" && state.viewMode === "parent",
-    isWorker: state.role === "child",
-    isPreview: state.role === "parent" && state.viewMode === "child",
-  };
-}
 
 export function useIsParentPreview(): boolean {
   const { state } = useStore();

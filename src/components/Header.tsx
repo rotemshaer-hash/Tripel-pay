@@ -1,45 +1,9 @@
 import type { ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useStore } from "../data/store";
-import { homePath } from "../data/routes";
-import { V, work } from "../data/vocabulary";
-import { IconParentUser, IconChildUser } from "./Icons";
+import { useNavigate } from "react-router-dom";
+import { work } from "../data/vocabulary";
 import { SurrealBackdrop } from "./SurrealBackdrop";
 
 const MELT_CLIP = "polygon(0 0, 100% 0, 100% 88%, 94% 100%, 84% 86%, 74% 100%, 62% 84%, 50% 100%, 38% 84%, 26% 100%, 14% 86%, 6% 100%, 0 88%)";
-
-function RoleSwitcher() {
-  const { state, dispatch } = useStore();
-  const navigate = useNavigate();
-  const location = useLocation();
-  // A worker login has no manager view to preview — this pill is only the admin's own
-  // convenience toggle for checking what the other side's screen looks like.
-  if (state.role === "child" || !state.onboarded || location.pathname.startsWith("/onboarding") || location.pathname === "/login") return null;
-
-  function go(mode: "parent" | "child") {
-    dispatch({ type: "SET_VIEW_MODE", mode });
-    navigate(homePath(mode));
-  }
-
-  return (
-    <div className="role-switcher" style={{ flexShrink: 0 }}>
-      <button
-        className={state.viewMode === "parent" ? "active" : ""}
-        onClick={() => go("parent")}
-        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-      >
-        <IconParentUser size={13} strokeWidth={2.2} /> {V.admin}
-      </button>
-      <button
-        className={state.viewMode === "child" ? "active" : ""}
-        onClick={() => go("child")}
-        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-      >
-        <IconChildUser size={13} strokeWidth={2.2} /> {V.worker}
-      </button>
-    </div>
-  );
-}
 
 export function Header({
   title,
@@ -95,16 +59,16 @@ export function Header({
       }}
     >
       {playful && <SurrealBackdrop />}
-      {/* The actions wrap onto their own line rather than squeezing the title: with a
-          role switcher and two buttons on a narrow phone there is simply not enough
-          width for all of it, and flex correctly gave the title whatever was left —
-          which was nothing. A floor on the title's width is what forces the wrap. */}
+      {/* The actions wrap onto their own line rather than squeezing the title: with
+          several buttons on a narrow phone there is simply not enough width for all of
+          it, and flex correctly gave the title whatever was left — which was nothing.
+          A floor on the title's width is what forces the wrap. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, rowGap: 10, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
         {/* minWidth is a real floor, not 0: a flex item with the default overflow
             (hidden, via textOverflow below) has no automatic minimum size, so with
-            minWidth:0 this block would rather shrink itself to nothing than let
-            RoleSwitcher wrap to its own line — the title silently disappearing on a
-            narrow phone instead of just truncating. */}
+            minWidth:0 this block would rather shrink itself to nothing than let the
+            right-side actions wrap to their own line — the title silently disappearing
+            on a narrow phone instead of just truncating. */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 110, flex: "1 1 190px" }}>
           {back && (
             <button
@@ -177,7 +141,6 @@ export function Header({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginInlineStart: "auto" }}>
           {right}
-          <RoleSwitcher />
         </div>
       </div>
       {children && (

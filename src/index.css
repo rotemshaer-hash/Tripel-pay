@@ -358,30 +358,6 @@ button.glass:active, .glass button:active {
   }
 }
 
-.role-switcher {
-  display: flex;
-  gap: 3px;
-  background: rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
-  border-radius: 999px;
-  padding: 3px;
-}
-.role-switcher button {
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 11px;
-  white-space: nowrap;
-  padding: 6px 10px;
-  border-radius: 999px;
-  letter-spacing: 0.01em;
-}
-.role-switcher button.active {
-  background: #ffffff;
-  color: var(--accent);
-  font-weight: 700;
-}
-
 .card-carousel-track { scrollbar-width: none; -ms-overflow-style: none; }
 .card-carousel-track::-webkit-scrollbar { display: none; }
 
