@@ -215,20 +215,26 @@ export function AttachmentList({
   onRemove?: (id: string) => void;
 }) {
   if (items.length === 0) return <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 8 }}>{empty}</div>;
+  // A note is the worker's own account of the job, not a piece of evidence for it — it
+  // reads first, the same way it leads the report this list feeds. A stable sort keeps
+  // photos and files in the order they were actually added, just moved as a group
+  // behind whatever notes came with them.
+  const ordered = [...items].sort((a, b) => Number(b.kind === "note") - Number(a.kind === "note"));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-      {items.map((a) => (
+      {ordered.map((a) => (
         <div key={a.id} style={{ background: "var(--paper)", borderRadius: 9, padding: 9 }}>
           {a.kind === "image" ? (
             <>
-              <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
               {/* What the worker called the shot lived in the alt attribute, which is
                   to say nowhere: the manager assembling a pack for a customer could
                   see twelve photos and not one of the captions written to tell them
-                  apart. */}
+                  apart. Named above the photo, not below it — a caption describes what
+                  you're about to see, not a footnote on what you just saw. */}
               {a.name && a.name !== "צילום מהשטח" && (
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginTop: 6 }}>{a.name}</div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>{a.name}</div>
               )}
+              <img src={a.content} alt={a.name} style={{ width: "100%", borderRadius: 7, display: "block" }} />
             </>
           ) : a.kind === "file" ? (
             <a

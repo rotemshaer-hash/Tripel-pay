@@ -98,7 +98,6 @@ type Action =
   | { type: "RESTORE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ADD_CHECKLIST_ITEM"; childId: string; taskId: string; text: string }
   | { type: "REMOVE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string }
-  | { type: "REOPEN_TASK"; childId: string; taskId: string; reason?: string; by?: string; at?: string }
   | { type: "ADD_TASK_ATTACHMENT"; childId: string; taskId: string; target: "brief" | "proof"; kind: Attachment["kind"]; name: string; content: string; path?: string; size?: number; mime?: string; by: string; at?: string }
   | { type: "ADD_TASK_COMMENT"; childId: string; taskId: string; text: string; by: string; at?: string }
   | { type: "REDEEM_GIFT"; childId: string; giftId: string }
@@ -127,7 +126,7 @@ type Action =
   | { type: "SET_PROFESSION"; professionId: string }
   | { type: "SET_REQUIRE_PROOF"; value: boolean }
   | { type: "ENSURE_DAY_TOKENS" }
-  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string; name?: string; file?: LinkUpdate["file"] }
+  | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string; name?: string; file?: LinkUpdate["file"]; attachmentId?: string }
   | { type: "MARK_TASK_SEEN"; childId: string; taskId: string; by: string; at?: string }
   | { type: "ACKNOWLEDGE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "MARK_TASK_SENT"; childId: string; taskId: string; by: string; at?: string }
@@ -377,17 +376,6 @@ function reducer(state: AppState, action: Action): AppState {
             },
           };
         }),
-      };
-    }
-    case "REOPEN_TASK": {
-      // The manager sends work back: status returns to in-progress and the rejection
-      // (with its reason) stays permanently in the trail.
-      const at = action.at ?? new Date().toISOString();
-      return {
-        ...state,
-        family: mapChild(state.family, action.childId, (c) =>
-          mapTask(c, action.taskId, (t) => logActivity({ ...t, status: "in_progress" }, { by: action.by ?? "", action: "reopened", detail: action.reason }, at))
-        ),
       };
     }
     case "UPDATE_TASK": {
@@ -925,10 +913,18 @@ function reducer(state: AppState, action: Action): AppState {
             // quickly, forever. `action.photo` (base64) is read only when no
             // uploaded file came with the update, for the rare update still queued
             // on a phone from before this changed.
+            //
+            // `attachmentId` is the worker's own id for the item, set once when it was
+            // first sent and sent again unchanged on every edit — it is what lets an
+            // edited note or a swapped photo update the existing record instead of
+            // landing as a second one next to it. An update with no matching id (a
+            // first submission, or one queued from before this existed) still lands as
+            // a new attachment, same as always.
+            const id = action.attachmentId ? `at-${action.attachmentId}` : `at-${crypto.randomUUID()}`;
             const attachment: Attachment =
               action.kind === "file" || (action.kind === "photo" && action.file)
                 ? {
-                    id: `at-${crypto.randomUUID()}`,
+                    id,
                     kind: action.kind === "photo" ? "image" : "file",
                     name: action.kind === "photo" ? action.name?.trim() || "צילום מהשטח" : action.file?.name || "קובץ מהשטח",
                     content: action.file?.url ?? "",
@@ -939,13 +935,19 @@ function reducer(state: AppState, action: Action): AppState {
                     addedBy: action.by,
                   }
                 : {
-                    id: `at-${crypto.randomUUID()}`,
+                    id,
                     kind: action.kind === "photo" ? "image" : "note",
                     name: action.kind === "photo" ? (action.name?.trim() || "צילום מהשטח") : "הערת ביצוע",
                     content: action.kind === "photo" ? (action.photo ?? "") : (action.note ?? ""),
                     addedAt: at,
                     addedBy: action.by,
                   };
+            const existing = (t.proofs ?? []).findIndex((p) => p.id === id);
+            if (existing >= 0) {
+              const proofs = [...(t.proofs ?? [])];
+              proofs[existing] = attachment;
+              return logActivity({ ...t, proofs }, { by: action.by, action: "edited" }, at);
+            }
             return logActivity({ ...t, proofs: [...(t.proofs ?? []), attachment] }, { by: action.by, action: "attached" }, at);
           })
         ),
@@ -1488,6 +1490,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             ...(entry.photo ? { photo: entry.photo } : {}),
             ...(entry.name ? { name: entry.name } : {}),
             ...(entry.file ? { file: entry.file } : {}),
+            ...(entry.attachmentId ? { attachmentId: entry.attachmentId } : {}),
           });
           clearInboxEntry(familyUid, entryId).catch((err) => console.error("Clearing a link update failed:", err));
         }

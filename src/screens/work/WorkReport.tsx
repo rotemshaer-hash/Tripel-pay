@@ -495,8 +495,8 @@ ${printCss}
                         <div className="report-proof-shots">
                           {group.items.map((a) => (
                             <figure key={a.id}>
-                              <img src={a.content} alt={a.name} />
                               {!group.name && a.name && a.name !== "צילום מהשטח" && <figcaption className="report-proof-name">{a.name}</figcaption>}
+                              <img src={a.content} alt={a.name} />
                               <figcaption>{`${a.addedBy} · ${formatDateExact(a.addedAt)} ${formatTime(a.addedAt)}`}</figcaption>
                             </figure>
                           ))}
@@ -567,7 +567,7 @@ const printCss = `
 .report-proof-shots figure { margin: 0; width: 30%; min-width: 150px; }
 .report-proof-shots img { width: 100%; border-radius: 6px; display: block; border: 1px solid #e3e5ea; }
 .report-proof-shots figcaption { font-size: 9px; color: #5c5f6b; margin-top: 3px; }
-.report-proof-shots figcaption.report-proof-name { font-size: 10.5px; font-weight: 700; color: #232a3b; margin-top: 5px; }
+.report-proof-shots figcaption.report-proof-name { font-size: 10.5px; font-weight: 700; color: #232a3b; margin-bottom: 5px; }
 .report-shot-group + .report-shot-group { margin-top: 12px; }
 .report-shot-group-name { font-size: 14px; font-weight: 700; color: #232a3b; border-bottom: 1px solid #e3e5ea; padding-bottom: 4px; margin-top: 9px; }
 .report-block-title { font-size: 13.5px; font-weight: 800; color: #5c5f6b; letter-spacing: .04em; margin: 11px 0 4px; }

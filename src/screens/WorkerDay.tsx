@@ -51,13 +51,10 @@ function writeQueue(items: PendingReport[]) {
 }
 
 /** One photo or note reported this sitting — kept locally so the review strip under
- * "צורפו X אסמכתאות" has something to show and edit. The link is one-way (see
- * pushLinkUpdate in firebase/db.ts: it only ever appends to the manager's inbox,
- * never lets an anonymous session reach in and rewrite something already sent), so
- * "editing" a photo or a note here sends a fresh, corrected report rather than
- * silently rewriting history — the same append-a-correction shape every other edit
- * in this product already uses, and it means the manager's own trail still shows
- * both the original and the fix instead of one disappearing. */
+ * "צורפו X אסמכתאות" has something to show and edit. An edit here carries the same
+ * `attachmentId` the item was first sent with, so the manager's side updates that one
+ * record in place instead of appending a second, corrected one beside it — a note that
+ * reads twice, once right and once wrong, was not the record anyone wanted. */
 interface LocalProofItem {
   id: string;
   kind: "photo" | "note" | "file";
@@ -425,6 +422,10 @@ export function WorkerDay() {
                               onClick={async () => {
                                 const name = photoName.trim();
                                 const { blob, fileName, mime } = pendingPhoto;
+                                // Generated here rather than left to the manager's side, so
+                                // a later swap of this same photo can name the attachment it
+                                // means to replace instead of just adding another one.
+                                const id = crypto.randomUUID();
                                 setBusy(true);
                                 setError("");
                                 try {
@@ -437,12 +438,13 @@ export function WorkerDay() {
                                     {
                                       kind: "photo",
                                       at: now(),
+                                      attachmentId: id,
                                       ...(name ? { name } : {}),
                                       file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size },
                                     },
                                     { proofs: state(task.taskId).proofs + 1 }
                                   );
-                                  addLocalItem(task.taskId, { id: crypto.randomUUID(), kind: "photo", url: stored.url, name: name || undefined });
+                                  addLocalItem(task.taskId, { id, kind: "photo", url: stored.url, name: name || undefined });
                                 } catch (err) {
                                   console.error("Uploading the photo failed:", err);
                                   setError(describeUploadFailure(err));
@@ -529,8 +531,9 @@ export function WorkerDay() {
                         <button
                           onClick={() => {
                             const text = note.trim();
-                            addLocalItem(task.taskId, { id: crypto.randomUUID(), kind: "note", text });
-                            report(task.taskId, { kind: "note", at: now(), note: text }, { proofs: state(task.taskId).proofs + 1 });
+                            const id = crypto.randomUUID();
+                            addLocalItem(task.taskId, { id, kind: "note", text });
+                            report(task.taskId, { kind: "note", at: now(), note: text, attachmentId: id }, { proofs: state(task.taskId).proofs + 1 });
                           }}
                           disabled={busy || !note.trim()}
                           style={{ background: work.ink, color: "#ffffff", border: "none", borderRadius: 11, padding: "0 18px", fontSize: 13.5, fontWeight: 800, opacity: busy || !note.trim() ? 0.4 : 1 }}
@@ -606,7 +609,7 @@ export function WorkerDay() {
                                   const stored = await uploadAttachment(`day/${task.taskId}`, new File([blob], file.name || "photo.jpg", { type: blob.type }));
                                   await report(
                                     task.taskId,
-                                    { kind: "photo", at: now(), ...(it.name ? { name: it.name } : {}), file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size } },
+                                    { kind: "photo", at: now(), attachmentId: it.id, ...(it.name ? { name: it.name } : {}), file: { name: stored.name, url: stored.url, path: stored.path, mime: stored.mime, size: stored.size } },
                                     {}
                                   );
                                   replaceLocalItem(task.taskId, it.id, { url: stored.url });
@@ -618,7 +621,7 @@ export function WorkerDay() {
                               }}
                               onEditText={(text) => {
                                 replaceLocalItem(task.taskId, it.id, { text });
-                                report(task.taskId, { kind: "note", at: now(), note: text }, {});
+                                report(task.taskId, { kind: "note", at: now(), note: text, attachmentId: it.id }, {});
                               }}
                             />
                           ))}

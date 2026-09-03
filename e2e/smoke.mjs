@@ -238,6 +238,19 @@ await d.setInputFiles('input[type="file"]:not([accept])', {
 await d.waitForTimeout(4000);
 check("a worker with no account can send a real file, not only a photo", (await d.getByText("צורפו 2").count()) > 0);
 
+// Editing a note used to land as a second one sitting next to the first, not a
+// replacement of it — the count below is the proof either way: it must not move.
+await d.getByText("עריכה", { exact: true }).click();
+await d.waitForTimeout(600);
+await d.getByText("הגעתי לאתר, הכל תקין").locator("..").getByText("עריכת טקסט").click();
+await d.waitForTimeout(400);
+await d.locator("input:focus").fill("הגעתי לאתר בבוקר, הכל תקין ומסודר");
+await d.getByRole("button", { name: "שמירה" }).click();
+await d.waitForTimeout(1500);
+check("an edited note replaces itself instead of piling up", (await d.getByText("צורפו 2").count()) > 0);
+await d.getByText("אישור", { exact: true }).click();
+await d.waitForTimeout(400);
+
 // A photo is the evidence the customer actually looks at, and every one used to arrive
 // called "צילום מהשטח" — a pack of identical captions the customer cannot read. The
 // worker names it before it goes.
@@ -298,6 +311,11 @@ await m.waitForTimeout(1500);
 // The name the worker typed has to survive all the way to the manager's record, or it
 // was never worth asking for: this is what the customer's pack is built from.
 check("the worker's own words on the photo reach the manager", (await m.locator("body").innerText()).includes("המדף העליון אחרי הניקוי"));
+// The edited note reaches the manager as itself, not as a second entry sitting
+// beside the one it replaced.
+const taskBody = await m.locator("body").innerText();
+check("the edited note reaches the manager as its new text", taskBody.includes("הגעתי לאתר בבוקר, הכל תקין ומסודר"));
+check("and the text it replaced is gone, not just added to", !taskBody.includes("הגעתי לאתר, הכל תקין"));
 await m.waitForTimeout(1500);
 await m.getByText("עריכה", { exact: true }).click();
 await m.waitForTimeout(600);

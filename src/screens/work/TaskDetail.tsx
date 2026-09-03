@@ -374,21 +374,13 @@ export function TaskDetail() {
               הגשה לאישור
             </button>
           )}
+          {/* "החזרה לתיקון" used to sit beside this — a second way to tell the worker
+              something was wrong, next to the note thread that already does exactly
+              that. One path for feedback, not two. */}
           {isManager && task.status === "pending_approval" && (
-            <>
-              <button onClick={() => dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={{ ...btnStyle(false), flex: 1 }}>
-                אישור
-              </button>
-              <button
-                onClick={() => {
-                  const reason = prompt("סיבת ההחזרה לתיקון:") ?? undefined;
-                  dispatch({ type: "REOPEN_TASK", childId: worker.id, taskId: task.id, reason, by: actor });
-                }}
-                style={{ ...btnStyle(false), flex: 1, background: "#ffffff", color: work.alert, border: `1px solid ${work.alert}` }}
-              >
-                החזרה לתיקון
-              </button>
-            </>
+            <button onClick={() => dispatch({ type: "APPROVE_TASK", childId: worker.id, taskId: task.id, by: actor })} style={btnStyle(false)}>
+              אישור
+            </button>
           )}
         </div>
 

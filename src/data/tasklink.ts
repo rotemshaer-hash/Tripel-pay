@@ -49,6 +49,12 @@ export interface LinkUpdate {
    * worker's own anonymous uid, which the bucket rules already allow, and only the
    * address travels here. */
   file?: { name: string; url: string; path?: string; mime?: string; size?: number };
+  /** Set by the client at the moment a photo or note is first sent, and sent again
+   * unchanged on every later edit of that same item — the one thing that tells the
+   * manager's side "update this" instead of "here's another one". Without it, editing
+   * a note read as appending to it: each save landed as a fresh piece of evidence
+   * sitting next to the one it was meant to replace. */
+  attachmentId?: string;
 }
 
 
