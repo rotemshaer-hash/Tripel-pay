@@ -5,7 +5,7 @@ import { V, work } from "../data/vocabulary";
 import { resizeImageToBlob } from "../utils/resizeImage";
 import { formatDate, formatTime, isOverdue } from "../utils/datetime";
 import { isServiceNotEnabled } from "../utils/authErrors";
-import { ProofButtons } from "../components/Attachments";
+import { ProofButtons, AttachmentList } from "../components/Attachments";
 import type { LinkUpdate, WorkerDaySnapshot } from "../data/tasklink";
 
 /**
@@ -373,6 +373,13 @@ export function WorkerDay() {
               {isOpen && (
                 <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
                   {task.brief && <div style={{ fontSize: 14, lineHeight: 1.6 }}>{task.brief}</div>}
+
+                  {(task.briefAttachments ?? []).length > 0 && (
+                    <div style={{ background: "var(--muted-bg)", borderRadius: 11, padding: "11px 13px", border: "1px solid var(--border)" }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: "var(--ink-soft)", marginBottom: 6 }}>קבצים מהמנהל</div>
+                      <AttachmentList items={task.briefAttachments ?? []} empty="" />
+                    </div>
+                  )}
 
                   {(task.messages ?? []).length > 0 && (
                     <div style={{ background: "#eef2ff", border: "1px solid #d5dcfb", borderRadius: 11, padding: "11px 13px" }}>

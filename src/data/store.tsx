@@ -1378,6 +1378,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const signature = [
           task.title,
           task.brief ?? "",
+          (task.briefAttachments ?? []).map((a) => a.id).join(","),
           task.dueAt ?? "",
           task.site ?? "",
           task.status,
@@ -1395,6 +1396,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           title: task.title,
           status: task.status,
           ...(task.brief ? { brief: task.brief } : {}),
+          ...((task.briefAttachments ?? []).length > 0 ? { briefAttachments: task.briefAttachments } : {}),
           ...(task.dueAt ? { dueAt: task.dueAt } : {}),
           ...(task.site ? { site: task.site } : {}),
           ...((task.checklist ?? []).length > 0 ? { steps: (task.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),
@@ -1428,7 +1430,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         open
           .map(
             (t) =>
-              `${t.id}:${t.title}:${t.brief ?? ""}:${t.site ?? ""}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}:${(t.proofs ?? []).length}:${(t.comments ?? []).length}`
+              `${t.id}:${t.title}:${t.brief ?? ""}:${(t.briefAttachments ?? []).map((a) => a.id).join(",")}:${t.site ?? ""}:${t.status}:${t.dueAt ?? ""}:${t.acknowledgedAt ? "a" : ""}:${(t.proofs ?? []).length}:${(t.comments ?? []).length}`
           )
           .join("|") +
         `~${state.family.requireProof !== false}`;
@@ -1444,6 +1446,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           title: t.title,
           status: t.status,
           ...(t.brief ? { brief: t.brief } : {}),
+          ...((t.briefAttachments ?? []).length > 0 ? { briefAttachments: t.briefAttachments } : {}),
           ...(t.dueAt ? { dueAt: t.dueAt } : {}),
           ...(t.site ? { site: t.site } : {}),
           ...((t.checklist ?? []).length > 0 ? { steps: (t.checklist ?? []).map((c) => ({ id: c.id, text: c.text, done: c.done })) } : {}),

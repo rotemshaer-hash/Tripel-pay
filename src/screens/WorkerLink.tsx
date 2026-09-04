@@ -5,7 +5,7 @@ import { V, work } from "../data/vocabulary";
 import { resizeImageToBlob } from "../utils/resizeImage";
 import { formatDate, formatTime } from "../utils/datetime";
 import { isServiceNotEnabled } from "../utils/authErrors";
-import { ProofButtons } from "../components/Attachments";
+import { ProofButtons, AttachmentList } from "../components/Attachments";
 import type { LinkUpdate, TaskLinkSnapshot } from "../data/tasklink";
 
 /**
@@ -134,6 +134,13 @@ export function WorkerLink() {
         {link.brief && (
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 14px", fontSize: 13.5, lineHeight: 1.6 }}>
             {link.brief}
+          </div>
+        )}
+
+        {(link.briefAttachments ?? []).length > 0 && (
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 14px" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 800, marginBottom: 8 }}>קבצים מהמנהל</div>
+            <AttachmentList items={link.briefAttachments ?? []} empty="" />
           </div>
         )}
 

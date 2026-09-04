@@ -1,3 +1,5 @@
+import type { Attachment } from "./types";
+
 /**
  * What travels on a shared task link.
  *
@@ -14,6 +16,10 @@ export interface TaskLinkSnapshot {
   workerName: string;
   title: string;
   brief?: string;
+  /** Reference files the manager attached to the brief — a plan, a photo of the part,
+   * a delivery note. Left out of the snapshot for a while, which meant a worker with
+   * no account could read the instructions but never see what they pointed at. */
+  briefAttachments?: Attachment[];
   dueAt?: string;
   site?: string;
   steps?: { id: string; text: string; done: boolean }[];
@@ -68,6 +74,9 @@ export interface WorkerDaySnapshot {
     taskId: string;
     title: string;
     brief?: string;
+    /** Same reference files as on the single-task link — the daily link had the same
+     * gap, for the same reason: nobody had wired the field through yet. */
+    briefAttachments?: Attachment[];
     dueAt?: string;
     site?: string;
     status: string;

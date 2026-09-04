@@ -153,6 +153,17 @@ await m.waitForTimeout(600);
 await m.getByText("פתיחת המשימה ›").first().click();
 await m.waitForURL("**/work/task/**", { timeout: 15000 });
 await m.waitForTimeout(1200);
+
+// A reference file attached to the brief used to be invisible to anyone holding a
+// no-account link — the snapshot they get never carried it, only the brief text.
+await m.setInputFiles('input[type="file"]:not([accept])', {
+  name: "sketch.txt",
+  mimeType: "text/plain",
+  buffer: Buffer.from("plan"),
+});
+await m.waitForTimeout(2500);
+check("the manager's reference file attaches to the brief", (await m.getByText("sketch.txt").count()) > 0);
+
 const waHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
 const shareLink = decodeURIComponent(waHref).match(/https?:\/\/[^\s]+\/w\/[a-f0-9]+/)?.[0] ?? "";
 check("the sent message carries a no-account task link", shareLink.length > 0);
@@ -162,6 +173,7 @@ const { ctx: linkCtx, page: l } = await openPage();
 await l.goto(shareLink.replace(/^https?:\/\/[^/]+/, BASE));
 await l.waitForTimeout(2500);
 check("the link opens the task without signing in", (await l.getByText("בדיקת מזגנים").count()) > 0);
+check("the worker with no account sees the manager's reference file too", (await l.getByText("sketch.txt").count()) > 0);
 await l.getByText("✅ קיבלתי").click();
 await l.waitForTimeout(1500);
 await l.getByPlaceholder("הערה למנהל…").fill("הוחלפו שני מסננים");
@@ -189,6 +201,24 @@ await m.waitForTimeout(1200);
 await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill("ניקיון מחסן");
 await m.getByRole("button", { name: "הקצאה", exact: true }).click();
 await m.waitForTimeout(1800);
+
+// Same gap on the daily link as on the single-task one — a reference file attached
+// here has to reach a worker with no account, not just the text brief around it.
+await m.goto(`${BASE}/work/journal`);
+await m.waitForTimeout(1500);
+await m.getByText("ניקיון מחסן").first().click();
+await m.waitForTimeout(600);
+await m.getByText("פתיחת המשימה ›").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1000);
+await m.setInputFiles('input[type="file"]:not([accept])', {
+  name: "warehouse-map.txt",
+  mimeType: "text/plain",
+  buffer: Buffer.from("map"),
+});
+await m.waitForTimeout(2500);
+check("the manager's reference file attaches to the new task's brief too", (await m.getByText("warehouse-map.txt").count()) > 0);
+
 await m.goto(`${BASE}/work/board`);
 await m.waitForTimeout(2500);
 check("the board lists the work", (await m.getByText("בדיקת מזגנים").count()) > 0);
@@ -211,6 +241,7 @@ if ((await d.getByPlaceholder("הערה למנהל…").count()) === 0) {
   await d.getByText("ניקיון מחסן").first().click();
   await d.waitForTimeout(600);
 }
+check("the worker on the daily link sees the manager's reference file too", (await d.getByText("warehouse-map.txt").count()) > 0);
 
 // One job, two moves: got it, then finished. There is deliberately nothing in
 // between — a "started" status the business never acted on was one more thing to
