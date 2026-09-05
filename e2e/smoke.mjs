@@ -535,8 +535,10 @@ check("but removing it from the board is reachable without opening an editor", (
 await m.getByText("הסרת המשימה מהלוח").click();
 await m.waitForTimeout(600);
 await m.getByRole("button", { name: "כן, להסיר" }).click();
-await m.waitForURL("**/work/tasks", { timeout: 15000 });
-await m.goto(`${BASE}/work/board`);
+// Sends the manager back to their own board — not to /work/tasks, the worker's own
+// list, which is a completely different screen the manager has no tab for.
+await m.waitForURL("**/work/board", { timeout: 15000 });
+check("removing the job returns the manager to their own board", true);
 await m.waitForTimeout(1500);
 check("the removed job is off the board", !(await m.locator("body").innerText()).includes("ניקיון מחסן"));
 await m.goto(`${BASE}/work/journal?range=month`);

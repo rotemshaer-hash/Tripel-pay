@@ -7,7 +7,7 @@ import { V, activityLabels, priorityColor, priorityLabels, recurrenceLabels, tas
 import { formatDate, formatDateTime, formatTime, isOverdue } from "../../utils/datetime";
 import { AttachButton, AttachmentList } from "../../components/Attachments";
 import { ConfirmButton } from "../../components/ConfirmButton";
-import { taskLink, taskShareLink } from "../../data/routes";
+import { homePath, taskLink, taskShareLink } from "../../data/routes";
 import { correctionMessage, updateMessage } from "../../data/messages";
 import { whatsAppLink } from "../../utils/share";
 import type { Child, TaskItem, TaskPriority } from "../../data/types";
@@ -517,7 +517,7 @@ export function TaskDetail() {
             confirmLabel="כן, להסיר"
             onConfirm={() => {
               dispatch({ type: "ARCHIVE_TASK", childId: activeWorker.id, taskId: activeTask.id, by: actor });
-              navigate("/work/tasks", { replace: true });
+              navigate(homePath("parent"), { replace: true });
             }}
           />
         )}
