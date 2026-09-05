@@ -95,6 +95,7 @@ type Action =
   | { type: "REASSIGN_TASK"; fromChildId: string; toChildId: string; taskId: string; by?: string; at?: string }
   | { type: "ARCHIVE_TASK"; childId: string; taskId: string; by: string; at?: string }
   | { type: "RESTORE_TASK"; childId: string; taskId: string; by: string; at?: string }
+  | { type: "DELETE_TASK"; childId: string; taskId: string }
   | { type: "ADD_CHECKLIST_ITEM"; childId: string; taskId: string; text: string }
   | { type: "REMOVE_CHECKLIST_ITEM"; childId: string; taskId: string; itemId: string }
   | { type: "ADD_TASK_ATTACHMENT"; childId: string; taskId: string; target: "brief" | "proof"; kind: Attachment["kind"]; name: string; content: string; path?: string; size?: number; mime?: string; by: string; at?: string }
@@ -463,6 +464,24 @@ function reducer(state: AppState, action: Action): AppState {
             return logActivity(rest as TaskItem, { by: action.by, action: "restored" }, at);
           })
         ),
+      };
+    }
+    case "DELETE_TASK": {
+      // The one place a task record is actually destroyed rather than archived — for
+      // the case ARCHIVE_TASK's own comment above rules out on purpose: something
+      // that was never real work to begin with (a test, a mistake) and has no
+      // business surviving in the journal. Only reachable once a task is already off
+      // the board, so it is never the first click on live work. Its files are cleaned
+      // out of Storage too, fire-and-forget — a failed cleanup there must never block
+      // the deletion the manager asked for.
+      const worker = state.family.children[action.childId];
+      const task = worker?.tasks.find((t) => t.id === action.taskId);
+      for (const item of [...(task?.proofs ?? []), ...(task?.briefAttachments ?? [])]) {
+        if (item.path) void deleteStoredFile(item.path);
+      }
+      return {
+        ...state,
+        family: mapChild(state.family, action.childId, (c) => ({ ...c, tasks: c.tasks.filter((t) => t.id !== action.taskId) })),
       };
     }
     case "ADD_CHECKLIST_ITEM": {

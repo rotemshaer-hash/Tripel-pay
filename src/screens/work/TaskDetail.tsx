@@ -533,6 +533,24 @@ export function TaskDetail() {
             שחזור המשימה ללוח
           </button>
         )}
+        {/* Removing takes a task off the board but keeps its record — this is the one
+            way to actually erase one, for the case that record is a mistake and not
+            worth keeping: a test, a duplicate, a job that never should have existed.
+            Only reachable once a task is already off the board, never as a first
+            click on live work, and unlike removing, this one really does destroy
+            everything the warning names. */}
+        {isManager && task.archivedAt && (
+          <ConfirmButton
+            style={{ background: "none", border: "none", color: work.alert, fontSize: 12.5, fontWeight: 700, padding: "6px 0", textAlign: "start" }}
+            label="מחיקה לצמיתות"
+            warning={`למחוק את "${task.title}" לצמיתות? בשונה מהסרה מהלוח, זו לא תישאר ביומן ולא ניתן יהיה לשחזר אותה. כל האסמכתאות והקבצים שלה יימחקו גם הם.`}
+            confirmLabel="כן, למחוק לצמיתות"
+            onConfirm={() => {
+              dispatch({ type: "DELETE_TASK", childId: activeWorker.id, taskId: activeTask.id });
+              navigate(homePath("parent"), { replace: true });
+            }}
+          />
+        )}
 
         <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 13, fontWeight: 700, padding: 8 }}>
           חזרה

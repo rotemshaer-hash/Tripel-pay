@@ -554,6 +554,41 @@ check(
   (await m.locator(".report-picker-row", { hasText: "ניקיון מחסן" }).count()) > 0
 );
 
+console.log("11.5 permanently deleting an archived task erases it, not just hides it");
+// Archiving is deliberately non-destructive — the check above just proved it. A task
+// that was never real work (a test, a duplicate) needs a real way out, reachable only
+// once it is already off the board, never as a first click on live work.
+await m.goto(`${BASE}/work/new`);
+await m.waitForTimeout(1200);
+await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill("בדיקה למחיקה");
+await m.getByRole("button", { name: "הקצאה", exact: true }).click();
+await m.waitForTimeout(1500);
+await m.goto(`${BASE}/work/board`);
+await m.waitForTimeout(1500);
+await m.getByText("בדיקה למחיקה").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1000);
+check("a live task offers no way to delete it outright", (await m.getByText("מחיקה לצמיתות").count()) === 0);
+await m.getByText("הסרת המשימה מהלוח").click();
+await m.waitForTimeout(600);
+await m.getByRole("button", { name: "כן, להסיר" }).click();
+await m.waitForURL("**/work/board", { timeout: 15000 });
+await m.goto(`${BASE}/work/journal?range=month`);
+await m.waitForTimeout(2000);
+await m.getByText("בדיקה למחיקה").first().click();
+await m.waitForTimeout(600);
+await m.getByText("פתיחת המשימה ›").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1000);
+check("only once archived does deleting it outright become an option", (await m.getByText("מחיקה לצמיתות").count()) > 0);
+await m.getByText("מחיקה לצמיתות").click();
+await m.waitForTimeout(600);
+await m.getByRole("button", { name: "כן, למחוק לצמיתות" }).click();
+await m.waitForURL("**/work/board", { timeout: 15000 });
+await m.goto(`${BASE}/work/journal?range=month`);
+await m.waitForTimeout(2000);
+check("a permanently deleted task leaves no trace in the journal", !(await m.locator("body").innerText()).includes("בדיקה למחיקה"));
+
 console.log("12. removing a worker keeps their record and frees the assignment picker");
 // Same shape as removing a job from the board: the roster and the "new task" picker
 // are working views, so they stop listing an archived worker — but nothing about
