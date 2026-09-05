@@ -200,7 +200,7 @@ export function TaskDetail() {
           {isManager && task.status !== "completed" && (
             <AttachButton folder={`tasks/${activeTask.id}`} label="📎 צירוף תמונה או קובץ להנחיות" onAttached={attach("brief")} />
           )}
-          {isManager && task.status !== "completed" && (
+          {isManager && task.status !== "completed" && !justChanged && (
             <>
               <a
                 href={whatsAppLink(
