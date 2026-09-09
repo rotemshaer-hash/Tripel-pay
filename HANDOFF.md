@@ -55,11 +55,11 @@
 ## 4. איך עובדים
 
 ### דיפלוי
-דחיפה ל-`main` → GitHub Actions מריץ `CI` + `Deploy to Netlify`. הרשת בסביבת הפיתוח **חסומה** ל-Netlify ול-Firebase, אז סטטוס נבדק דרך `mcp__github__actions_list` (הפלט ענק — לחתוך את הקובץ השמור עם `head -c`).
+דחיפה ל-`main` → GitHub Actions מריץ `CI` (שלושה jobs: `check` = tsc+oxlint+db-boundary, `rules` = בדיקות האבטחה, `smoke` = ה-e2e המלא) **ובמקביל** `Deploy to Netlify` (שרץ עצמאית, עם אותו tsc+oxlint+db-boundary+build לפני הפריסה — הוא לא מחכה ל-CI). הרשת בסביבת הפיתוח **חסומה** ל-Netlify ול-Firebase, אז סטטוס נבדק דרך `mcp__github__actions_list` (הפלט ענק — לחתוך את הקובץ השמור עם `head -c`).
 
 ### לפני כל commit
 `npx tsc --noEmit -p tsconfig.app.json` → `npm run build` → `npx oxlint` → `npm run check:db-boundary`.
-**12 warnings זה הבסיס התקין.** יותר = משהו חדש נשבר.
+**12 warnings זה הבסיס התקין.** יותר = משהו חדש נשבר. עד 9.9.2026 `oxlint` לא היה חלק מ-CI/Deploy בפועל (רק המלצה מקומית) — עכשיו שניהם מריצים אותו כשלב אמיתי.
 
 ### הבדיקה שתופסת באגים אמיתיים — `npm run e2e:emulated`
 `e2e/smoke.mjs` מריץ את כל המוצר מול Firebase Emulator Suite, **כולל קבצי החוקים האמיתיים**. כ-90 בדיקות: פתיחת חשבון, כתיבת משימה עם שדה אופציונלי ריק, שליחה מאותו מסך, קוד הזמנה, הרשמת עובד, אישור קבלה, העלאת קובץ, דיווח מקישור בלי חשבון (כולל קבצי הנחיות שהמנהל צירף), שער האסמכתאות, עריכה של הערה שמחליפה את עצמה ולא מצטרפת, דוח/ייצוא לאקסל, הסרת משימה מהלוח מול מחיקתה לצמיתות, התנתקות והתחברות.
@@ -74,6 +74,13 @@ E2E_CHROMIUM=/opt/pw-browsers/chromium firebase emulators:exec \
   --only auth,database,storage --project triplepay-test "node e2e/smoke.mjs"
 ```
 **כל באג שעלה לנו ימים היה נתפס כאן** — קוד הזמנה שלא פורסם, כתיבה שנדחתה בגלל `undefined`, עובד שנרשם ולא הצליח להיכנס, העלאה בלי הרשאה.
+
+### בדיקות אבטחה שליליות — `npm run rules:emulated`
+`e2e/smoke.mjs` מוכיח שהמוצר עובד כשכולם משחקים לפי הכללים — כל בדיקה בו היא משתמש לגיטימי שעושה משהו לגיטימי, אז סעיף `.read`/`.write` שהפך פתוח מדי בטעות לא יכול להיחשף שם. `e2e/rules.mjs` הוא החלל השלילי: עובד שמנסה לקרוא נתונים של עסק אחר, זר שמנסה לכתוב `taskLinks`/`workerLinks`/`inviteCodes` בשם uid שלא שלו, קובץ ב-Storage שמנסים לגעת בו מחוץ לתיקיית ה-uploader — נגד ה-rules **האמיתיים**, דרך `@firebase/rules-unit-testing`, בלי דפדפן. הרצה: `npm run rules:emulated` (אותו הרכב בדיוק כמו `e2e:emulated`, רק database+storage בלי auth/playwright).
+
+שני אישורים בקובץ הם `assertSucceeds` ולא `assertFails` בכוונה — לא באג: קריאת תצלום `taskLinks`/`workerLinks` וקריאת קובץ מ-Storage פתוחות לכל משתמש מחובר, כי הטוקן/קישור-ההורדה **הוא** ההרשאה, לא מזוהה ה-uid. זה המודל המתועד בסעיף 1.2 למעלה.
+
+**ממצא אמיתי, לא תוקן (9.9.2026):** יצירת רשומה **חדשה** ב-`linkInbox/{familyUid}/{entryId}` לא בודקת שהכותב מחזיק טוקן של אותו עסק בפועל — רק שהרשומה עוד לא קיימת ושיש בה `taskId`+`childId`. מי שלמד אי פעם את ה-uid של עסק (הוא שדה גלוי בכל תצלום `taskLinks`/`workerLinks`) יכול תיאורטית להזריק דיווח מזויף לתיבה שלו. שום זרימה קיימת במוצר לא תלויה בפרצה הזו (עובד תמיד כותב רק לתיבה של העסק שהקישור שלו שייך אליו), אבל היא אמיתית. **לא לתקן אגב עבודה אחרת** — זו החלטת מודל-אבטחה, לא תיקון קוסמטי.
 
 ### צילומי מסך
 אותו הרכב בדיוק (אמולטור + preview על 4173), עם סקריפט Playwright חד-פעמי שנמחק אחרי השימוש. אם צריך לעקוף את Firebase לגמרי: guard **זמני** בשורה הראשונה של ה-`useEffect` של האימות ב-`store.tsx` (`if ((window as unknown as { __PREVIEW__?: boolean }).__PREVIEW__) return;`), זריעת `localStorage` במפתח `triple-pay-state-v1` **רק אם ריק**, ו**להסיר את ה-guard לפני commit** (`grep -c "__PREVIEW__" src/data/store.tsx` = 0).
