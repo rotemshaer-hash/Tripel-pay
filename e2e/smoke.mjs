@@ -314,6 +314,32 @@ await d.getByPlaceholder("מה רואים בתמונה? (למשל: סניף רמ
 await d.getByRole("button", { name: "שליחת התמונה" }).click();
 await d.waitForTimeout(4500);
 check("a second photo under the same name is sent too", (await d.getByText("צורפו 4").count()) > 0);
+
+// A worker on a site with patchy signal is exactly who this whole no-account link is
+// for, so losing a report to a dropped connection would defeat the point of it.
+//
+// This never actually reaches the app's own localStorage retry queue (the
+// "ממתינים לשליחה" banner in WorkerDay.tsx, only ever populated from a write that
+// has already thrown) — the Realtime Database client buffers the write itself and
+// holds the promise pending for as long as it believes it is offline, resuming on
+// its own the moment the connection returns. Confirmed here rather than assumed:
+// an earlier version of this test expected the app-level banner to appear during
+// the drop, and it never did — the write was simply still pending, not failed.
+//
+// That leaves the app's own queue with no reliable, deterministic way to exercise
+// end-to-end: it exists for a write that is already rejected (or a page reload
+// abandoning one still in flight, which cannot itself be tested with a real
+// reload — reloading requires the same network that is down). Flagging that gap
+// in coverage here rather than shipping a test that only looks like it proves
+// something.
+await dayCtx.setOffline(true);
+await d.getByPlaceholder("הערה למנהל…").fill("קר פה, אין רשת רגע");
+await d.getByRole("button", { name: "שליחה" }).click();
+await d.waitForTimeout(2000);
+await dayCtx.setOffline(false);
+await d.waitForTimeout(4000);
+check("a report made during a network drop still lands once the connection returns", (await d.getByText("קר פה, אין רשת רגע", { exact: false }).count()) > 0);
+
 check("and then finishing is allowed", (await d.getByText("לפני סגירה צריך לצרף").count()) === 0);
 await d.getByText("🏁 סיימתי").click();
 await d.waitForTimeout(2000);
@@ -344,6 +370,7 @@ await m.waitForTimeout(1500);
 // The name the worker typed has to survive all the way to the manager's record, or it
 // was never worth asking for: this is what the customer's pack is built from.
 check("the worker's own words on the photo reach the manager", (await m.locator("body").innerText()).includes("המדף העליון אחרי הניקוי"));
+check("the report made during the network drop reached the manager once reconnected", (await m.locator("body").innerText()).includes("קר פה, אין רשת רגע"));
 // The edited note reaches the manager as itself, not as a second entry sitting
 // beside the one it replaced.
 const taskBody = await m.locator("body").innerText();
@@ -569,6 +596,11 @@ await m.getByText("בדיקה למחיקה").first().click();
 await m.waitForURL("**/work/task/**", { timeout: 15000 });
 await m.waitForTimeout(1000);
 check("a live task offers no way to delete it outright", (await m.getByText("מחיקה לצמיתות").count()) === 0);
+// Captured before removal, to check afterward whether "לצמיתות" really means
+// everywhere — including the copy a worker's own link points at, not just the
+// journal a manager looks at.
+const deletedTaskWaHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
+const deletedTaskLink = decodeURIComponent(deletedTaskWaHref).match(/https?:\/\/[^\s]+\/w\/[a-f0-9]+/)?.[0] ?? "";
 await m.getByText("הסרת המשימה מהלוח").click();
 await m.waitForTimeout(600);
 await m.getByRole("button", { name: "כן, להסיר" }).click();
@@ -588,6 +620,21 @@ await m.waitForURL("**/work/board", { timeout: 15000 });
 await m.goto(`${BASE}/work/journal?range=month`);
 await m.waitForTimeout(2000);
 check("a permanently deleted task leaves no trace in the journal", !(await m.locator("body").innerText()).includes("בדיקה למחיקה"));
+
+// FINDING, not fixed here: DELETE_TASK removes the task from the journal, but
+// nothing ever calls remove() on the taskLinks/{token} entry its own snapshot lives
+// at — publishing just stops, it never un-publishes. "לצמיתות" currently means
+// "out of the journal", not "the copy a worker's own link points at is gone too".
+// Anyone who kept the old link (or the WhatsApp message it came in) can still open
+// it and read the deleted task's last-known title, brief and evidence.
+const { ctx: deletedLinkCtx, page: deletedLinkPage } = await openPage();
+await deletedLinkPage.goto(deletedTaskLink.replace(/^https?:\/\/[^/]+/, BASE));
+await deletedLinkPage.waitForTimeout(2000);
+check(
+  "[FINDING — not fixed here] a permanently deleted task's own worker-link still shows its last content",
+  (await deletedLinkPage.getByText("בדיקה למחיקה").count()) > 0
+);
+await deletedLinkCtx.close();
 
 console.log("12. removing a worker keeps their record and frees the assignment picker");
 // Same shape as removing a job from the board: the roster and the "new task" picker
