@@ -676,21 +676,20 @@ await m.getByRole("button", { name: "שחזור לצוות" }).click();
 await m.waitForTimeout(800);
 check("restoring brings them back to the active roster", (await m.locator(".pane", { hasText: secondWorker.name }).count()) > 0);
 
-console.log("13. reassigning a task leaves its already-sent link silently broken");
-// Reassigning moves the task between two people's lists with its whole history —
-// but it never rotates the task's own linkToken, and republishing that same token's
-// snapshot is guarded by a change-detection signature that covers the task's own
-// fields (title, brief, dueAt, site, status, checklist, comment count) and nothing
-// about WHO currently owns it. A reassignment changes none of those fields, so the
-// signature the effect compares against is identical before and after — the publish
-// effect looks at the task, sees nothing it tracks has changed, and never rewrites
-// the snapshot. The link keeps showing the ORIGINAL assignee's stale identity
-// forever. Worse: a report filed through it still updates real state (it dispatches
-// APPLY_LINK_UPDATE against the childId baked into that stale snapshot), which
-// looks up the task under that child's CURRENT task list — a list the task was just
-// removed from by the reassignment. The dispatch finds nothing to update and
-// silently no-ops. The report is not delayed or misattributed; it is dropped, with
-// nothing on either side saying so.
+console.log("13. reassigning a task republishes its already-sent link instead of stranding it");
+// Reassigning moves the task between two people's lists with its whole history.
+// It used to leave the task's own linkToken stale: the republish signature covered
+// only the task's own fields (title, brief, dueAt, site, status, checklist, comment
+// count) and nothing about who currently owns it, so a reassignment — which changes
+// none of those — left the effect believing nothing had changed and never rewrote
+// the snapshot. Worse than stale content: a report filed through that stale link
+// dispatched APPLY_LINK_UPDATE against the OLD owner's id, which no longer had the
+// task in its list, and the update silently found nothing to apply itself to. Fixed
+// two ways: the signature now includes the current owner, so a reassignment forces
+// a republish; and APPLY_LINK_UPDATE itself now falls back to finding the task by
+// id if it isn't where the snapshot's childId says it should be, so even a report
+// that lands in the brief window before republish catches up still finds its task
+// instead of vanishing.
 await m.goto(`${BASE}/work/new`);
 await m.waitForTimeout(1200);
 await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill("בדיקת העברה");
@@ -712,32 +711,25 @@ await m.waitForTimeout(1200);
 check("reassigning moves the task to the new worker's own page", (await m.locator("body").innerText()).includes(secondWorker.name));
 
 // The ORIGINAL worker, still holding the link they were first sent, reports through
-// it as if nothing changed — and has no way to know it isn't working.
+// it as if nothing changed.
 const { ctx: oldLinkCtx, page: oldLinkPage } = await openPage();
 await oldLinkPage.goto(originalWorkerLink.replace(/^https?:\/\/[^/]+/, BASE));
 await oldLinkPage.waitForTimeout(2000);
 check(
-  "[FINDING — not fixed here] the old link still shows the ORIGINAL assignee's name, never updated by the reassignment",
-  (await oldLinkPage.locator("body").innerText()).includes(worker.name)
+  "the old link picks up the reassignment and shows the NEW assignee's name",
+  (await oldLinkPage.locator("body").innerText()).includes(secondWorker.name)
 );
 await oldLinkPage.getByText("✅ קיבלתי").click();
 await oldLinkPage.waitForTimeout(1000);
 await oldLinkPage.getByPlaceholder("הערה למנהל…").fill("זה עדיין אני, יוסי, לא דנה");
 await oldLinkPage.getByRole("button", { name: "שליחה" }).click();
 await oldLinkPage.waitForTimeout(2000);
-check(
-  "the link itself shows no error — the worker has no reason to think anything went wrong",
-  (await oldLinkPage.locator("body").innerText()).includes("צורפו") || (await oldLinkPage.getByText("נשלח למנהל").count()) > 0
-);
 await oldLinkCtx.close();
 
 await m.reload();
 await m.waitForTimeout(2000);
 const reassignedTaskBody = await m.locator("body").innerText();
-check(
-  "[FINDING — not fixed here] the report never reaches the task at all — silently dropped, not delayed or misattributed",
-  !reassignedTaskBody.includes("זה עדיין אני, יוסי, לא דנה")
-);
+check("the report filed through the once-stale link reaches the task, not lost to the reassignment", reassignedTaskBody.includes("זה עדיין אני, יוסי, לא דנה"));
 
 console.log("14. a page refresh mid-session keeps the manager signed in with their data intact");
 // Distinct from section 9's explicit sign-out/sign-in round trip: this is the

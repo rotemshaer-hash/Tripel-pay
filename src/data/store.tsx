@@ -905,9 +905,21 @@ function reducer(state: AppState, action: Action): AppState {
       // journal must not be able to tell the difference, because to the business there
       // is none.
       const at = action.at;
+      // action.childId comes from whatever snapshot the reporting session loaded,
+      // which can go stale — most concretely, a task reassigned since the link went
+      // out still carries the OLD owner's id until the publish effect above catches
+      // up. Without this fallback, mapChild/mapTask below find no task under that
+      // childId and silently do nothing: not a wrong attribution, the report just
+      // vanishes, with no error on either side to say so. Falling back to a search
+      // by taskId means the update still lands on the task itself even while its
+      // link is stale.
+      const owner = state.family.children[action.childId]?.tasks.some((t) => t.id === action.taskId)
+        ? action.childId
+        : Object.values(state.family.children).find((c) => c.tasks.some((t) => t.id === action.taskId))?.id;
+      if (!owner) return state;
       return {
         ...state,
-        family: mapChild(state.family, action.childId, (c) =>
+        family: mapChild(state.family, owner, (c) =>
           mapTask(c, action.taskId, (t) => {
             if (action.kind === "ack") {
               if (t.acknowledgedAt) return t;
@@ -1394,7 +1406,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (worker.archivedAt) continue;
       for (const task of worker.tasks) {
         if (!task.linkToken || task.status === "completed" || task.archivedAt) continue;
+        // worker.id/worker.name are in the signature because reassigning a task
+        // changes neither — a task moved between two people's lists still has the
+        // same title, brief, status and so on, so without these two fields the
+        // signature before and after a reassignment is identical, this loop
+        // decides nothing changed, and the link a worker already has sits stale
+        // with the OLD owner's identity forever (see APPLY_LINK_UPDATE's fallback
+        // below for what that staleness did to a report filed through it).
         const signature = [
+          worker.id,
+          worker.name,
           task.title,
           task.brief ?? "",
           (task.briefAttachments ?? []).map((a) => a.id).join(","),
