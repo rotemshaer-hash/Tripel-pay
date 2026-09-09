@@ -17,8 +17,30 @@ jobs:
         run: npm ci
       - name: Type-check
         run: npx tsc --noEmit
+      - name: Lint
+        run: npx oxlint
       - name: Firebase access boundary check
         run: npm run check:db-boundary
+
+  # The rules files, exercised directly for the requests they're supposed to refuse —
+  # one company reading another's, a stranger writing into someone else's inbox. The
+  # smoke job below only ever drives requests a legitimate user would make, so a
+  # `.read`/`.write` clause that is quietly too permissive has no way to surface there.
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run the rules test suite
+        run: npx firebase-tools@13 emulators:exec --only database,storage --project triplepay-test "node e2e/rules.mjs"
 
   # The whole product, once, against the Firebase Emulator Suite — which loads the
   # very rules files this repo deploys. Every bug that cost this project days (an

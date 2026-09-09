@@ -17,6 +17,8 @@ jobs:
         run: npm ci
       - name: Type-check
         run: npx tsc --noEmit
+      - name: Lint
+        run: npx oxlint
       - name: Firebase access boundary check
         run: npm run check:db-boundary
       - name: Build
