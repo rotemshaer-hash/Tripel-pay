@@ -676,6 +676,80 @@ await m.getByRole("button", { name: "שחזור לצוות" }).click();
 await m.waitForTimeout(800);
 check("restoring brings them back to the active roster", (await m.locator(".pane", { hasText: secondWorker.name }).count()) > 0);
 
+console.log("13. reassigning a task leaves its already-sent link silently broken");
+// Reassigning moves the task between two people's lists with its whole history —
+// but it never rotates the task's own linkToken, and republishing that same token's
+// snapshot is guarded by a change-detection signature that covers the task's own
+// fields (title, brief, dueAt, site, status, checklist, comment count) and nothing
+// about WHO currently owns it. A reassignment changes none of those fields, so the
+// signature the effect compares against is identical before and after — the publish
+// effect looks at the task, sees nothing it tracks has changed, and never rewrites
+// the snapshot. The link keeps showing the ORIGINAL assignee's stale identity
+// forever. Worse: a report filed through it still updates real state (it dispatches
+// APPLY_LINK_UPDATE against the childId baked into that stale snapshot), which
+// looks up the task under that child's CURRENT task list — a list the task was just
+// removed from by the reassignment. The dispatch finds nothing to update and
+// silently no-ops. The report is not delayed or misattributed; it is dropped, with
+// nothing on either side saying so.
+await m.goto(`${BASE}/work/new`);
+await m.waitForTimeout(1200);
+await m.getByPlaceholder("לדוגמה: ניקיון חדר ישיבות").fill("בדיקת העברה");
+await m.getByRole("button", { name: "הקצאה", exact: true }).click();
+await m.waitForTimeout(1500);
+check("assigning offers the send on the same screen for the reassignment task too", (await m.getByText(`שליחה ל${worker.name}`, { exact: false }).count()) > 0);
+await m.goto(`${BASE}/work/board`);
+await m.waitForTimeout(1200);
+await m.getByText("בדיקת העברה").first().click();
+await m.waitForURL("**/work/task/**", { timeout: 15000 });
+await m.waitForTimeout(1000);
+const originalWaHref = await m.locator('a[href^="https://wa.me/"]').first().getAttribute("href");
+const originalWorkerLink = decodeURIComponent(originalWaHref).match(/https?:\/\/[^\s]+\/w\/[a-f0-9]+/)?.[0] ?? "";
+
+await m.getByText("עריכה", { exact: true }).click();
+await m.waitForTimeout(600);
+await m.getByText(secondWorker.name, { exact: true }).click();
+await m.waitForTimeout(1200);
+check("reassigning moves the task to the new worker's own page", (await m.locator("body").innerText()).includes(secondWorker.name));
+
+// The ORIGINAL worker, still holding the link they were first sent, reports through
+// it as if nothing changed — and has no way to know it isn't working.
+const { ctx: oldLinkCtx, page: oldLinkPage } = await openPage();
+await oldLinkPage.goto(originalWorkerLink.replace(/^https?:\/\/[^/]+/, BASE));
+await oldLinkPage.waitForTimeout(2000);
+check(
+  "[FINDING — not fixed here] the old link still shows the ORIGINAL assignee's name, never updated by the reassignment",
+  (await oldLinkPage.locator("body").innerText()).includes(worker.name)
+);
+await oldLinkPage.getByText("✅ קיבלתי").click();
+await oldLinkPage.waitForTimeout(1000);
+await oldLinkPage.getByPlaceholder("הערה למנהל…").fill("זה עדיין אני, יוסי, לא דנה");
+await oldLinkPage.getByRole("button", { name: "שליחה" }).click();
+await oldLinkPage.waitForTimeout(2000);
+check(
+  "the link itself shows no error — the worker has no reason to think anything went wrong",
+  (await oldLinkPage.locator("body").innerText()).includes("צורפו") || (await oldLinkPage.getByText("נשלח למנהל").count()) > 0
+);
+await oldLinkCtx.close();
+
+await m.reload();
+await m.waitForTimeout(2000);
+const reassignedTaskBody = await m.locator("body").innerText();
+check(
+  "[FINDING — not fixed here] the report never reaches the task at all — silently dropped, not delayed or misattributed",
+  !reassignedTaskBody.includes("זה עדיין אני, יוסי, לא דנה")
+);
+
+console.log("14. a page refresh mid-session keeps the manager signed in with their data intact");
+// Distinct from section 9's explicit sign-out/sign-in round trip: this is the
+// ordinary case of a tab just reloading — a stale cache or a broken auth-restore
+// path would show up as a bounce to /login or an empty board here.
+await m.goto(`${BASE}/work/board`);
+await m.waitForTimeout(1500);
+await m.reload();
+await m.waitForTimeout(2500);
+check("a raw refresh does not bounce the manager back to login", new URL(m.url()).pathname.startsWith("/work/"));
+check("and the board still shows real data, not an empty shell", (await m.getByText("בדיקת העברה").count()) > 0);
+
 await managerCtx.close();
 await workerCtx.close();
 await browser.close();
