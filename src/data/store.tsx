@@ -123,7 +123,6 @@ type Action =
   | { type: "RESTORE_WORKER"; childId: string }
   | { type: "RESET_WORKER_ACCESS"; childId: string }
   | { type: "SET_WORKER_PHONE"; childId: string; phone: string }
-  | { type: "SET_PROFESSION"; professionId: string }
   | { type: "SET_REQUIRE_PROOF"; value: boolean }
   | { type: "ENSURE_DAY_TOKENS" }
   | { type: "APPLY_LINK_UPDATE"; childId: string; taskId: string; kind: LinkUpdate["kind"]; at: string; by: string; note?: string; photo?: string; name?: string; file?: LinkUpdate["file"]; attachmentId?: string }
@@ -994,12 +993,6 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case "SET_REQUIRE_PROOF":
       return { ...state, family: { ...state.family, requireProof: action.value } };
-    case "SET_PROFESSION": {
-      const next = { ...state.family };
-      if (action.professionId) next.professionId = action.professionId;
-      else delete next.professionId;
-      return { ...state, family: next };
-    }
     case "SET_WORKER_PHONE": {
       const phone = action.phone.trim();
       return {
